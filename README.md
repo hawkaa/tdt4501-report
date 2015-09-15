@@ -1,1 +1,2 @@
-# tdt4501-report
+# Computer Science, Specialization Project
+By Håkon Åmdal
