@@ -1,17 +1,20 @@
 \section{Problem statement and goals}
 \label{sec:problem-statement-and-goals}
-This thesis will try to answer the following research question:
+In order to aid \genus~with the software development process, this thesis will address the following research question:
 
-\textbf{Which challenges does \genus~face when implementing a module for Business Intelligence in their \genusSoftware?}
+\textbf{RQ1: Which challenges does \genus~face when implementing a module for Business Intelligence in their \genusSoftware?}
 
-We will address the issue by scrutinizing the following hypothesis:
+The question will be answered by reviewing the current litterature, scrutinizing the competing products and analysing the bits and bolts needed to develop the business intelligence module.
 
-\textbf{\genus~has identified the following key issues:}
+Based on some workshops and discussions with \genus , they have pointed out some key issues they consider important. Based on these key points, I've come up with the following hypotheses:
 \begin{enumerate}\bfseries
-  \item Indexes have to be created dynamically, and there is a question of which and when.
-  \item The multitenancy support in \genusSoftware will affect the index generation
-  \item Formulas must be calculated efficiently to not become a bottleneck
+  \item In order to create a high-performance system without a database administrator, indexes have to be created dynamically, and there is a question of which and when.
+  \item The security layer in \genusSoftware~will affect the implementation, and some indexes and formula results will have to be stored per user.
+  \item Formulas must be calculated efficiently to not become a bottleneck.
   \item Indexes and data must be compressed in order to get performance.
-  \item Selections have to be reasonably compressed in order to minimize the amount of data sent through the network.
+  \item Network traffic must be reduced by compressing data queries.
 \end{enumerate}
+
+Each hypthesis will be studied in the terms of research, competitor solutions, as well as design proposal. In addition to this, I will look for unindentified issues which will affect the design.
+
 
