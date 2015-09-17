@@ -2,17 +2,18 @@
 \label{sec:problem-statement-and-goals}
 In order to aid \genus~with the software development process, this thesis will address the following research question:
 
-\textbf{RQ1: Which challenges does \genus~face when implementing a module for Business Intelligence in their \genusSoftware?}
+\textbf{RQ1: Which challenges does \genus~face when implementing Business Intelligence support in their \genusSoftware?}
 
-The question will be answered by reviewing the current litterature, scrutinizing the competing products and analysing the bits and bolts needed to develop the business intelligence module.
+The question will be answered by reviewing the current litterature, scrutinizing the competing products and analysing the bits and bolts needed to develop business intelligence inside \genusSoftware.
 
 Based on some workshops and discussions with \genus , they have pointed out some key issues they consider important. Based on these key points, I've come up with the following hypotheses:
 \begin{enumerate}\bfseries
-  \item In order to create a high-performance system without a database administrator, indexes have to be created dynamically, and there is a question of which and when.
+  \item Data needs to be accessed fast. To do this, data has to be stored in a format for quick access, and indexes has to be generated dynamically.
   \item The security layer in \genusSoftware~will affect the implementation, and some indexes and formula results will have to be stored per user.
+  \item Indexes, data, and data interchange formats must be compressed to get performance and utilize the available memory efficiently.
   \item Formulas must be calculated efficiently to not become a bottleneck.
-  \item Indexes and data must be compressed in order to get performance.
-  \item Network traffic must be reduced by compressing data queries.
+  \item \sout{Network traffic must be reduced by compressing data queries.}
+  \item \sout{In order to create a high-performance system without a database administrator, indexes have to be created dynamically, and there is a question of which and when.}
 \end{enumerate}
 
 Each hypthesis will be studied in the terms of research, competitor solutions, as well as design proposal. In addition to this, I will look for unindentified issues which will affect the design.
