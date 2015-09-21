@@ -1,0 +1,25 @@
+\chapter{Alternative Products}
+\label{chap:alternative-products}
+
+This chapter will contain info about:
+
+\begin{itemize}
+  \item QlikView
+  \item Tableu
+\end{itemize}
+
+\section{Microsoft, IBM, SAP, and Oracle}
+Microsoft, SAP, IBM, and Oracle does all supply OLAP solutions. There has been several blog posts and articles (\textit{insert references here}) on which of these products are the best. Lots of these blog posts are very biased, and there is little doubt they're written from a marketers perspective. However, there's been little doubt that they all offer high performance analytics solutions. What is common for all of them is:
+\begin{itemize}
+  \item Columnar storage
+  \item In-memory storage
+  \item Indexing
+\end{itemize}
+
+They all seem to agree on the above points.
+
+However, some people claim that these solutions are not pure In-Memory Database Systems (IMDS) (cite Steve Graves). They are only 100\%~cached databases tweaked to exploit the available memory.
+
+\section{Conclusions}
+\label{sec:Conclusions}
+Since \genusSoftware supports several different database backends, and among them providers like MySQL which does not support in-memory database tables, one can not utilize the DBMS technology which exists. \genus must develop their own system, preferably a pure IMDS.

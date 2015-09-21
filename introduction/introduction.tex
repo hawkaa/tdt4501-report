@@ -1,21 +1,13 @@
 \chapter{Introduction}
 \label{chap:introduction}
+This chapter is the introduction to the thesis. Section 1.1 will introduce bla bla
+\clearpage
 
-\section{Background on data warehouses}
-\label{sec:background-data-warehouses}
-\lipsum[3]
-
-\input{introduction/bi-background}
-
-\section{Motivation}
-\genus~is a small Norwegian company that creates a model-driven application framework that lets you build software applications without programming. The framework lets you define your business object model. \genusSoftware~handles millions of rows. \genusSoftware~does also include restrictions on access, which means the data available to the end users in the model is dependent on the user group.
-
-Business Intelligence has also become an important part of a business. Traditionally, data warehouses (section \ref{sec:background-data-warehouses}) has been used for this, with preconfigured reports. However, with the advent of in-memory databases with cheap hardware, several market players has come up with fast, elegant and end user intuitive solutions to analyze business data. Products like \qlikview, Foo, and Bar offers high-performance analytics panel which are easy to configure for the end user, such that important patterns are spotted and acted upon.
-
-There are however several challenges with these products. First of all, they are all separate products, and does not integrate well with existing solutions. Secondly, they don't handle metadata. Types and database relations needs to be reconfigured on import. Thirdly, the products does not support security. Lastly, a database administrator is required.
-
-\genus~has been requested by their customers to develop a module for business intelligence inside \genusSoftware . They believe the challenges mentioned in the previous paragraph can be overcome by integrating the module into their existing framework. This is because \genusSoftware~is already installed at the client and does not need any new software. In addition, metadata is well handled, as well as permission control. 
-
-The motivation for this thesis is to aid \genus~ in the process of developing this module, by analysing state-of-the art research, identifying key issues and suggest design principles.
-%\input{introduction/bi-background}
+\input{introduction/background-and-motivation}
 \input{introduction/problem-statement-and-goals}
+
+\section{Deliverables and methodology}
+The first two parts of the thesis will be a literature review and a similar product analysis. These two chapters let me familiarize myself to the most recent research within the field, and have a look at how competing products solves the problems. The ultimate goal for these chapters is to be able to come up with a discussion and analysis of the hypotheses stated in section \ref{sec:problem-statement-and-goals}, which will be the third pard of the thesis. This part will also include a section of other issues that has not been thought of so far.
+
+The last part of the thesis, based on the results so far, will contain a design proposal for a Busines Intelligence implementation in \genusSoftware. 
+

@@ -1,6 +1,7 @@
 \documentclass[10pt, a4paper]{report}
 
 \input{misc/packages}
+
 \input{misc/colors}
 \input{misc/languages}
 \input{misc/misc}
@@ -24,12 +25,16 @@
   \clearpage
 
   \setcounter{page}{1}
+
   % chapters
   \include{introduction/introduction}
-
-  % chapters
-  \include{genus-application-framework/genus-application-framework}
-
+  \include{background/background}
+  \include{literature-review/literature-review}
+  \include{alternative-products/alternative-products}
   \include{discussion/discussion}
+
+  % bibliography
+  \bibliographystyle{plain}
+  \bibliography{bibliography/bibliography}
 
 \end{document}
