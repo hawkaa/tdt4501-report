@@ -1,0 +1,6 @@
+\chapter{Design}
+
+\section{Scale-up vs scale out}
+Scaling out, that is using a cluster of server has long been considered the best way to design a high performance, high availability system for analytic workloads over large data sets \cite{Mukherjee2015-ul}. There are several reasons for this perception. First of all, the CPU and memory does not get contention as easily, since the data is spread across different servers in the cluster. With large data volumes, the main memory of a single instance might not be sufficient. Secondly, scaling out allows more servers to be added if the workload increases.
+
+However, with decreasing harware prices, there has been a discussion wether scaling up is a better design choice. Analytic workloads from Yahoo and Microsoft has a median input size of 14 GB. Additionally, the implementation is easier because the entire server share the same address space. However, current state-of-the-art multi processors employ Non-uniform Memory Access (NUMA), such that a framework for distributed in-memory becomes necessary even on a single SMP server.
