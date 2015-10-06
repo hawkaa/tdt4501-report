@@ -4,3 +4,64 @@
 Scaling out, that is using a cluster of server has long been considered the best way to design a high performance, high availability system for analytic workloads over large data sets \cite{Mukherjee2015-ul}. There are several reasons for this perception. First of all, the CPU and memory does not get contention as easily, since the data is spread across different servers in the cluster. With large data volumes, the main memory of a single instance might not be sufficient. Secondly, scaling out allows more servers to be added if the workload increases.
 
 However, with decreasing harware prices, there has been a discussion wether scaling up is a better design choice. Analytic workloads from Yahoo and Microsoft has a median input size of 14 GB. Additionally, the implementation is easier because the entire server share the same address space. However, current state-of-the-art multi processors employ Non-uniform Memory Access (NUMA), such that a framework for distributed in-memory becomes necessary even on a single SMP server.
+
+\section{Using a Colomn Store}
+\label{sec:Using a Colomn Store}
+Common for all the OLAP systems we have studied in this thesis, is that they all utilize a columnar storage layout. 
+
+Additionaly, Abadi et al. \cite{Abadi2008-dd} supports this claim. Trying to emulate a column store in a row-store DBMS does not yield significant performance benefits.
+
+\paragraph{Optimizations}
+\label{par:Optimizations}
+Using a raw column store will not automatically be advantageous over row-oriented databases. Abadi et al. \cite{Abadi2008-dd} demonstrate that simple column-oriented operations without optimizations, like compression and late materialization does not dramatically outperform well-designed row-stores.
+
+\section{Read-only}
+\label{sec:Read-only}
+Adding support on-line updates clearly complicates the system design. We propose to keep the system read-only to reduce complexity. The in-memory data structures are loaded into memory in fixed intervals (e.g. every night). Omiting insert, update, and delete functionality will let us skip trasaction support, which is a tedious process and hard to get right.
+
+This design choice does not completely disregard on-line updates in the future. We see that several clever solutions for transactional processing are present in today's products while still keeping the read optimized column store structure. The C-store uses a Writeable Store component to incremently add data to the Read-optimized Store. We believe a similar technique could be utilized in \projectName.
+
+
+\section{Cherry-picking ideas}
+\label{sec:Cherry-picking ideas}
+We see that the different products have different ways of implementing high performance systems for query intensive workloads. The goal of this section is to pick the design principles to implement business intelligence in \genusSoftware.
+
+\subsection{Data filters}
+\label{sub:Data filters}
+Both Oracle and QlikView offers some sort of data filtering for their analytics. As we saw in Section~\ref{sec:Oracle In-Memory option}, oracle lets the database administrators pick any database objects and add an \texttt{INMEMORY} option to it. More specifically, one can pick certain tables, certain columns and certain horizontal partitions (i.e records from the last year) to put in memory to reduce memory usage. Although QlikView is quite different, since the user must create a loading script, you still get the same functionality as Oracle when it comes to adding filters to your in-memory data.
+
+For \genusSoftware, we introduce the concept of a Genus Data Mart. This lets the user define a snowflake schema with the required columns and tables for an analytical task. In addition to this, certain filters on the data should be applied, such that \projectName~supports horizontal partitioning of the data (i.e records from the last year). \todo{Figure out if the filters are needed}.
+
+\subsection{Scalability}
+\label{sub:Scalability}
+Oracle offers support for highly distributed systems, such that high throughput and availability can be maintained.
+
+Although this should be key design goal for all systems, we believe the extra complexity cannot be justified. \genus 's customers does not have more than ten servers.
+
+We propose a scale-up architecture, where an entire data mart fits into the memory on a single server instance. However, different data marts will be placed on different servers, such that scale-out will be (partly) supported.
+
+\subsection{Do not reinvent the OS}
+\label{sub:Do not reinvent the OS}
+We see that Oracle has implemented their own format for buffer management and raw files \todo{Check this out}.
+
+On the other side, Monet embraces the idea of not re-inventing the operation system. It relies heavily on the virtual memory and the underlying file system. C-store does also use individual files in the underlying operating system to store the columns.
+
+We consider utilizing the underlying operating system as a good design principle to keep \projectName~simple, yet effective.
+
+\subsection{Compression}
+\label{sub:Compression}
+One of the major advantages by storing data by column, is that the data is intuitively more compressible than data stored in rows. Previous work has shown that query performance can be improved by an order of magnitude \cite{Abadi2006-bf}.
+
+Originally, only seen as a way to reduce storage requirements, tests show that if a column-oriented query executor can operate on compressed data directly, performance can be improved \cite{Abadi2008-dd}
+
+
+\section{Hardware assumptions}
+In the design, we assume the following about the hardware.
+\begin{enumerate}
+  \item The entire dataset can be contained entirely in RAM.
+  \item High performance 64-bits SMPs
+\end{enumerate}
+
+\section{Performance evaluation}
+\label{sec:Performance evaluation}
+The final design will be tested using the TPC-H benchmark. \todo{Add explanation about TPC-H benchmark}.

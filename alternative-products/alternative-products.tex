@@ -5,6 +5,7 @@ This chapter will contain info about:
 
 \begin{itemize}
   \item QlikView
+  \item Oracle In-Memory option
   \item Tableu
 \end{itemize}
 
@@ -20,6 +21,83 @@ They all seem to agree on the above points.
 
 However, some people claim that these solutions are not pure In-Memory Database Systems (IMDS) (cite Steve Graves). They are only 100\%~cached databases tweaked to exploit the available memory.
 
+\section{Oracle In-Memory option}
+\label{sec:Oracle In-Memory option}
+
+\subsection{Key design concepts}
+\label{sub:Key design concepts}
+This section will enumerate the key design concepts in the in-memory option for the oracle database
+
+\paragraph{Datadase object selection}
+\label{par:Datadase object selection}
+Oracle offers a wide range of in-memory granularities for their users. Their \texttt{INMEMORY} attribute can be specified on any oracle database object, like a tablespace, table, partition or materialized view. Being able to select partitions for in-memory usage, allows you to maintain the newest data in-memory, while rows older than a certain date will be stored on disk. For a table or tablespace, certain columns can be excluded in the data loaded into memory.
+
+\todo{Check out what a database object is}
+
+\paragraph{Column store}
+\label{par:Column store}
+Oracle saves the data in the dual format, that is both row and columns of data. The analytic queries uses the column format.
+
+\paragraph{Background worker population}
+\label{par:Background worker population}
+The oracle database uses a background worker to populate the IM storage, and will be able to handle queries even if the data is not loaded into memory yet. The background workers columize and compress the data continously.
+
+\paragraph{In-Memory Compression units}
+\label{par:In-Memory Compression units}
+The column store is made up of multiple extents, called In-Memory Compression Units (IMCUs). Data is loaded into these units without sorting, they are put in the same way as it appears in the row format.
+
+\paragraph{Priorities}
+\label{par:Priorities}
+All database objects that can be loaded into memory can have a priority associated with it (five levels). When selecting which objects to load into memory, these priorities are used. All objects at a given priority level must be fully populated before the population for any objects at a lower priority level can commence.
+
+\paragraph{In-Memory Compression}
+\label{par:In-Memory Compression}
+Oracle utilizes a compression format on their in-memory storage layout (\cite{Oracle2015-fs}). Compression is normally considered as a space-saving mechanism, but compression will also improve query performance. All scanning and filtering operations operate directly on the compressed columns which decreases query execution time. Data is decompressed before it is required for the result set.
+
+Oracle offers several different compression levels.\todo{Is this needed?}
+
+We have been unable to find the specific compression algorithm, but Oracle says that Dictionary Encoding, Run Length Encoding and Bit-Packing is used \cite{Oracle2015-fs}.
+
+\paragraph{Indexes}
+\label{par:Indexes}
+Indexes for each of the columns in the column store are maintained by storing the minimum and maxumum value for each compression unit (IMCU). If the query specifies a \texttt{WHERE} clause, all ICMUs indexes are checked. If the column value is outside the maximum and the minimum value for an ICMU, the IMCU will not be scanned.
+
+Additionally, when a dictionary based compression is used, the dictionary can be used to determine if the value being searched for actually exists within an IMCU.
+
+\paragraph{SIMD Vector Processing}
+\label{par:SIMD Vector Processing}
+SIMD (Single Instruction, Multiple Data) instructions are used within the Oracle database to process multiple coulmn values at the same time using a single CPU instruction. 
+
+\paragraph{In-Memory joins}
+\label{par:In-Memory joins}
+Oracle uses Bloom Filters to join two or more tables.
+
+\paragraph{In-Memory aggregation}
+\label{par:In-Memory aggregation}
+To perform summaries and aggregations, Oracle applies an optimizer transformation, called \textit{Vector Group By}
+\todo{Provide an explanation of the vector group by here}
+
+\subsection{Other}
+\label{sub:Other}
+Oracle offers high performance OLTP with transaction support. There are background workers to keep as few stale tuples in the IMCUs.
+
+Oracle scales out in a RAC environment. Each node will have parts of the data, and is considered as a share-nothing architecture.
+
+Fault tolerance. Improves performance and increases availability.
+
+All of the information in this section was found in paper 1, paper 2, paper 3.
+
+\section{Other}
+\label{sec:Other}
+Other techiques not tied to a specific software package has also been developed
+
+\subsection{Late Materialization}
+\label{sub:Late Materialization}
+Abadi et. al. \cite{Abadi2008-dd} explains how column storages benefit from late materialization, which means tuples are not constructed before they are really needed. The advantages of this technique is four-fold. \todo{Add information about the paper here}
+
+\subsection{Invisible Join}
+\label{sub:Invisible Join}
+\todo{Explain the invisible join from the Abadi et al. paper}
 \section{Conclusions}
 \label{sec:Conclusions}
 Since \genusSoftware supports several different database backends, and among them providers like MySQL which does not support in-memory database tables, one can not utilize the DBMS technology which exists. \genus must develop their own system, preferably a pure IMDS.
