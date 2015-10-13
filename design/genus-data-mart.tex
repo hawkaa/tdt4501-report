@@ -1,0 +1,24 @@
+\section{\datamart}
+We here propose the idea of the \datamart. This design lets the genus user pick objects and their respective columns, as well ass add filters on them, thus data can be filtered both vertically (skipping entire columns) and horizontally (only keep rows that satisifies a certain predicate.)
+
+Since we know more about the data than the generic database provders (e.g. Oracle and Microsoft), we can use this information to create tailored data selections.
+
+\subsection{Why \datamart?}
+\label{sub:Why \datamart?}
+We here present the arguments for why the \datamart idea is used in our design proposal.
+
+\paragraph{Security}
+\label{par:Security}
+By defining a data mart, the modellers may include only these columns that should be visible for everyone. One example here is that the names of all the emoployees should be visible in the analysis dashboard, but not their social security number.
+
+\paragraph{Data limitation and filtering}
+\label{par:Data limitation}
+By defining a data mart, one does not need to put the entire database into memory. By limiting the data both horizontally and vertically, less requirements are put on the hardware, and the performance might increase.
+
+\paragraph{Own query language}
+\label{par:Own query language}
+The data mart allows for using an extremely simple, yet powerful query language. The only input is the current selection, and the output is the potential rows and recalculated aggregates.
+
+\paragraph{Scale-out}
+\label{par:Scale-out}
+Since more than one \datamart is allowed, this allows for a simple, yet powerful way of scaling out. By distributing the data on different servers in the cluster, less computational and memory requirements are put on each server.

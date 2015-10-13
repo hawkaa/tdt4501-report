@@ -1,0 +1,35 @@
+\section{Microsoft SQL Server}
+Starting from SQL Server 2012, Microsoft offers column storage \cite{noauthor_undated-py}, known as \textit{in-memory columnstore index}. From SQL Server 2016, the index is now updateable and available for tables that are stored in-memory. Previous versions were read-only \cite{noauthor_undated-ut}. They clain their product achieve up to 10x query performance and 10x data compression compared to a row-oriented storage. Microsoft claim the columnstore indexes give high performance on analytic queries that scan large amounts of data.
+
+\paragraph{Row Groups}
+\label{par:Row Groups}
+Microsoft SQL server operate on \textit{row groups} which are groups of rows compressed into a columnar format. The number of rows in a row group must me small enough to benefit from in-memory operations and large enough to achive high compression rates.
+
+\paragraph{Batch execution}
+\label{par:Batch execution}
+This is a method for processing multiple rows in a query together. Typically, the query performance improves by 2-4x. 
+
+\paragraph{Dual format}
+\label{par:Dual format}
+Like Oracle, a row store and a column store can be combined, such that the transactional workload can use the row store and analytics run on the column store. Since the column store is updated when data changes in the row store, both indexes are working against the same data.
+
+\paragraph{Transactional support}
+\label{par:Transactional support}
+Snapshot isolation, online defragmentation of indexes. Filters for column store data, such that only cold data can be accessed. \cite{noauthor_undated-tc}
+
+\paragraph{Indexing types}
+\label{par:Indexing types}
+SQL server supports two kind of indexes \cite{Delaney2014-ip}:
+\begin{itemize}
+  \item Non-clustered hash-indexes, stored as hash tables with linked lists
+  \item nonclustedred indexes. Supports retrieving ranges of values, ordering of rows and performance for queries using the inequality operation.
+\end{itemize}
+
+\paragraph{Native compiled code}
+\label{par:Native compiled code}
+SQL server compiles code into DLL and runs it to operate on the data directly. \todo{Fill in more here}
+
+\paragraph{deltastore}
+\label{par:deltastore}
+SQL server keeps a data structure called the \textit{deltastore} to manage changes in the data. This structure gathers data up to a certain threshold. When the threshold is reached, the deltastore closes and the column store index is rebuilt.
+

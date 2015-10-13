@@ -1,0 +1,16 @@
+\section{Multitenancy and Security}
+As mentioned in a previous section,  \genusSoftware~supports multiple forms of security. One of the major concerns in this application when it comes to security is the row based filtering. Depending on which user you are, you may not be able to see all the rows in a table. In addition, there are certain columns that only certain users should be allowed to see.
+
+We introducte the following mechanics:
+
+\paragraph{Column filtering}
+\label{par:Column filtering}
+By default, the data mart can be configured to hide certain columns. If a column is intentionally  hidden from a user in the user interface due to security reasons, one must make sure this column is hidden in the data mart as well.
+
+\paragraph{Data mart permission control}
+\label{par:Data mart permission control}
+The modellers may specify a security level on each data mart, such that classified columns may be used.
+
+\paragraph{Table filtering}
+\label{par:Table filtering}
+If a table is filtered on a certain attribute (a grocery store clerk may only have access to his own store), one of two things may happen. First, the filter may be turned off completely, such that all users have access to all data. This may be useful if you want to use the aggregates to be visible, but not the individual rows. Second, if one decides to keep the filter, a special filter is created in the session. On every access to the table, this additional filter is applied.

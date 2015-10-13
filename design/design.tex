@@ -21,6 +21,12 @@ Adding support on-line updates clearly complicates the system design. We propose
 
 This design choice does not completely disregard on-line updates in the future. We see that several clever solutions for transactional processing are present in today's products while still keeping the read optimized column store structure. The C-store uses a Writeable Store component to incremently add data to the Read-optimized Store. We believe a similar technique could be utilized in \projectName.
 
+The fact that we choose to not support delta operations is based on the observation that there is two kind of analytics: \todo{Perhaps find background information on this?}
+\begin{enumerate}
+  \item \textbf{Immideate analycits} Analytics of something that just recently happened (e.g. today's sales). The data is required to be continiously updated, but the amount of data is low.
+  \item \textbf{Historical analytics} Analytics that needs to compare large amounts of data (e.g. sales this year compared to previous year). Although handy, there is no requirement to have this data up to date all the time. Hence, there is a high amount of data, but it can be loaded into memory less frequently than the above.
+\end{enumerate}
+
 
 \section{Cherry-picking ideas}
 \label{sec:Cherry-picking ideas}
@@ -54,6 +60,21 @@ One of the major advantages by storing data by column, is that the data is intui
 
 Originally, only seen as a way to reduce storage requirements, tests show that if a column-oriented query executor can operate on compressed data directly, performance can be improved \cite{Abadi2008-dd}
 
+In order for compression to improve performance, it must satisfy two constraints \cite{Westmann2000-mz}. First, it must be very fast and have low CPU overhead. Otherwise, the performance benefits of reduced IO and better cache utilization will be eaten up by the additional CPU cost. Secondly, the compression must be fine grained. This is first of all for performance reasons, since fine-grained compression makes it possible to lazily decompress fields during query execution.
+
+Dictionary-based compression is a common way of compressing the data in a column. There are several ways to go about this encoding. In order to maximize the compression performance, the number of distinct values must be known in advance, such that no more than the necessary bits will be used. We propose that all distinct values for every column should be counted before putting it in memory, such that the optimal number of bits for dictionary encoding may be used.
+
+\subsection{Splitting columns horizontally}
+\label{sub:Splitting columns horizontally}
+We see that Microsoft and Oracle splits theirs column stores horizontally. SQL server operate on row groups which are groups of rows compressed into a columnar format. They say they must be small enough to benefit from in-memory operations and large enough to achive high compression rates. Oracle operates on In-Memory Compression Units, which is comprised of compressed columns known as a compression unit. Although no particular reasoning behind the IMCU size is found, it's likely to believe the arguments are the same as the ones for SQL server. Additionally, the Oracle Database In-memory supports distributed architechtures, where IMCU serves as the smallest distributed architecture. If the IMCUs are too large, load balancing might be suboptimal.
+
+One additional argument for splitting the column is for insertions and updates. Managing columns in smaller partitions will improve performance on OLTP workloads
+
+Since \projectName~is operates under the assumption that the entire database fits in memory, it should not support a distributed architecture, and the entire database is read-only, we find no reason to split columns horizontally. We propose a design where entire columns are stored contigously in memory.
+
+\subsection{Vector Group By}
+\label{sub:Vector Group By}
+One should use the vector group by, since grouping happens regularly.
 
 \section{Hardware assumptions}
 In the design, we assume the following about the hardware.
@@ -67,3 +88,23 @@ In the design, we assume the following about the hardware.
 The final design will be tested using the TPC-H benchmark. \todo{Add explanation about TPC-H benchmark}.
 
 Another argument for scaling up instead of scaling out is that \genus has a detailed overview over their customers. They know that scaling up will suffice for all customers, and they can impose hardware requirements for their users.
+
+\input{design/genus-data-mart}
+
+\input{design/query-language}
+
+\input{design/multitenancy-and-security}
+
+\section{Why the already existing technologies are not used}
+\label{sec:Why the already existing technologies are not used}
+Genus uses the minimal of the database features in order to support a magnitude of SQL databases. Using In-memory constructs in these database is not a feasible option, due to two things:
+\begin{itemize}
+  \item Not all providers support in-memory options
+  \item The syntax and configurations for these constructs are differet per provider.
+\end{itemize}
+
+\section{Future work}
+\label{sec:Future work}
+\subsection{Support for real time updates}
+\label{sub:Support for real time updates}
+In the first iteration of \projectName~development, there is no support for online updates. If such functionality should be provided, there are several techniques that can be used. We see that C-store \cite{Stonebraker2005-qz} is comprised of a writeable store (WS) and a Read-optimized store (RS), which are connected through a \textit{Tuple Mover}. A similar technique can be used for \projectName .
