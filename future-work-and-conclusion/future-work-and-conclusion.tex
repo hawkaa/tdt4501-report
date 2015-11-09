@@ -1,5 +1,5 @@
-\chapter{Discussion}
-\label{chap:discussion}
+\chapter{Future Work and Conclusion}
+\label{chap:Future Work and Conclusion}
 
 \section{Future work}
 Although this thesis has discussed the key challenges on implementing Business Intelligence in a model-driven framework, there are still challenges that has not been discussed broadly.
@@ -9,3 +9,12 @@ The thesis has assumed that data traverse the network at low cost, such that all
 The thesis is based on a model where the data is recycled every night. This means that the most recent data will be left out of the analysis. Here it would be interesting to find out which alterations that needs to be done to avoid this problem. One could look at bla bla.
 
 There is also a lack of discussion of which component should do what. As explanied, \genusSoftware is comprised of a server and a client. Moving functionality between these components will affect the latency and performance.
+
+\section{Conclusion}
+\label{sec:Conclusion}
+We have seen that database systems for OLAP workloads use light-weight compression, parallelism on all levels, and careful implementation to achieve good performance.
+
+We point at dictionary compression with bit-packing as an obvious candidate for compression algorithm. We also propose splitting up the data horizontally, such that clustering can be utilized.
+
+We point at the next step, which is implementation and testing of these techniques in \genusSoftware.
+

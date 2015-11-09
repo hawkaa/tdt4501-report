@@ -1,0 +1,50 @@
+\chapter{Data Layout}
+\label{chap:Data Layout}
+One of the most prevalent ways of achieving good performance for OLAP workloads, is to consider how the data is laid out in all levels of the memory hierarchy. Most of the discussion relates to column stores against row stores, but we see alternate ways of storing the data. In addition to the overall storage format, one should also consider if and how to partition the data, and how to sort it.
+\newpage
+
+\section{Column storage}
+\label{sec:Column storage}
+Many database systems use columnar storage instead of row storage to enhance aggregation and predicate evaluation performance. This includes the MonetDB \cite{a}, C-Store \cite{b}... The main argument is that you don't need to access more columns than strictly necessary.
+
+Abadi \ea \cite{Abadi2008-dd} investigated wheter there was a fundamental difference between row and column stores, and tried to mimic columnar behavior in a commercial row store. The conclusion was that there is something fundamental about column stores that make them perform so well, and this includes compression, vectorized execution and late materialization.
+
+\subsection{Column projections}
+\label{sub:Column projections}
+C-store allows to have several projections per column, with different sort order. They claim the redundant storage is justified by the additional compression. Configuring these projections requires a DBA.
+
+\subsection{Horizontal partitioning of columns}
+\label{sub:Horizontal partitioning of columns}
+Several products splits the columns horizontally, and if the columns are split, each block normally has its own dictionary (see the Compression chapter). There are several orthogonal arguments for this:
+\begin{itemize}
+  \item Storing metadata values, like minimum and maximum per block allows for cluster exploitation and easy pruning of data.
+  \item Smart partitioning of data based on the value frequencies handles data skew, and allows for improved compression rates.
+  \item Horizontal partitions can be spread out across different nodes in a distributed environment.
+\end{itemize}
+
+\subsection{Sorting of values}
+\label{sub:Sorting of values}
+There is little indication in the literature that it is common to sort the values in the columns. This has been explicitly mentioned being the case for Microsof SQL Server \cite{Larson2013-mc} and Blink \cite{Raman2013-em}.
+
+There are however benefits in sorting the values in the column store. First of all, single value lookups are easily performed by a binary search (however, this limitation can be overcome by keeping inverted indexes \cite{Lemke2010-is}, \cite{Schwalb2014-hn}) Second, and perhaps most important, is that sorted columns can be compressed aggressively by applying run-length encoding (read more about this in the Compression chapter). This is the reason why C-store \cite{Stonebraker2005-qz} lets the DBA define projections of various sort orders.
+
+\subsection{Row identifiers}
+\label{sub:Row identifiers}
+In order to stitch together the rows after a query has been executed, each row needs a unique identifier. Many of the systems store these implicitly \cite{Boncz2002-yj, Raman2013-em, Stonebrake2005-qz, Lamb2012-kg} as a virtual object ID (void). Microsoft SQL Server identifies a row by a combination of row group ID and tuple ID \cite{Larson2013-mc}.
+
+\section{Alternative storage layouts}
+\label{sec:Alternative storage layouts}
+Although column storage is normally seen as superior to row storage on analytical workloads, some related work have questioned this.
+
+The Oracle Database in-memory \cite{Lahiri2015-mz} offers a dual format, where data is stored as both columns and rows. Since analytical indexes can be dropped when using a column layout, and that the columns are heavily compressed, this does not take more space than usual. 
+
+The work of Barber \ea \cite{Barber2012-xt} claims that both row and column store is suboptimal, and claim that columns are ineffective because they must be padded to word boundaries for efficient access. Their database system, \pn{Blink} therefore implement a hybrid structure, where a subset of the rows are densely packed in word banks, typcially 128-256 bits each. A later paper on \pn{Blink} \cite{Raman2013-em} however contradicts this format, and says everything is stored column-wise.
+
+Another popular format is the PAX data layout \cite{Holloway2008-rr, Bjorklund2011-wh}
+
+\section{Row stores}
+\label{sec:Row stores}
+Although much points at a column or hybrid layout is the most beneficial for analytical workloads, Holloway \ea \cite{Holloway2008-rr} investigated in which occurences a row store actually could be beneficial. 
+
+
+

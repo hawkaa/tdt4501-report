@@ -1,16 +1,25 @@
 \section{Background and Motivation}
 \label{sec:background-and-motivation}
+\begin{secex}
+    This section should introduce:
+    \begin{enumerate}
+      \item \genus
+      \item The need for Business Intelligence
+      \item The fact that \genus~needs to offer business intelligence to offer a competitive product
+      \item Problems with existing products, and they believe \genus~can offer a better product.
+    \end{enumerate}
+\end{secex}
 
-\genus~is a mid-sized Norwegian company that creates a model-driven application framework that lets you build software applications without programming. The framework lets you define your business object model. \genusSoftware~handles millions of rows. \genusSoftware~does also include restrictions on access, which means the data available to the end users in the model is dependent on the user group.
+\genus~is a mid-sized Norwegian company that creates a model-driven application framework that lets you build software applications without programming. The framework lets you define your business object model. \genusSoftware~handles millions of rows. \genusSoftware~does also include restrictions on access, which means the data available to the end users in the model is dependent on the user group. \todo{A couple of more sentences on the \genus company and software}
 
-Business Intelligence has also become an important part of a business. Traditionally, data warehouses (section \ref{sec:background-data-warehouses}) has been used for this, with preconfigured reports. However, with the advent of in-memory databases with cheap hardware, several market players has come up with fast, elegant and end user intuitive solutions to analyze business data. Products like \qlikview, Foo, and Bar offers high-performance analytics panel which are easy to configure for the end user, such that important patterns are spotted and acted upon.
+Business Intelligence has also become an important part of a business. Traditionally, data warehouses (section ) has been used for this, with preconfigured reports. However, with the advent of in-memory databases with cheap hardware, several market players has come up with fast, elegant and end user intuitive solutions to analyze business data. Products like \qlikview, Tableau, and Microsoft PowerPivot offers high-performance analytics panel which are easy to configure for the end user, such that important patterns are spotted and acted upon. \todo{Add relevant info about business intelligence and business discovery}
 
-There are however several challenges with these products. First of all, they are all separate products, and does not integrate well with existing solutions. Secondly, they don't handle metadata. Types and database relations needs to be reconfigured on import. Thirdly, the products does not support security. Lastly, a database administrator is required.
+There are however several challenges with these products. First of all, they are all separate products, and does not integrate well with existing solutions. This is well noticed by the users, who will have to install and familiarize themselves with a new and unfamiliar user interface. The IT department does also need to specify a separate security system for these applications, such that the data is only available for authorized users. Second, these applications rquire explicit knowledge about metadata\todo{ask Einar about this}, more specifically; types and database relations needs to be reconfigured on import. Third, in order to handle multiple users at once, these systems require a separate architecture, which is yet another system for the IT staff to install and maintain.
 
-\genus~has been requested by their customers to develop a module for business intelligence inside \genusSoftware . They believe the challenges mentioned in the previous paragraph can be overcome by integrating the module into their existing framework. This is because \genusSoftware~is already installed at the client and does not need any new software. In addition, metadata is well handled, as well as permission control. 
+\genus~wants to offer Business Intelligence capabilities to their customers, and they believe the challenges in the above paragraph can be overcome by implementing this in their \genusSoftware. If implemented correctly, users is able to access Business Intelligence dashboards and data extracts that seamlessly interacts with their main IT system. Security settings and metadata is kept, and the same server architecture can be used.
 
-The motivation for this thesis is to aid \genus~ in the process of developing this module, by analysing state-of-the art research, identifying key issues and suggest design principles. The thesis will be continued in my master thesis the following spring.
+The motivation for this thesis is to aid \genus~ in the process of adding Business Intelligence capabilities to their software. To do this, we study the relevant litterature in Business Intelligence and OLAP workloads to identify key concepts and challenges in implementing such a system. When such concepts, techniques and challenges are identified, we look into which techniques are the most promising and practical in \genus' situation, and come up with design guidelines that will aid the development process of such a system.
 
-Lately, a there has been a high demand in providing software capable of delivering ad-hoc real-time analysis without compromising regular transactional performance \cite{Mukherjee2015-ul}. In addition to the rapid development of new and efficient hardware, a new breed of online transactional analytic processing (OLTAP) has emerged.
+%Lately, a there has been a high demand in providing software capable of delivering ad-hoc real-time analysis without compromising regular transactional performance \cite{Mukherjee2015-ul}. In addition to the rapid development of new and efficient hardware, a new breed of online transactional analytic processing (OLTAP) has emerged.
 
-DRAM becomes cheaper \cite{Manegold2000-st} such that blabla.
+%DRAM becomes cheaper \cite{Manegold2000-st} such that blabla.

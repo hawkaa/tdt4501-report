@@ -54,6 +54,10 @@ On the other side, Monet embraces the idea of not re-inventing the operation sys
 
 We consider utilizing the underlying operating system as a good design principle to keep \projectName~simple, yet effective.
 
+\paragraph{Custom defined memory manager}
+\label{par:Custom defined memory manager}
+A 64-bit architecture allows for close to unlimited amount of memory. However, certain alterations to the OS memory manager must be done anyway. First, allocating large pieces of consecutive memory might not be available. A mechanis for handling this must be created by i.e. splitting columns horizontally, or creating an own light-weight memory manager for handling large consecutive chunks of data. \todo{Find sources on limitations on mmap}.
+
 \subsection{Compression}
 \label{sub:Compression}
 One of the major advantages by storing data by column, is that the data is intuitively more compressible than data stored in rows. Previous work has shown that query performance can be improved by an order of magnitude \cite{Abadi2006-bf}.
@@ -108,3 +112,7 @@ Genus uses the minimal of the database features in order to support a magnitude 
 \subsection{Support for real time updates}
 \label{sub:Support for real time updates}
 In the first iteration of \projectName~development, there is no support for online updates. If such functionality should be provided, there are several techniques that can be used. We see that C-store \cite{Stonebraker2005-qz} is comprised of a writeable store (WS) and a Read-optimized store (RS), which are connected through a \textit{Tuple Mover}. A similar technique can be used for \projectName .
+
+\subsection{NUMA support}
+\label{sub:NUMA support}
+The design assumes all memory has equal access time (UMA). Scaling up might require a transistion to NUMA nodes. If the implementation is made NUMA aware, one can expect a five times improvement in performance \cite{Psaroudakis2015-lc}, as depicted in Figure xx.

@@ -5,9 +5,15 @@ This chapter is the introduction to the thesis. Section 1.1 will introduce bla b
 
 \input{introduction/background-and-motivation}
 \input{introduction/problem-statement-and-goals}
+%\input{introduction/deliverables}
+\input{introduction/methodology}
 
-\section{Deliverables and methodology}
-The first two parts of the thesis will be a literature review and a similar product analysis. These two chapters let me familiarize myself to the most recent research within the field, and have a look at how competing products solves the problems. The ultimate goal for these chapters is to be able to come up with a discussion and analysis of the hypotheses stated in section \ref{sec:problem-statement-and-goals}, which will be the third pard of the thesis. This part will also include a section of other issues that has not been thought of so far.
+\section{Contributions}
+\label{sec:Contributions}
+The novelty of this thesis is two-fold. Most related work presesnts a single system and explains the techniques use there. Here, I present the litterature by category, not by product. This way, comparisons can be made more easily, and it is easier to get an overview over where the litterature agrees, and where there are contradictions. I have not found related work that directly compares implementations, only presentations of single systems or concepts.
 
-The last part of the thesis, based on the results so far, will contain a design proposal for a Busines Intelligence implementation in \genusSoftware. 
+The second contribution, is a thorough discussion on where the various techniques presented applies. \genusSoftware have several fundamental and practical limitations, and based on these, I present the techniques that are the most fruitful. Optimizations in columnar storage have already been investigated by Abadi \ea~\cite{Abadi2008-dd}, however this work focus on the fundamental differences between row and column stores. I present a more holistic picture, considering more concepts and techniques. In addition to this, this thesis specifically targets \genusSoftware.
+
+\input{introduction/thesis-structure}
+
 

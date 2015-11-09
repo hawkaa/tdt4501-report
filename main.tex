@@ -5,6 +5,7 @@
 \input{misc/misc}
 
 \input{misc/metadata}
+\input{misc/environments}
 \input{misc/vars}
 
 \begin{document}
@@ -28,10 +29,16 @@
   % chapters
   \include{introduction/introduction}
   \include{background/background}
-  \include{literature-review/literature-review}
-  \include{alternative-products/alternative-products}
+
+  %
+  \include{data-layout/data-layout}
+  \include{compression/compression}
+  \include{implementation/implementation}
+  \include{scaling-parallelism/scaling-parallelism}
+
   \include{design/design}
-  \include{discussion/discussion}
+  \include{future-work-and-conclusion/future-work-and-conclusion}
+  \include{alternative-products/alternative-products}
 
   % bibliography
   \bibliographystyle{plain}

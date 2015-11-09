@@ -1,21 +1,35 @@
-\section{Problem statement and goals}
+\section{Problem statement, goals, and deliverables}
 \label{sec:problem-statement-and-goals}
-In order to aid \genus~with the software development process, this thesis will address the following research question:
+\begin{secex}
+This section should explain what I will to to aid \genus~in solving the above motivation. That is more specifically studying the litterature, and see which techniques are used to enhance OLAP performance, because none of us know too much about what is going on out there. It should state the research question, which should be pretty similar to the Monet thesis.
+\end{secex}
 
-\textbf{RQ1: Which challenges does \genus~face when implementing Business Intelligence support in their \genusSoftware?}
+The absolute goal of the entire project is the following: 
 
-The question will be answered by reviewing the current litterature, scrutinizing the competing products and analysing the bits and bolts needed to develop business intelligence inside \genusSoftware.
+\textbf{Implement Business Intellingence capabilities in \genusSoftware~ that has high performance, handles large datasets, and utilizes the available hardware, and that is competitive to their competing products in terms of performance and functionality.}
 
-Based on some workshops and discussions with \genus , they have pointed out some key issues they consider important. Based on these key points, I've come up with the following hypotheses:
-\begin{enumerate}\bfseries
-  \item Data needs to be accessed fast. To do this, data has to be stored in a format for quick access. Data access patters need to be analyzed and optimization for data retrieval must be done dynamically.
-  \item The security layer in \genusSoftware~will affect the implementation, and some indexes and formula results will have to be stored per user.
-  \item Indexes, data, and data interchange formats must be compressed to get performance and utilize the system resources efficiently.
-  \item \sout{Formulas must be calculated efficiently to not become a bottleneck.}
-  \item \sout{Network traffic must be reduced by compressing data queries.}
-  \item \sout{In order to create a high-performance system without a database administrator, indexes have to be created dynamically, and there is a question of which and when.}
-\end{enumerate}
+Working towards this goal, we start out by addressing the following research question:
 
-Each hypthesis will be studied in the terms of research, competitor solutions, as well as design proposal. In addition to this, I will look for unindentified issues which will affect the design.
+\textbf{RQ1: How to design a high performance database software that is capable of supporting ad-hoc Business Intelligence queries on large datasets?}
+
+The question will be answered by reviewing the current litterature, scrutinizing the competing products and analysing the bits and bolts needed to develop business intelligence inside \genusSoftware. Herew, we familiarize ourselvese with the most recent research within the field, and have a look at how competing products solves the problems. The ultimate goal for these chapters is to be able to come up with a discussion and analysis of the hypotheses stated in section \ref{sec:problem-statement-and-goals}, which will be the third pard of the thesis.
+
+Based on the results from the RQ1, we continue with the following research question:
+
+\textbf{RQ2: Which of the techiques and concepts are the most pracical to implement in \genusSoftware~in order to get Business Intelligence capabalities, and which challenges are identified?}
+
+This question will be answered by analysing the \genusSoftware, and in conjunction with the results from RQ1, we come up with a design proposal that can be used in the implementation phase of this project. This part will also include a section of other issues that has not been thought of so far.
+
+%Based on some workshops and discussions with \genus , they have pointed out some key issues they consider important. Based on these key points, I've come up with the following hypotheses:
+%\begin{enumerate}\bfseries
+%  \item Data needs to be accessed fast. To do this, data has to be stored in a format for quick access. Data access patters need to be analyzed and optimization for data retrieval must be done dynamically.
+%  \item The security layer in \genusSoftware~will affect the implementation, and some indexes and formula results will have to be stored per user.
+%  \item Indexes, data, and data interchange formats must be compressed to get performance and utilize the system resources efficiently.
+%  \item \sout{Formulas must be calculated efficiently to not become a bottleneck.}
+%  \item \sout{Network traffic must be reduced by compressing data queries.}
+%  \item \sout{In order to create a high-performance system without a database administrator, indexes have to be created dynamically, and there is a question of which and when.}
+%\end{enumerate}
+%
+%Each hypthesis will be studied in the terms of research, competitor solutions, as well as design proposal. In addition to this, I will look for unindentified issues which will affect the design.
 
 
