@@ -1,0 +1,18 @@
+\chapter{Other design considerations}
+\label{chap:Other design considerations}
+\begin{secex}
+  Chapter about design considerations that does not fit anywhere else
+\end{secex}
+
+\section{Disk support}
+\label{sec:Disk support}
+\missingfigure{Insert figure on the "cliff", sudden performance decrease once the working set becomes too large.}
+In this thesis, we propose a system that will work in-memory. According to research executed by Kemper \ea~\cite{Kemper2011-ap}, this is safe to assume, because ... However, it is important to be aware of the consequences when the database is too large to fit entirely in memory.
+
+The most trivial way to support disk access, is using the operating system virtual memory. This is done by \monetdb~\cite{Boncz2002-yj}, \blink~\cite{Barber2014-ey} and \qlikview~\cite{Qlik2011-ef}. However, the page replacement algorithms for virtual memory has been shown to not work very well on database workloads \todo{find reference of this. Boncz?}. The work of Graefe \ea~\cite{Groefe2014-ds} says that main-memory designed databases suffers a sudden performance drop when virtual memory mechanism starts swapping pages to disk. The VM manager has poor eviction decisions, and are not suited for transactional workloads. Several attempts has been done to mitigate this problem, by exploiting the OS. \qlikview has reported a significant loss in performance once the OS starts paging. This is not the case for \tableau~, which claims their system still performs well even if the data does not fit entirely in memory \cite{Komkolkar2015-iq}.
+
+There are two ways to mitigate the problems caused by virtual memory. The first one is making your algorithms aware that some pages might be spilled to disk. Larson \ea~explains how \mssql uses a modified hash joining algorithm to avoid the sudden drop in performance once the working set gets too large \cite{Larson2013-mc}. This emphasizes that careful writing to disk is important.
+
+However falling back to virtual memory has been claimed to be unacceptible for performance and correctness reasons \cite{Graefe2014-ds}. To overcome this challenge, major database vendors like \oracle~and \mssql~use buffer managers for all their database operations. However, adding this layer of indirection comes at a significant performance cost. They explain a method where pointers are swizzeled from domain idenfiers to physical identifiers once brought up to memory. This way, they achieve the best of both worlds. \todo{Read the notes from this paper and elaborate} \mssql~has been showed to perform worse than \vertipaq~because the latter does not have a buffer manager \cite{Ferrari2012-hm}
+
+

@@ -26,7 +26,7 @@ Lastly, several sources \cite{Lamb2012-kg, Lahiri2015-mz} have indicated that co
 \label{sub:When to decompress?}
 Compression has initially been thought of as a measure for saving disk and memory usage, but not as a performance argument itself. Hence, early work suggest uncompressiong the data when moved from disk to RAM, or from RAM to cache \cite{Zukowski2006-oz}. 
 
-However it has been more and more common lately to let the database work directly on compressed data, which means data should not be decompressed until it is materialized and sent to the user. (There is more about materialization in the next chapter). Systems like \monetx does not decompress before the data is put into cache \cite{Johnson2008-cp}
+However it has been more and more common lately to let the database work directly on compressed data, which means data should not be decompressed until it is materialized and sent to the user. (There is more about materialization in the next chapter). Systems like \monetx does not decompress before the data is put into cache \cite{Johnson2008-cp}. The authors behind \blink \cite{Barber2012-xt} and a research group Lemke \ea~\cite{Lemke2010-is} says that you should never decompress before absolutely needed. 
 
 
 \section{Dictionary compression}

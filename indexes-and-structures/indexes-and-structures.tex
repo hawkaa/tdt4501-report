@@ -1,0 +1,61 @@
+\chapter{Indexes and data structures}
+\label{chap:Indexes and data structures}
+Although much of the indexing and materialized views are extraneous if the database is structured within columns, we find that certain indexes and data structures can increase query performance. In this chapter we look at structures for large scale OLAP queries, as well as indexes for single value lookups.
+
+\newpage
+
+Indexes are extensively used in \qlikview. According to a whitepaper on scalability, RAM normally need 2\%-10\% of the application on disk to accomodate overhead such as indexes and data associations.
+
+\section{Indexes versus table scan}
+\label{sec:Indexes versus table scan}
+Boncz \ea~\cite{Boncz2006-md} shows how easily a table scan should be triggered, and that index based lookups actually can degrade performance. Several researches indicate this \cite{Boncz2002-yj, Abadi2008-dd}. The work of Holloway \ea~\cite{Holloway2008-rr} sees an increased importance of a full table scan. \qlikview~has also been reported to calculate much of the results via scans \cite{noauthor_undated-js}.
+
+Early versions of \blink~had a design goal to avoid structures that benefit particular queries. Hence, they skipped indexes and calculated all the results on denormalized tables via scans.
+
+\section{Value lookups}
+\label{sec:Single value lookups}
+Even though we work towards analytical queries, which normally process a large number of rows,and that a table scan in many cases are beneficial, value lookups might still be necessary.
+
+\missingfigure{Add a figure from \cite{Schwalb2014-hn} that shows how an inverted index can be implemented efficiently in a read only store}
+One common way is to use inverted indexes \cite{Lemke2010-is}. This is used by \hyrise, where inverted indexes is used to look up single values. Since the columns are immutable, the indexes can be optimized in terms of storage size and cache awareness \cite{Schwalb2014-hn}. The index consists of two vectors, where dictionary entries are mapped to a position list.  \hyrise also supports multi-column indexes, but this requires additional lookup, since dictionary values needs to be fetched before searching.
+
+\mssql server offers two types of indexes: Non-clustered hash-index and non-clustered BW-tree index \cite{Delaney2014-ip, noauthor_undated-vq}. These indexes are rebuit on recovery.
+
+\subsection{Bitmap indexes}
+\label{sub:Bitmap indexes}
+A Bitmap index is a special structure where each distinct value at a column is represented as a bitmap where all rows containing that value has the value 1. Bitap indexes has two main purposes: Column compression, and easy lookup and combination of predicates. Work from 1999 \cite{Witten1999-qq} claims that compressed inverted indexes are almost always superior to bitmap indexes in practical situations. However, Bjørklund claims that bitmap indexes are widely used in Decision Support Systems \cite{Bjorklund2011-wh}
+
+The first, is that it can work as column compression. \cstore~uses bitmaps to compress columns if they have few distinct values. Since the bitmaps normally are sparse, they can be compressed even further by applying run-length encoding.
+
+\qlikview~also utilizes some sort of bitmap indexes, which are created for each field \cite{Qlik2011-ef}.
+
+\missingfigure{Insert figure from \cite{Bjorklund2011-wh} on WAH compression}
+Another way of compressing a bitmap index is to use WAH compression \cite{Bjorklund2011-wh}, which is a form of run-length encoding. Columns with high cardinality are well represented in this scheme. An implementation of WAH is \algmet{FastBit}.
+
+
+\section{Metadata indexes}
+\label{sec:Metadata indexes}
+A metadata index is an index where certain parts of the data can be skipped based on attributes, like minimum and maximum value. This is especially handy when the columns are horizontally partitioned, like mentioned in Section \ref{sub:Horizontal partitioning of columns}. Partitions can be skipped on the basis of column maximum or mininum value, or the per-block dictionary can be scanned to see if a certain key is present.
+
+One way to keep track of this metadata is through a synopsis table. \ibm uses this, and the table keeps control over pages with corresponding metadata such that pages can be skipped.
+
+The storing of block metadata for quick data pruning is used by \oracle~\cite{Lahiri2015-mz}, \ibm~\cite{Roman2013-em}, \vertica~\cite{Lamb2012-kg}, \monetx~\cite{Boncz2005-wj}, \mssql~\cite{Larson2013-mc}, and \exasol~\cite{Exasol2014-xh}.
+
+\section{Join indexes}
+\label{sec:Join indexes}
+Join indexes is a structure that stores precomputed join results, and are discussed in several articles. Join indexes are used by \monetdb~\cite{Boncz2002-yj} and \monetx~\cite{Boncz2005-wj}. \todo{Add information about the impact in memory using this technique.} \cstore uses join indexes as it allows for quick joining \cite{Stonebraker2005-qz}, but in \vertica, the commercialized version of \cstore, the cost of join indexes was outweighed by the benefits \cite{Lamb2012-kg}.
+
+For join indexes, it is common to use bitmap indexes \cite{Bjorklund2011-wh}.
+
+\section{Data duplication and preaggregation}
+\label{sec:Data duplication and preaggregation}
+Another way to boost performance, is through data duplication. \cstore~and \vertica~allows for storing the columns in multiple sort orders at the same time \cite{Stonebraker2005-qz, Lamb2012-kg}. \blink allows for storing columns in multiple banks, such that predicates can be evaluated in the same bank \cite{Johnson2008-cp}. \exasol~replicates tables across nodes in the system if they are small enough.
+
+Earlier, data was preaggregated to achieve good performance, but this has been considered as inflexible and one of the main challenges with old ROLAP and MOLAP systems \cite{Boncz2002-yj}. Modern systems does not preaggregate results, like \sapnw~\cite{Lemke2010-is} and \qlikview~\cite{Qlik2014-vd}, and calculate all results as needed. \qlikview does however allow data to be preaggregated when loaded into memory \cite{Qlik2011-yc}.
+
+\section{Dynamic generation of indexes}
+\label{sec:Dynamic generation of indexes}
+Indexes are used extensively by \exasol, where they are produces, maintained, and deleted as needed \cite{Exasol2014-xh}. This gives faster filter operations.
+
+Boncz \ea~\cite{Boncz2006-md} also mentions "index on-the-fly" briefly.
+
