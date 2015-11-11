@@ -1,2 +1,34 @@
 \chapter{Implementation Details}
 \label{chap:Implementation Details}
+We find the low-level implementation of the data structures and algorithms an important part of acheiving performance. Recent work by Sidiauskas \ea~\cite{Sidiauskas2014-ef} claims that based on empirical performance findings, there is a challenge about concluding about data structures and algorithms, and that this is more important in an in-memory setting.
+
+It is all about reducing the number of branches, operate on multiple values at a time, cache awareness, and avoid extra layers of indirection.
+\newpage
+
+\section{Background information on modern CPUs}
+\label{sec:Background information on modern CPUs}
+Modern CPUs has pipelining with dependencies, branch predictions. In addition, 30\% of the instructions are loads and stores \cite{Boncz2005-wj}. \textbf{All in all, CPUs have become highly complex devices where instruction throughput of a processor can vary by orders of magnitude}.
+
+\section{Queries}
+\label{sec:Queries}
+
+\subsection{Reducing the degrees of freedom}
+\label{sub:Reducing the degrees of freedom}
+\monetdb~\cite{Boncz2005-wj} reduce the freedom in the queries. CPU primitives expose to the compiler that processing a tuple is independent from the others.
+
+\subsection{Compiling into machine code}
+\label{sub:Compiling into machine code}
+\missingfigure{Insert two figures here from \cite{Neumann2011-uq}. First one is the pseudo-code, second is the pipeline breakres.
+The work by Neumann \ea~\cite{Neumann2011-uq} explains how queries are compiled into native machine code using the LVVM compiller framework. Doing this, the processing of queries are data centric and not operator centric. Classical query processing always wipes the CPU registers, but in their solution they push tuple values until a pipeline is broken.
+
+\section{Other tips}
+\label{sec:Other tips}
+Neumann \ea~\cite{Neumann2011-uq} explains how a loop can be optimized by having an \texttt{if} in front of a while, such that the while only does one thing.
+
+\subsection{Difference in implementations}
+\label{sub:Difference in implementations}
+The research of Willhalm \ea~\cite{Willhalm2013-ri} show two different implementations in the unpacking of data in a SIMD scan, and shows the big influence of careful implementation.
+
+On spatial joins, Sidiauskas \ea~\cite{Sidiauskas2014-ef} explains how the performance between two implementations can be doubled by removing an extra layer of indirection.
+
+Pelkonen \ea~\cite{Pelkonen2015-ko} explains how to optimize the implementation by tombstoning some memory, instead of giving it back to the operating system.
