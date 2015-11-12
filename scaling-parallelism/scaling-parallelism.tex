@@ -1,2 +1,83 @@
 \chapter{Scaling and Parallelization}
 \label{chap:Scaling and Parallelization}
+We find scaling and parallelization an important part of the design for efficient database systems. A system must be able to parallelize on all levels: Across nodes, on NUMA nodes, across multiple threads, SIMD, and Instruction Level Parallelism. \todo{Insert more info from Willhalm2013-rl here}
+
+One of the keys to acheiving good parallel performance, is to use structures that are built for multi-core \cite{Primsch2011-ij}.
+
+\exasol, the top performing system on the TPC-H benchmark, reports to apply \textbf{parallelism on every layer} \cite{Exasol2014-xh}.
+
+\newpage
+\section{Scaling out}
+\label{sec:Scaling out}
+Scaling out is important for performance. Scaling out is the technique where several machines (nodes) are used, and the work is distributed between them. They share no common resources, so all data and control traffic must be passed through explicit network actions. Scaling is necessary in large businesses, and volumes are increasing \cite{Qlik2012-ku}.
+
+The best discussion on the need for scaling out can be found in research executed by Mukherjee \ea~\cite{Mukherjee2015-ul}. Historically, it has been argued that scaling out is the best way to acheive good performance. It does also provide redundancy; if one node in the cluster goes down, another node can be ready to take over.
+
+However, there has been discussions that one should scale up instead of scale out. Wwhen using a shared-memory apporach, scaling up has been claimed to be easier \cite{Boncz2002-yj}. In addition, 80\% of Facebooks tasks is less than 10GB, a workload where a single server is sufficient \cite{Mukherjee2015-ul}. However, scaling up might also mean the transition to NUMA nodes, and these nodes (as we see in Section ?) benefit from software written for a distributed architecture. Last, but not least, if results are cached and used by several users, having one powerful server instead of several less powerful will increase cache hit rates \cite{qlik2012-ku}. \qlikview has reported that scaling up is twice as fast as scaling out on a large application with many users. For smaller applications, scaling up and scaling out gives the same performance.
+
+
+Several systems allows for scaling out, like \cstore, \sapnw, and \saph. \oracle~spreads its in-memory compression units (IMCUs) across different nodes, and allows for redundancy \cite{Lahiri2015-mz}. The work of Plattner \ea~\cite{Plattner2014-fr} show how one can support read-only operations if having relaxed transactional constraints.
+
+When using dictionary compression, there are several ways to spread the dictionaries across the partition \cite{Psaroudakis2015-lc}. Physical partitioning, as used by for instance \oracle~has the disadvantage of reducing compression rates. The various schemes has a time to build versus performance trade-off.
+
+\subsection{Techniques for scaling out}
+\label{sub:Techniques for scaling out}
+When it comes to load balancing, random, loaded document, CPU with RAM overload can be used \cite{Qlik2012-ku}.
+
+
+\section{Intra-query parallelism and scheduling}
+\label{sec:Parallelism}
+No matter if you scale up or scale out, on a single machine, parallelism must still be used. Key challenges are work distribution and scheduling. Parallelization is normally solved by partitioning the input and merge the results after \cite{Neumann2011-uq}.
+
+Systems that report using parallelization is \vertica~\cite{Lamb2012-kg}, \mssql~\cite{Larson2013-mc}, \blink~\cite{Barber2012-xt, Johnson2008-cp}. \qlikview has reported that it scales uniformly when a combination of RAM and CPU is added \cite{Qlik2011-yc}
+
+\missingfigure{Perhaps a figure from Hyrise \cite{Schwalb2014-hn}~on task based query execution model}
+One execution model is the task-based query execution model which is used by \hyrise~\cite{Swhalb2014-hn}. They claim almost perfect load balancing on multi-core CPUs, and it has efficient workload management.
+
+In terms of work distribution, \blink~ parallelized on a block level, where each partition is split into blocks and assigned to a thread \cite{Johnson2008-cp, Barber2012-xt}.
+
+None of this system investigated in this research have used the GPU for query processing. The reason for this might be because the GPU has bandwidth limitations \cite{Willhalm2009-hu}
+
+\subsection{Keeping track of the tasks}
+\label{sub:Keeping track of the tasks}
+Psaroudakis \ea~suggest using a page socket mapping structure for keeping track which processor owns which partition \cite{Psaroudakis2015-lc}.
+
+
+\subsection{Work stealing}
+\label{sub:Work stealing}
+Performance can be boosted if tasks are allowed to be stolen from other work units. This is done in \blink~\cite{Barber2012-xt}. However, special attention should be given to which tasks that are stolen. Ideally, one should only steal computing intensive tasks, not memory intensive ones \cite{Psaroudakis2015-lc}.
+
+\subsection{Joining in parallel}
+\label{sub:Joining in parallel}
+Joining becomes a challenge when done in parallel.
+
+In \ibm, each thread performs a local grouping on a local hash tables and creates a linked list of overflow buckets \cite{Raman2013-em}. When they are full, they get published globally. Second phase, each thread reserves a partition to merge, and it merges all local hash tables to a global one.
+
+The hash tables can be built in parallel \cite{Barber2014-ey}. Hyperthreading will speed up the probe phase \todo{Because the memory gap is hidden?}.
+
+Several join algorithms discussed in Section X partitions the input in order to improve cache locality. This decision might as well be a parallelization decision \cite{Neumann1011-uq}.
+
+\subsection{Grouping in parallel}
+\label{sub:Grouping in parallel}
+Vendors say their grouping operations scale linearly with the number of threads until the CPU is saturated \cite{Farber2012-vh}
+
+\section{Single Input, Multiple Data (SIMD)}
+\label{sec:Single Input, Multiple Instructions (SIMD)}
+\missingfigure{Figure from Willhalm2009-hu}
+Within a single thread, it instructions working on more than one element at a time can be used to enhance query performance. It is a good idea, especially if we can keep the whole block in the registers \cite{Neumann2011-uq}. This is used by \oracle~\cite{Lahiri2015-mz}, \blink~\cite{Barber2012-xt}, \ibm.
+
+Many ALUs does not support long words, like the Intel SSE and Intel AVX2 extension \cite{Willhalm2009-hu, Willhalm2013-rl}. The key is to pack columns densely and work on multiple rows or columns at a time \cite{Johnson2008-cp}. SIMD instructions can evaluate equal-value and value-range predicates without the need of decompression.
+
+Several compression techniques benefits from SIMD \cite{Lemke2010-is}\todo{Check if this can be dictionary compression?}
+
+Although algorithms can be optimized for scalar execution, the research of Willhalm \ea~show that a vectorized model is 1.58 times faster than query processing optimized for scalar execution \cite{Willhalm2009-hu}. In addition, byte aligned columns perform the best.
+
+The highest performing database on the TPC-H benchmark uses SIMD instructions \cite{Exasol2014-xh}.
+
+\section{Instruction Level Paralellism}
+\label{sec:Instruction Level Paralellism}
+Due to super-scalar CPUs, one might optimize for instruction level paralellism. This is exploited by \blink, where query execution is executed in batches on multiple rows at the same time. In general, the idea is that if a processor can find enough independet work, it can be a magintude or two faster \cite{Boncz2005-wj}.\todo{Insert something here about DIRA?}
+
+\section{Other}
+\label{sec:Other}
+Concurrency can be limited by having a maximum limit of concurrent queries. This is used in \ibm~\cite{Raman2013-em}.
