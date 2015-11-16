@@ -20,6 +20,5 @@ Lastly, they don't use metadata at the highest level.
 
 A dimension table is normally small. A fact table is normally large, and is connected in a star with the dimensions
 
-A star schema is ...
+A star schema is where the fact table is connected through one or more dimensions. A snowflake schema is an extension of the star schema, where dimensions can have more dimensions. Star and snowflake schemas are easier to query, and there exists techniques that lets you turn a non-star schema into a star \cite{Lamb2012-kg}.
 
-A snowflake schema is ...

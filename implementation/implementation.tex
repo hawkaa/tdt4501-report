@@ -7,7 +7,7 @@ It is all about reducing the number of branches, operate on multiple values at a
 
 \section{Background information on modern CPUs}
 \label{sec:Background information on modern CPUs}
-Modern CPUs has pipelining with dependencies, branch predictions. In addition, 30\% of the instructions are loads and stores \cite{Boncz2005-wj}. \textbf{All in all, CPUs have become highly complex devices where instruction throughput of a processor can vary by orders of magnitude}.
+Modern CPUs has pipelining with dependencies, branch predictions. In addition, 30\% of the instructions are loads and stores \cite{Boncz2005-wj}. \textbf{All in all, CPUs have become highly complex devices where instruction throughput of a processor can vary by orders of magnitude}. \todo{More stuff here in Boncz2005-wj}
 
 \section{Branch avoidance}
 \label{sec:Branch avoidance}
@@ -21,7 +21,7 @@ Branch avoidance is also imortant when decompressing. In the compression algorit
 
 \subsection{Loop pipelining}
 \label{sub:Loop pipelining}
-The absence of loop pipelining can have dramatic effects on query performance. Boncz \ea~\cite{Boncz2005} show how the \mysql uses 49 cycles per tuple due to the absence of loop pipelining.
+The absence of loop pipelining can have dramatic effects on query performance. Boncz \ea~\cite{Boncz2005-wj} show how the \mysql uses 49 cycles per tuple due to the absence of loop pipelining.
 
 In order to ensure proper loop pipeline behavior, compilers must know that pointers do not overlap, such that loop unrolling can be used. CPU primitives expose to the compiler that processing a tuple is independent from the others. This is also important in the decompression and compression step \cite{Zukowski2006-oz}
 

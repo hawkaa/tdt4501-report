@@ -1,16 +1,37 @@
 \chapter{Introduction}
 \label{chap:introduction}
-This chapter is the introduction to the thesis. Section 1.1 will introduce bla bla
 \clearpage
 
 \input{introduction/background-and-motivation}
 \input{introduction/problem-statement-and-goals}
+
+\subsection{In-Memory}
+\label{sub:In-Memory}
+We restrict our research to databases that assumes the entire dataset can fit in RAM The reason for this is two-fold. First of all, preliminary research have shown that most database systems use this approach in order to achieve good performance. These systems include, but are not limited to, \oracle~\cite{Lahiri2015-mz}, \saph~\cite{Farber2012-vh}, \gorilla~\cite{Pelkonen2015-ko}, \qlikview~\cite{Qlik2011-ef}, \tableau~\cite{Kamkolkar2015-iq}, \monetdb~\cite{Boncz2002-yj}, \blink~\cite{Barber2012-xt}, \sapnw~\cite{Lemke2010-is}, and more. Several of these systems requires the database to fit entirely in memory, and does not have a buffer manager. We see later in this thesis that omiting the buffer manager can increase performance since an extra layer of indirection is removed \cite{Graefe2014-ds}, and it has been shown that databases without buffer managers performs better than those who do \cite{Ferrari2012-hm}. If the database gets to large than the provisioned RAM, data will be spilled to disk using the OS underlying swapping mechanisms.  A white paper by \qlikview~suggests that companies looking for business intelligence should look for in-memory technologies \cite{Bereanu2010-tj}.
+
+Kemper \ea~arguest that it is safe to assume data can fit in memory, because of compression and price of RAM... \cite{Kemper2011-ap} \todo{Fill in information from Kemper here}. RAM is getting cheaper \cite{Exasol2014-xh}, and together with 64-bits CPUs \cite{Delaney2014-ip}, we find in-memory databases to outperform traditional disk-based databases. Much progress has been done in the development of non-volatile RAM, which suggests the era of magnetic disks as the primary database storage hardware might soon be over.
+
+It has been said that putting entire databases in RAM is the key to unite OLAP and OLTP \cite{Faust2015-ke}, even though we do not emphasize write support in this thesis. It is also easier optimized using parallelization \cite{Psaroudakis2013-fn}.
+
+It is worth noting that even though we focus on in-memory performance, optimizations performed for disk-based databases will still be applicable. We have just moved one step up through the memery hierarchy \cite{Boncz2002-yj}. That is, optimizations done to better utilize available memory for a disk based database will help an in-memory database utilize available CPU caches. 
+
+We will continue this research keeping the in-memory assumption true. However, even though DRAM is cheap, it is still rarely over-provisioned and unused \cite{Barber2014-ey}. We will try to keep the memory footprint as low as possible.
+
+\subsection{Read-only}
+\label{sub:Read-only}
+In the first iteration towards the main goal, we assume that the system will be read only. By not supporting inserts, updates, and deletes, we simplify the database design. We will reason in Chapter x of which techniques might be applied if we need write support.
+\missingfigure{Figure on the three factors that must be compromised}
+The first reason we chose to stick to read-only functionality, is that our main design goal is performance. A research paper by Psaurodakis \ea~\cite{Psaroudakis2014-ma} explains how "one size does not fit all" in a database setting, and there always must be a compromize between data freshness, flexibility, and scheduling. Of these three design goals, we decide scheduling (directly related to performance) is our main priority.
+
+Second, we see that the main reference products, \qlikview~and \tableau, are read only solutions.
+
+
 %\input{introduction/deliverables}
 \input{introduction/methodology}
 
 \section{Contributions}
 \label{sec:Contributions}
-The novelty of this thesis is two-fold. Most related work presesnts a single system and explains the techniques use there. Here, I present the litterature by category, not by product. This way, comparisons can be made more easily, and it is easier to get an overview over where the litterature agrees, and where there are contradictions. I have not found related work that directly compares implementations, only presentations of single systems or concepts.
+The novelty of this thesis is two-fold. Most related work presesnts a single system and explains the techniques use there. Here, we present the litterature by category, not by product. This way, comparisons can be made more easily, and simplifies the process to getting an overview over where the litterature agrees, and where there are contradictions. We have found work X and work Y. These systems present single concepts, but neither of these span as broadly as we do in this thesis.
 
 The second contribution, is a thorough discussion on where the various techniques presented applies. \genusSoftware have several fundamental and practical limitations, and based on these, I present the techniques that are the most fruitful. Optimizations in columnar storage have already been investigated by Abadi \ea~\cite{Abadi2008-dd}, however this work focus on the fundamental differences between row and column stores. I present a more holistic picture, considering more concepts and techniques. In addition to this, this thesis specifically targets \genusSoftware.
 

@@ -8,11 +8,13 @@ One of the most prevalent ways of achieving good performance for OLAP workloads,
 
 \section{Column storage}
 \label{sec:Column storage}
-As mentioned before, the most common way for transactional workloads has been to store data in rows. However many database systems use columnar storage instead of row storage to enhance aggregation and predicate evaluation performance. This includes the MonetDB \cite{Boncz2002-yj, Boncz2005-yj}, C-Store \cite{Stonebraker2015-qz}, SAP HANA \cite{Farber2012-vh}, and Microsoft SQL Server \cite{Larson2013-mc, noauthor_undated-vq}, as well as the Business Discovery product Tableau \cite{Kamkolkar2015-iq}. The main argument is that you don't need to access more columns than strictly necessary.
+As mentioned before, the most common way for transactional workloads has been to store data in rows. However many database systems use columnar storage instead of row storage to enhance aggregation and predicate evaluation performance. This includes the MonetDB \cite{Boncz2002-yj, Boncz2005-wj}, C-Store \cite{Stonebraker2005-qz}, SAP HANA \cite{Farber2012-vh}, and Microsoft SQL Server \cite{Larson2013-mc, noauthor_undated-vq}, as well as the Business Discovery product Tableau \cite{Kamkolkar2015-iq}. 
+
+The main argument is that you don't need to access more columns than strictly necessary. \todo{Insert stuff about that here}. Another argument for column storage is that columns have low degree of freedom, they only need to know about the local memory offset and not the global table layout \cite{Boncz2005-wj}.
 
 MonetDB, one of the earlier database systems using a columnar storage used it because \todo{fill in about MonetDB} \cite{Boncz2002-yj}. The arguments from Stonebraker \ea~\cite{Stonebraker2005-qz} are similar, but since C-store stores their data in multiple sort orders, it can be compressed even more.. SQL Server argues for column store \cite{noauthor_undated-vq}: High compression rates, and better performance due to memory utilization
 
-However, the most important piece of litterature Abadi \ea \cite{Abadi2008-dd} investigated wheter there was a fundamental difference between row and column stores, and tried to mimic columnar behavior in a commercial row store. The conclusion was that there is something fundamental about column stores that make them perform so well, and this includes compression (Chapter x), vectorized execution (Section x) and late materialization (Section y). \todo{Make this article a big deal}
+However, the most important piece of literature Abadi \ea~investigated wheter there was a fundamental difference between row and column stores, and tried to mimic columnar behavior in a commercial row store \cite{Abadi2008-dd} . The conclusion was that there is something fundamental about column stores that make them perform so well, and this includes compression (Chapter x), vectorized execution (Section x) and late materialization (Section y). \todo{Make this article a big deal}
 
 Column stores have been said to be more compressible, as we see in Chapter 4 is important to achieve good performance.
 
