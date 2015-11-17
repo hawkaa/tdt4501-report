@@ -1,21 +1,21 @@
 \section{Background and Motivation}
 \label{sec:background-and-motivation}
-\begin{secex}
-    This section should introduce:
-    \begin{enumerate}
-      \item \genus
-      \item The need for Business Intelligence
-      \item The fact that \genus~needs to offer business intelligence to offer a competitive product
-      \item Problems with existing products, and they believe \genus~can offer a better product.
-    \end{enumerate}
-\end{secex}
+%\begin{secex}
+%    This section should introduce:
+%    \begin{enumerate}
+%      \item \genus
+%      \item The need for Business Intelligence
+%      \item The fact that \genus~needs to offer business intelligence to offer a competitive product
+%      \item Problems with existing products, and they believe \genus~can offer a better product.
+%    \end{enumerate}
+%\end{secex}
 
-\genus~is a mid-sized Norwegian company that creates a model-driven application framework that lets you build software applications without programming. The framework lets you define your business object model and configure restrictions and relationsships within the model. Using action orchestration and form design, \genusSoftware can provide a fully functional development framework that can solve a magnitude of problems. It handles millions of rows. \genusSoftware~does also include restrictions on access, which means the data available to the end users in the model is dependent on the user group. \todo{A couple of more sentences on the \genus company and software}
+\genus~is a mid-sized Norwegian company that creates a model-driven application framework that lets you build software applications without programming. The framework lets you define your business object model and configure restrictions and relationsships within the model. Using action orchestration and form design, \genusSoftware~can provide a fully functional development framework that can solve a magnitude of problems. It handles millions of rows. \genusSoftware~does also include restrictions on access, which means the data available to the end users in the model is dependent on the user group. \todo{A couple of more sentences on the \genus company and software}
 
-Business Intelligence, or Business Analytics, is an important piece of a business. Business Intelligence allows for making qualified decisions based on data gathered mainly in the IT systems within the company. Traditionally, data warehouses (section X) has been used for this, with preconfigured reports. However, with the advent of in-memory databases and cheap, commodity hardware, several market players has come up with fast, elegant, and end user intuitive solutions to analyze business data. Products like \qlikview, \tableau, and \powerpivot~offers high-performance analytics panel which are easy to configure for the end user, such that important patterns are spotted and acted upon. \todo{Add relevant info about business intelligence and business discovery}
+Business Intelligence, or Business Analytics, is an important piece of a business. Business Intelligence allows for making qualified decisions based on data gathered mainly in the IT systems within the company. Traditionally, data warehouses (section X) has been used for this, with reports are preconfigured and generated in batches. However, with the advent of in-memory databases and cheap, commodity hardware, several market players has come up with fast, elegant, and end user intuitive solutions to analyze business data. Products like \qlikview, \tableau, and \powerpivot~offers high-performance analytics panel which are easy to configure for the end user, such that important patterns are spotted and acted upon. We refer to these as \term{Business Discovery} products.
 
-There are several challenges with these products. First of all, they are all separate products, and does not integrate well with existing solutions. This affects the end users, who will have to install and familiarize themselves with a new and unfamiliar user interface. The IT department does also need to specify a separate security system for these applications, such that the data is only available for authorized users. Second, these applications require explicit knowledge about metadata\todo{ask Einar about this}, more specifically; types and database relations needs to be reconfigured when defining the data import routine. Third, in order to handle multiple users at once, these systems require a separate architecture, which is yet another system for the IT staff to install and maintain. In general, \qlikview, \tableau, and \powerpivot~work is isolation and detached to the underlying data.
+There are several challenges with these \bd~products. First of all, they are all separate products, and does not integrate well with existing solutions. This affects the end users, who will have to install and familiarize themselves with a new and unfamiliar user interface. The IT department does also need to specify a separate security system for these applications, such that the data is only available for authorized users. Second, these applications require explicit knowledge about metadata, more specifically; types and database relations needs to be reconfigured when defining the data import routine. Third, in order to handle multiple users at once, these systems require a separate architecture, which is yet another system for the IT staff to install and maintain. In general, \qlikview, \tableau, and \powerpivot~work is isolation and detached to the underlying data.
 
-\genus~wants to offer Business Intelligence capabilities to their customers, because the above challenges cann be overcome by implementing this directly within their \genusSoftware. If implemented correctly, users is able to access Business Intelligence dashboards and data extracts that seamlessly interacts with their main IT system. Security settings and metadata is kept, and the same server architecture can be used.
+By implementing \bi~capabilities in the \genusSoftware, the above challenges can be overcome. If implemented correctly, users is able to access \bi~dashboards and data extracts that seamlessly interacts with their main IT system. Security settings and metadata is kept, and the same server architecture can be used.
 
-The motivation for this thesis is to aid \genus~ in the process of adding Business Intelligence capabilities to their software. To do this, we study the relevant litterature in Business Intelligence and OLAP workloads to identify key concepts and challenges in implementing such a system. When such concepts, techniques and challenges are identified, we conclude the paper with which techniques are the most promising and practical in \genus' situation.
+The motivation for this thesis is to aid the process of adding \bi~ capabilities to \genusSoftware. To do this, we study the relevant litterature in Business Intelligence and OLAP workloads to identify key concepts and challenges in implementing such a system. When such concepts, techniques and challenges are identified, we conclude the paper with which techniques are the most promising and practical in \genus' situation.

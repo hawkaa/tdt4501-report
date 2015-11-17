@@ -1,24 +1,28 @@
 \section{Problem statement, goals, and deliverables}
 \label{sec:problem-statement-and-goals}
-\begin{secex}
-This section should explain what I will to to aid \genus~in solving the above motivation. That is more specifically studying the litterature, and see which techniques are used to enhance OLAP performance, because none of us know too much about what is going on out there. It should state the research question, which should be pretty similar to the Monet thesis.
-\end{secex}
+%\begin{secex}
+%This section should explain what I will to to aid \genus~in solving the above motivation. That is more specifically studying the litterature, and see which techniques are used to enhance OLAP performance, because none of us know too much about what is going on out there. It should state the research question, which should be pretty similar to the Monet thesis.
+%\end{secex}
 
-For the entire Business Intelligence project, the following goal is defined:
-\textbf{Implement Business Intellingence capabilities in \genusSoftware~ that has high performance, handles large datasets, and utilizes the available hardware. The new product must be competitive to it's reference products in terms of performance and fuctionality.}
+We define the goal for the project as following: 
 
-Working towards this goal does not mean that the newly developed software must be equal in terms of functionality, it is more of a statement that Business Intelligence in \genusSoftware will be compared directly to alternative products, like \qlikview, \tableau, and \powerpivot. In terms of performance and "waiting" it is directly comparable, but lack of functionality in \genusSoftware will be directly be weighted against the benefits of having everything in one solution.
+\textbf{G1: Implement Business Intellingence capabilities in \genusSoftware~ that has high performance, handles large datasets, and utilizes the available hardware. The new product must be competitive to other \bd~ products in terms of performance and fuctionality.}
+
+By \bd~products we mean products that allows for ad-hoc querying, data navigation in all dimensions, and high performance systems that does not rely on preaggregation of data. We look closer into \bd~products in Section X. Examples of such products are \qlikview, \tableau, and \powerpivot.
+
+Working towards this goal does not mean that the newly developed software must be equal in terms of functionality, it is a mere statement that \bi~in \genusSoftware~will be compared directly to its alternative products, like \qlikview, \tableau, and \powerpivot. In terms of performance and "waiting" it is directly comparable, but lack of functionality in \genusSoftware~will be directly be weighted against the benefits of having everything in one solution.
 
 As a first step towards this goal, we address the following research question:
-\textbf{RQ1: How to design a high performance database software that is capable of supporting ad-hoc Business Intelligence queries on large datasets?}
 
-The question will be answered by reviewing the current litterature, scrutinizing the competing products, and analysing the bits and bolts needed to develop Business Intelligence capabilities within \genusSoftware. In this thesis, we familiarize ourselvese with the most recent research within the field, and have a look at how reference products solve the problems. 
+\textbf{RQ1: How to design a high performance database software that is capable of supporting \bd~workloads on large datasets?} \todo{Should in-memory, read-only restriction be directly addressed in RQ1?}
+
+The question will be answered by reviewing the current litterature, scrutinizing the competing products, and analysing the bits and bolts needed to develop \bi~ capabilities in \genusSoftware. In this thesis, we familiarize ourselves with the most recent research within the field, and have a look at how reference products solve the problems. 
 
 Based on the results from the RQ1, we continue with the following research question:
 
 \textbf{RQ2: Which of the techiques and concepts are the most promising and pracical to implement in \genusSoftware~in order to reach the goal, and which challenges are identified?}
 
-This question will be answered by combining the results from RQ1 with a brief analysis of the \genusSoftware architecture into a discussion.
+This question will be answered by combining the results from RQ1 with a brief analysis of the \genusSoftware~architecture into a discussion.
 
 %Based on some workshops and discussions with \genus , they have pointed out some key issues they consider important. Based on these key points, I've come up with the following hypotheses:
 %\begin{enumerate}\bfseries
