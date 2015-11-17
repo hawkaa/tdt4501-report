@@ -38,3 +38,16 @@ In certain conditions, using the delta store can be omited completely on inserti
 \subsection{Transactions}
 \label{sub:Transactions}
 Transactions can be supported using standard locking and latching used in traditional OLTP databases \cite{Lamb2012-kg}. However, to simplify the design , \hyper~process the transactions serially with a single thread \cite{Psaroudakis2014-ma}. This avoids expensive locking and latching. The analytical queries gets a memory snapshot of the current state of the database by forking the processor, such that hardware facilities for paging can be used.
+
+\section{Denormalization}
+\label{sec:Denormalization}
+The technique where you add redundant data and grouping attempting to optimize performance is known as \term{Denormalization} \cite{Wikipedia_contributors2015-az}. It has been studied extensively before \cite{Raman2008-gi}. Among the read-optimized databases, denormalization is not used due to a variety of reasons. First of all, denormalizing offsets the compression \cite{Barber2012-xt}. Second, applying a predicate on a foreign key is easier than applying it on a denormalized fact table \cite{Abadi2008-dd}. \blink was initially denormalizing the data \cite{Johnson2008-cp}, but after checking on customer data, they figured it did not help performance \cite{Barber2012-xt}.
+
+In the case of the reference producs, \qlikview~does not denormalize data internally. However, the data extract script allows users to enter SQL statements such that data can be fetched from other systems, and in this step, denormalization can be applied \cite{Qlik2011-yc}. Both \qlikview~and \tableau~uses star and snowflake schemas, which can be seen as a form of denormalization. Using these schemas boost performance \cite{Kamkolkar2015-iq}.
+
+
+\section{Caching}
+\label{sec:Caching}
+In order to improve performance, caching might be used. In dedicated database systems, like the \exasol, joins, queries, and aggregates are cached to keep the system scalable \cite{Exasol2014-xh, Plattner2014-fr}. The cache can be put in the delta store, mentioned in Section \ref{sub:Delta Store}.
+
+For read-only, business intelligence engines, caching can be used more aggressively. In \qlikview, the server has a central cache function such that calculations only need to be done once \cite{Qlik2011-ef}. This gives better user experience and lower the CPU footprint. When deciding which results to cache, the system takes into consideration how long it takes to generate the results \cite{noauthor_undateds-js}. In addition, cache is shared among users \cite{Qlik2011-yc}. Hence, if adding "one user at a time", the cache builds up, and the system can gradually serve more and more users. In \tableau, data and calculations are cached and shared among the users \cite{Kamkolkar2015-iq}. \vertipaq~also cache data, and this improves performance compared to \mssql~\cite{Ferrari2012-hm}.

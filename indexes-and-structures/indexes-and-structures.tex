@@ -33,13 +33,15 @@ The first, is that it can work as column compression. \cstore~uses bitmaps to co
 Another way of compressing a bitmap index is to use WAH compression \cite{Bjorklund2011-wh}, which is a form of run-length encoding. Columns with high cardinality are well represented in this scheme. An implementation of WAH is \algmet{FastBit}.
 
 
-\section{Metadata indexes}
+\section{Table statistics}
 \label{sec:Metadata indexes}
-A metadata index is an index where certain parts of the data can be skipped based on attributes, like minimum and maximum value. This is especially handy when the columns are horizontally partitioned, like mentioned in Section \ref{sub:Horizontal partitioning of columns}. Partitions can be skipped on the basis of column maximum or mininum value, or the per-block dictionary can be scanned to see if a certain key is present.
+Table statistics can be used to skip certain parts of the data based on attributes, like minimum and maximum value. This is especially handy when the columns are horizontally partitioned, like mentioned in Section \ref{sub:Horizontal partitioning of columns}. Partitions can be skipped on the basis of column maximum or mininum value, or the per-block dictionary can be scanned to see if a certain key is present.
 
 One way to keep track of this metadata is through a synopsis table. \ibm uses this, and the table keeps control over pages with corresponding metadata such that pages can be skipped.
 
 The storing of block metadata for quick data pruning is used by \oracle~\cite{Lahiri2015-mz}, \ibm~\cite{Roman2013-em}, \vertica~\cite{Lamb2012-kg}, \monetx~\cite{Boncz2005-wj}, \mssql~\cite{Larson2013-mc}, and \exasol~\cite{Exasol2014-xh}.
+
+In addition to this, histograms of the table value distributions can be made. This is done by \ibm~\cite{Raman2013-em, Raman2008-gi} and \mssql~\cite{Larson2013-mc}. To make these histograms, random sampling can be used, and here two techniques apply. The first one is truly random, where values are picked across the whole column. The second one is a grouped version, where a random sample range is picked.
 
 \section{Join indexes}
 \label{sec:Join indexes}
