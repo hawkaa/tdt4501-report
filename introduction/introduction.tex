@@ -13,18 +13,18 @@ Kemper \ea~arguest that it is safe to assume data can fit in memory, because of 
 
 It has been said that putting entire databases in RAM is the key to unite OLAP and OLTP \cite{Faust2015-ke}, even though we do not emphasize write support in this thesis. It is also easier optimized using parallelization \cite{Psaroudakis2013-fn}.
 
-It is worth noting that even though we focus on in-memory performance, optimizations performed for disk-based databases will still be applicable. We have just moved one step up through the memery hierarchy \cite{Boncz2002-yj}. That is, optimizations done to better utilize available memory for a disk based database will help an in-memory database utilize available CPU caches. 
+It is worth noting that even though we focus on in-memory performance, optimizations performed for disk-based databases will still be applicable. We have just moved one step up through the memery hierarchy \cite{Boncz2002-yj}. That is, optimizations done to better utilize available memory for a disk based database will help an in-memory database utilize available CPU caches. \todo{Make this much clearer}
 
 We will continue this research keeping the in-memory assumption true. However, even though DRAM is cheap, it is still rarely over-provisioned and unused \cite{Barber2014-ey}. We will try to keep the memory footprint as low as possible.
 
 \subsection{Read-only}
 \label{sub:Read-only}
 In the first iteration towards the main goal, we assume that the system will be read only. By not supporting inserts, updates, and deletes, we simplify the database design. We will reason in Chapter x of which techniques might be applied if we need write support.
-\missingfigure{Figure on the three factors that must be compromised}
-The first reason we chose to stick to read-only functionality, is that our main design goal is performance. A research paper by Psaurodakis \ea~\cite{Psaroudakis2014-ma} explains how "one size does not fit all" in a database setting, and there always must be a compromize between data freshness, flexibility, and scheduling. Of these three design goals, we decide scheduling (directly related to performance) is our main priority.
 
-Second, we see that the main reference products, \qlikview~and \tableau, are read only solutions.
+\ffigure{img/compromise.png}{Conceptual figures of how we expect the performance of mixed workloads to be affected by (a) data freshness, (b) flexibility, and (c) scheduling. Courtesy of \cite{Psaroudakis2014-ma}.}{fig:compromise}
+We choose to focus on read-only because our main design goal is performance. A research paper by Psaurodakis \ea~\cite{Psaroudakis2014-ma} explains how "one size does not fit all" in a database setting, and in order to get good read performance, data freshness, query flexibility, and query scheduling must be compromised.
 
+Write support comes in two levels. The first, and most involved level is to have the database system support inserts, updates, and deletes directly. These systems might also support transactions. Typical systems are DBMS, where the focus is correctness, and the systems might emphasize read performance, write performance or both. The other, more light-weight alternative, is to have the \bd~solution listen to updates performed by another system, say a DBMS. These solutions are not guaranteed to be timely, but timely enough for most cases. \qlikview~and \tableau~supports the latter.
 
 %\input{introduction/deliverables}
 \input{introduction/methodology}
@@ -33,7 +33,24 @@ Second, we see that the main reference products, \qlikview~and \tableau, are rea
 \label{sec:Contributions}
 The novelty of this thesis is two-fold. Most related work presesnts a single system and explains the techniques use there. Here, we present the litterature by category, not by product. This way, comparisons can be made more easily, and simplifies the process to getting an overview over where the litterature agrees, and where there are contradictions. We have found work X and work Y. These systems present single concepts, but neither of these span as broadly as we do in this thesis.
 
-The second contribution, is a thorough discussion on where the various techniques presented applies. \genusSoftware have several fundamental and practical limitations, and based on these, I present the techniques that are the most fruitful. Optimizations in columnar storage have already been investigated by Abadi \ea~\cite{Abadi2008-dd}, however this work focus on the fundamental differences between row and column stores. I present a more holistic picture, considering more concepts and techniques. In addition to this, this thesis specifically targets \genusSoftware.
+The second contribution, is a thorough discussion on where the various techniques presented applies. \genusSoftware have several fundamental and practical limitations, and based on these, We present the techniques that are the most fruitful. Optimizations in columnar storage have already been investigated by Abadi \ea~\cite{Abadi2008-dd}, however this work focus on the fundamental differences between row and column stores. We present a more holistic picture, considering more concepts and techniques. In addition to this, this thesis specifically targets \genusSoftware.
+
+\section{Terms used in this thesis}
+\label{sec:Terms used in this thesis}
+This section presents terms and definitions used throughout this thesis.
+
+\paragraph{Database Management System (DBMS)}
+\label{par:Database Management System (DBMS)}
+We look into several Database Management Systems (DBMS) in this thesis. These systems are general purpose systems for storage of data. DBMSes can focus on read performance for analytical workloads, write performance for transactional workloads, or both. These systems do not come with user interfaces for \bd, but is designed such that other applications can be built on top of them. The normal interface with the DBMSes is SQL. In this thesis, we look at \oracle, \ibm, \saph, \sapnw, \mssql, \cstore, \vertica, \blink, \exasol, \oracle, \hyper, and \hyrise.
+
+\paragraph{Business Discovery}
+\label{par:Business Discovery}
+\bd~is a term introduced by \qlikview~\cite{Qlik2014-vd}. \bd~is different from traditional \bi~by focusing more on the end user. By not relying on preaggregated data, the user can follow his own "information scent" and click his way through the data. \bd~platforms delivers panels and dashboards to multiple devices, and allows for easy sharing. They typically build on storage systems that are specifically designed for \bd~workloads, but some of them integrate directly with read-optimized DBMSes. \bd~products include \tableau, \qlikview, \powerpivot, and more.
+
+\paragraph{Reference products}
+\label{par:Reference products}
+By reference products we mean product pointed out \genus, products which \bd~in \genusSoftware~will be directly compared to. Studyed in this thesis is \qlikview~and \tableau.
+
 
 \input{introduction/thesis-structure}
 
