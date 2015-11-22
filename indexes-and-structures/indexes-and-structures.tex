@@ -2,9 +2,9 @@
 \label{chap:Indexes and data structures}
 Although much of the indexing and materialized views are extraneous if the database is structured within columns, we find that certain indexes and data structures can increase query performance. In this chapter we look at structures for large scale OLAP queries, as well as indexes for single value lookups.
 
-\newpage
-
 Indexes are extensively used in \qlikview. According to a whitepaper on scalability, RAM normally need 2\%-10\% of the application on disk to accomodate overhead such as indexes and data associations.
+
+\newpage
 
 \section{Indexes versus table scan}
 \label{sec:Indexes versus table scan}
@@ -16,20 +16,27 @@ Early versions of \blink~had a design goal to avoid structures that benefit part
 \label{sec:Single value lookups}
 Even though we work towards analytical queries, which normally process a large number of rows,and that a table scan in many cases are beneficial, value lookups might still be necessary.
 
-\missingfigure{Add a figure from \cite{Schwalb2014-hn} that shows how an inverted index can be implemented efficiently in a read only store}
+\missingfigure{Add a figure that shows how an inverted index can be implemented efficiently in a read only store}
 One common way is to use inverted indexes \cite{Lemke2010-is}. This is used by \hyrise, where inverted indexes is used to look up single values. Since the columns are immutable, the indexes can be optimized in terms of storage size and cache awareness \cite{Schwalb2014-hn}. The index consists of two vectors, where dictionary entries are mapped to a position list.  \hyrise also supports multi-column indexes, but this requires additional lookup, since dictionary values needs to be fetched before searching.
 
 \mssql server offers two types of indexes: Non-clustered hash-index and non-clustered BW-tree index \cite{Delaney2014-ip, noauthor_undated-vq}. These indexes are rebuit on recovery.
 
-\subsection{Bitmap indexes}
-\label{sub:Bitmap indexes}
+\section{Bitmap indexes}
+\label{sec:Bitmap indexes}
 A Bitmap index is a special structure where each distinct value at a column is represented as a bitmap where all rows containing that value has the value 1. Bitap indexes has two main purposes: Column compression, and easy lookup and combination of predicates. Work from 1999 \cite{Witten1999-qq} claims that compressed inverted indexes are almost always superior to bitmap indexes in practical situations. However, Bjørklund claims that bitmap indexes are widely used in Decision Support Systems \cite{Bjorklund2011-wh}
 
+\subsection{Compression of bitmaps}
+\label{sub:Compression of bitmaps}
+\ffigure{img/wah.png}{Example WAH compression. Courtesy of \cite{Bjorklund2011-wh}.}{fig:wah}
+Bitmap indexes are another way of compressing the data, especially on unsorted columns with few distinct values \cite{Stonebraker2005-qz}. Since the bitmaps normally are sparse, they can be compressed with techniques like WAH \cite{Bjorklund2011-wh} (Figure \ref{fig:wah}) or Run-Length Encoding. However, inverted indexes are normally always instead of bitmaps \cite{Witten1999-qq}
+
+Another way of compressing bitmaps is using a parameterized ways, which is explored by \cite{Moffat1992-tz}. Although this article is old, it still indicates that the total number of 1's in a bitmaps should be the main parameter when considering which compression method to use.
+
+Hierarchical compression of bitmaps might be used as well \cite{Witten1999-qq}. This method is recommended, since it is very fast to see if a row is present in the bitmap. The key is either way to have fast extraction of single values.
 The first, is that it can work as column compression. \cstore~uses bitmaps to compress columns if they have few distinct values. Since the bitmaps normally are sparse, they can be compressed even further by applying run-length encoding.
 
 \qlikview~also utilizes some sort of bitmap indexes, which are created for each field \cite{Qlik2011-ef}.
 
-\missingfigure{Insert figure from \cite{Bjorklund2011-wh} on WAH compression}
 Another way of compressing a bitmap index is to use WAH compression \cite{Bjorklund2011-wh}, which is a form of run-length encoding. Columns with high cardinality are well represented in this scheme. An implementation of WAH is \algmet{FastBit}.
 
 
@@ -45,6 +52,7 @@ In addition to this, histograms of the table value distributions can be made. Th
 
 \section{Join indexes}
 \label{sec:Join indexes}
+\afigure{img/join-index.png}{Example join index structure in \cstore. Courtesy of \cite{Stonebraker2005-qz}.}{fig:join-index}{0.4}
 Join indexes is a structure that stores precomputed join results, and are discussed in several articles. Join indexes are used by \monetdb~\cite{Boncz2002-yj} and \monetx~\cite{Boncz2005-wj}. \todo{Add information about the impact in memory using this technique.} \cstore uses join indexes as it allows for quick joining \cite{Stonebraker2005-qz}, but in \vertica, the commercialized version of \cstore, the cost of join indexes was outweighed by the benefits \cite{Lamb2012-kg}.
 
 For join indexes, it is common to use bitmap indexes \cite{Bjorklund2011-wh}.
@@ -61,3 +69,8 @@ Indexes are used extensively by \exasol, where they are produces, maintained, an
 
 Boncz \ea~\cite{Boncz2006-md} also mentions "index on-the-fly" briefly.
 
+\section{Caching}
+\label{sec:Caching}
+In order to improve performance, caching might be used. In dedicated database systems, like the \exasol, joins, queries, and aggregates are cached to keep the system scalable \cite{Exasol2014-xh, Plattner2014-fr}. The cache can be put in the delta store, mentioned in Section \ref{sub:Delta Store}.
+
+For read-only, business intelligence engines, caching can be used more aggressively. In \qlikview, the server has a central cache function such that calculations only need to be done once \cite{Qlik2011-ef}. This gives better user experience and lower the CPU footprint. When deciding which results to cache, the system takes into consideration how long it takes to generate the results \cite{noauthor_undateds-js}. In addition, cache is shared among users \cite{Qlik2011-yc}. Hence, if adding "one user at a time", the cache builds up, and the system can gradually serve more and more users. In \tableau, data and calculations are cached and shared among the users \cite{Kamkolkar2015-iq}. \vertipaq~also cache data, and this improves performance compared to \mssql~\cite{Ferrari2012-hm}.

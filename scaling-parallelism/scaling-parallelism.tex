@@ -83,7 +83,7 @@ As mentioned earlier, a scale out shared-nothing strategy might enhance performa
 
 \section{Single Input, Multiple Data (SIMD)}
 \label{sec:Single Input, Multiple Instructions (SIMD)}
-\missingfigure{Figure from Willhalm2009-hu}
+\ffigure{img/simd.png}{SIMD execution model: In (a) scalar mode: one operation produces one result. In (b) SIMD mode: one operation produces multiple results. Courtesy of \cite{Willhalm2009-hu}.}{fig:simd}
 Within a single thread, it instructions working on more than one element at a time can be used to enhance query performance. It is a good idea, especially if we can keep the whole block in the registers \cite{Neumann2011-uq}. This is used by \oracle~\cite{Lahiri2015-mz}, \blink~\cite{Barber2012-xt}, \ibm.
 
 Many ALUs does not support long words, like the Intel SSE and Intel AVX2 extension \cite{Willhalm2009-hu, Willhalm2013-rl}. The key is to pack columns densely and work on multiple rows or columns at a time \cite{Johnson2008-cp}. SIMD instructions can evaluate equal-value and value-range predicates without the need of decompression.

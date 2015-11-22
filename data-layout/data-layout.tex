@@ -1,8 +1,5 @@
 \chapter{Data Layout}
 \label{chap:Data Layout}
-\begin{secex}
-  Should explain row stores vs column stores, and alternative storage layouts. I believe much from the Bjørklund thesis can be used here.
-\end{secex}
 One of the most prevalent ways of achieving good performance for OLAP workloads, is to consider how the data is laid out in all levels of the memory hierarchy. Most of the discussion relates to column stores against row stores, but we see alternate ways of storing the data. In addition to the overall storage format, one should also consider if and how to partition the data, and how to sort it.
 \newpage
 
@@ -20,8 +17,8 @@ Column stores have been said to be more compressible, as we see in Chapter 4 is 
 
 Although much points at a column or hybrid layout is the most beneficial for analytical workloads, Holloway \ea \cite{Holloway2008-rr} investigated in which occurences a row store actually could be beneficial. One of the major findings from this paper is that row stores are just as compressible as column stores if done right.
 
-\missingfigure{Insert figure on how updates trigger a chain reaction of index updating from Plattner2014}
-There are papers claiming OLTP also benefits from a columnar storage. The work of Farber \ea~\cite{Farber2012-vh} argues that columnar storage is suited for OLTP as well, due to the compression. In addition, there are more read operations in an OLTP than one originally thinks. Lastly, indexes can be dropped. The work of Plattner \ea~\cite{Plattner2014-fr} claim that most OLTP queries ask for aggregates, not only one row. It triggers a series of aggregate, as seen in Figure x. Lastly, data footprint and application development gets easier.
+\ffigure{img/chain-reaction.png}{OLTP workloads will affect more than a couple of rows. Index structures must be maintained, and preaggregations and matrealized views must be updated. In the figure, an update that triggers a chain reaction is depicted. Courtesy of \cite{Plattner2014-fr}.}{fig:chain-reaction}
+There are papers claiming OLTP also benefits from a columnar storage. The work of Farber \ea~\cite{Farber2012-vh} argues that columnar storage is suited for OLTP as well, due to the compression. In addition, there are more read operations in an OLTP than one originally thinks. Lastly, indexes can be dropped. The work of Plattner \ea~\cite{Plattner2014-fr} claim that most OLTP queries ask for aggregates, not only one row. It triggers a series of aggregate, as seen in Figure \ref{fig:chain-reaction}. Lastly, data footprint and application development gets easier.
 
 \subsection{Column projections}
 \label{sub:Column projections}
@@ -36,8 +33,8 @@ Several products splits the columns horizontally, and if the columns are split, 
   \item Horizontal partitions can be spread out across different nodes in a distributed environment.
 \end{itemize}
 
-\missingfigure{Add figure about Microsoft SQL Server data layout}
-Microsoft SQL server operate on \textit{row groups} which are groups of rows compressed into a columnar format. The number of rows in a row group must me small enough to benefit from in-memory operations and large enough to achive high compression rates. Data within these are not sorted, and they are encoded and compressed independently.
+\ffigure{img/mssql-row-group.png}{Illustrating how a column store index in \mssql is created and stored. The set of rows is divided into row groups that are converted to column segments and dictionaries. Courtesy of \cite{Larson2013-mc}.}{fig:mssql-row-group}
+Microsoft SQL server operate on \textit{row groups} which are groups of rows compressed into a columnar format. The number of rows in a row group must me small enough to benefit from in-memory operations and large enough to achive high compression rates. Data within these are not sorted, and they are encoded and compressed independently. Each row group has their own dictionary, as seen in Figure~\ref{fig:mssql-row-group}.
 
 For Oracle Database in-memory option, the column store is made up of multiple extents, called In-Memory Compression Units (IMCUs). Data is loaded into these units without sorting, they are put in the same way as it appears in the row format. Each chunk constists of approximately half a million rows, and each block is assigned max and minimum values per column such that data can easily be pruned.
 
@@ -60,8 +57,10 @@ In order to stitch together the rows after a query has been executed, each row n
 \label{sec:Alternative storage layouts}
 Although column storage is normally seen as superior to row storage on analytical workloads, some related work have questioned this.
 
-The Oracle Database in-memory \cite{Lahiri2015-mz} offers a dual format, where data is stored as both columns and rows. Since analytical indexes can be dropped when using a column layout, and that the columns are heavily compressed, this does not take more space than usual. IBM 2 with BLU acceleration \cite{Raman2013-em} does not save the data in both ways, but collumns and rows might co-exist in the same table.
+\ffigure{img/oracle-dual.png}{The \oracle~dual format. Courtesy of \cite{Oracle2015-fs}.}{fig:oracle-dual}
+The Oracle Database in-memory \cite{Lahiri2015-mz} offers a dual format, where data is stored as both columns and rows. As we see in Figure~\ref{fig:oracle-dual}, the rows are used for transactional workloads, while the columns are used for analycits. Since analytical indexes can be dropped when using a column layout, and that the columns are heavily compressed, this does not take more space than usual. IBM 2 with BLU acceleration \cite{Raman2013-em} does not save the data in both ways, but collumns and rows might co-exist in the same table.
 
+\ffigure{img/banked-layout.png}{Banked layout. Courtesy of \cite{Johnson2008-cp}.}{fig:banked-layout}
 The work of Barber \ea \cite{Barber2012-xt} claims that both row and column store is suboptimal, and claim that columns are ineffective because they must be padded to word boundaries for efficient access. Their database system, \pn{Blink} therefore implement a hybrid structure, where a subset of the rows are densely packed in word banks, typcially 128-256 bits each. \pn{Blink} puts data into banks, and each column has fixed bits within that bank. A bank is normally a machine word length \cite{Johnson2008-cp} A later paper on \pn{Blink} \cite{Raman2013-em} however contradicts this format, and says everything is stored column-wise.
 
 \ffigure{img/pax.png}{PAX layout for example tuples. Courtesy of \cite{Bjorklund2011-wh}.}{fig:pax}

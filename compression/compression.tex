@@ -1,14 +1,15 @@
-\chapter{Compression}
-\label{chap:Compression}
-\begin{secex}
-  Not only should this chapter regard compression, it should add the sections Memory layout and padding from the Data layout chapter.
-\end{secex}
+\chapter{Data Compression}
+\label{chap:Data Compression}
+When data is stored in a format optimized for analytical workloads, we find the next step in the process of improving performance to apply compression. Compression needs to be light-weight such that one typle can be decompressed at a time. Dictionary compression is the most common compression scheme due to simplicity in predicate evaluation, but delta and run-length encoding may also be used.
 \newpage
+\section{Compression Background}
+\label{sec:Compression Background}
+
 To improve cache locality, reduce memory footprint, and hence increase performance, the most prevalent technique used is compression of data. It is used by nearly all database systems, like the \pn{IMB DB2 with BLU Acceleration} \cite{Raman2013-em}, \pn{C-store} \cite{Stonebraker2005-qz}, \pn{Vertica} \cite{Lamb2012-kg}, and more. There are several sources that indicates that Columns are more easily compressible \todo{insert references to this here}, however the work by Holloway \ea~\cite{Holloway2008-rr} contradicts this and claims that row stores can be compressed just as much if done correctly. The top performing system in the TPC-H benchmark duoes also use highly compressed data, structured for rapid retrieval. \mssql~\cite{noauthor_undated-vq} claim a compression rate of 10x when storing in a columnar format.
 
 Historically, compression has been thought of a measure for reducing disk and memory footprint. However, in this setting, compressing the data also comes with the benefit of increased performance. Abadi \ea~\cite{Abadi2008-dd} explores column compression and how it affects performance. In this research, they found a performance increase of two when applying compression, but this was dependent on the query. Compression cause common database operations to go from memory to CPU bound, hence used to overcome the memory wall \cite{Willhalm2009-hu}, and it can be used to reduce CPU cycles \cite{Stonebraker2005-qz}.
 
-Of more recent work databases, the \gorilla~\cite{Pikonen2015-ko} (2015)claims that compression is one of the main reasons for good performance. The \exasol~\cite{Exasol2015-xh} writes that data is compressed of two reasons. First, it reduces the total storage, and second; it increases performance by reducing pressure on the CPU caches.
+Of more recent work databases, the \gorilla~\cite{Pelkonen2015-ko} claims that compression is one of the main reasons for good performance. The \exasol~\cite{Exasol2014-xh} writes that data is compressed of two reasons. First, it reduces the total storage, and second; it increases performance by reducing pressure on the CPU caches.
 
 The C-store database uses a variety of different compression techniques, which are allowed when certain column values are sorted. For sorted local columns, run-length encoding is used. \todo{Add the rest of C-stores compression techniques here}.
 
@@ -16,7 +17,7 @@ The work of Holloway \ea~\cite{Holloway2008-rr} concludes that dictionary and Ru
 
 However, for compression to work, it must work on compressed data directly \cite{Lemke2010-is}. In addition to this, it must be fast and fine-grained (possible to decode one value at a time). Zukowski2006-qz \ea~\cite{Zukowski2006-oz} concludes that a compression algorithm should care about super-scalar processors, that is it should be loop pipelineable, support out-of-order exectuion, and avoid if-then-else in inner loops. In addition, decompression should happen when data is moved from RAM to cache, not from disk to RAM. 
 
-\cite{Westmann2000-mz} defines light-weight compression as ..., and it seems to be mentioned in several proceeding work. Lemke \ea~\cite{Lemke2010-is} claims that the real benefit of compression can only be leveraged if the decompression effort can be minimized. Light-weight compression has been defined by Holloway \ea~\cite{Holloway2008} as bit-packing, dictionary encoding, delta encoding, and Run-Length Encoding.
+A study of compressed databases executed by Westmann \ea~investigates the premises of database compression, and that is that the compression must be light-weight \cite{Westmann2000-mz}. In other words, the real benefit of compression can only be leveraged if the decompression effort can be minimized \cite{Lemke2010-is}. Light-weight compression has been defined by Holloway \ea~as bit-packing, dictionary encoding, delta encoding, and Run-Length Encoding \cite{Holloway2008-rr}.
 
 It has also been concluded that compression only improves read-only functionality, not inserts, deletes, and updates \cite{Westmann200-mz}.
 
@@ -35,22 +36,25 @@ Dictionary compression, or dictionary encoding, is widely used within column sto
 
 Dictionaries can be either sorted or unsorted. A sorted dictionary allows for easier value lookup and evaluation of more advanced predicates, like less than, greater than etc. \saph~\cite{Farber2012-vh} uses a sorted dictionary, where value IDs are bit-packed and compressed. If the rows are sorted, run-length encoding, cluster encoding, and sparse coding is used. \sapnw~\cite{Lemke2010-is} is one of the systems where the dictionary is sorted.
 
-\oracle utilizes a compression format on their in-memory storage layout (\cite{Oracle2015-fs}). Compression is normally considered as a space-saving mechanism, but compression will also improve query performance. All scanning and filtering operations operate directly on the compressed columns which decreases query execution time. Data is decompressed before it is required for the result set. \oracle uses Dictionary Encoding, Run Length Encoding and Bit-Packing is used \cite{Oracle2015-fs}. 
+\oracle~utilizes a compression format on their in-memory storage layout \cite{Oracle2015-fs}. Compression is normally considered as a space-saving mechanism, but compression will also improve query performance. All scanning and filtering operations operate directly on the compressed columns which decreases query execution time. Data is decompressed before it is required for the result set. \oracle uses Dictionary Encoding, Run Length Encoding and Bit-Packing is used \cite{Oracle2015-fs}. 
 
 In addition to above \ibm~and \blink~uses bitpacked dictionary encoding where each partition has their own dictionary. All rows are order preserved.
 
-Among the direct competitors of \genusSoftware, there is strong identication that \qlikview~uses dictionary encoding, based on the fact that they claim the less spread in the data, the more compression \cite{Qlik2011-ef}. This is confirmed in a blog post at \textit{DBMS2}\footnote{http://www.dbms2.com/} \cite{noauthor_undated-js}. \tableau also points towards dictionary encoding, since they claim that they have good compression rate if the data includes text values \cite{Kamkolkar2015-iq}.
+Among the direct competitors of \genusSoftware, there is strong identication that \qlikview~uses dictionary encoding, based on the fact that they claim the less spread in the data, the more compression \cite{Qlik2011-ef}. This is confirmed in a blog post at \textit{DBMS2}\footnote{http://www.dbms2.com/} \cite{noauthor_undated-js}. \tableau~also points towards dictionary encoding, since they claim that they have good compression rate if the data includes text values \cite{Kamkolkar2015-iq}.
 
 Special considerations should however be taken when implementing dictionary encoding. First of all, the dictionary should fit inside the L2 cache, and it should not be used if the dictionary turns out bigger than the value it is replacing \cite{Holloway2008-rr}. 
 
 \subsection{Implementation}
 \label{sub:Implementation}
-\missingfigure{Insert figure here of how dictionary encoding is physically implemented. Use \cite{Psaroudakis2015-lc}}
+\ffigure{img/dictionary.png}{Example of a dictionary compression implementation with inverted indexes. Courtesy of \cite{Psaroudakis2015-lc}.}{fig:dictionary}
+An example implementation of a dictionary compressed column can be seen in Figure~\ref{fig:dictionary}. This figure also includes inverted indexes which can be used to look up single value positions.
 
 
 \subsection{Bitpacking}
 \label{sub:Bitpacking}
-Bitpacking is the compression algorithm normally used in conjunction with dictionary encoding. It has a lower compression than algorithms that allows for variable length, but you get the benefit of constant time lookup \cite{Raman2008-gi}.
+Bitpacking is the compression algorithm normally used in conjunction with dictionary encoding. It has a lower compression than algorithms that allows for variable length, but you get the benefit of constant time lookup \cite{Raman2008-gi}. Bitpacking can also be used directly on the data, that is, the values in the column does not need to be keys to a dictionary.
+
+\qlikview~data is compressed using a hash table and only the number of bits required is used \cite{Qlik2014-vd}.
 
 \subsection{Query optimizations}
 \label{sub:Query optimizations}
@@ -64,7 +68,7 @@ The work by Faust \ea~\cite{Faust2015-ke} draws attention to two major issues wi
 
 \section{Delta compression}
 \label{sec:Delta compression}
-Delta compression, or delta encoding, is \todo{Insert information about Delta compression here}. It is used by several database systems, like \pn{Blink}~\cite{Raman2008-gi}
+Delta compression, or delta encoding, is \todo{Insert information about Delta compression here, and perhaps a figure}. It is used by several database systems, like \pn{Blink}~\cite{Raman2008-gi}
 
 A variant of delta encoding is the \algmet{PForDelta}, which is a bitpacked delta encoding \cite{Bjorklund2011-wh}. This method handles outliers very well, because they are put somewhere else in memory. It has the advantage of being able to be compressed and decompressed without branches.
 
@@ -72,26 +76,12 @@ A variant of delta encoding is the \algmet{PForDelta}, which is a bitpacked delt
 \label{sec:Run-length encoding}
 For sorted values, Run-length encoding can be used \cite{Bjorklund2011-wh}. A typical bla bla. The work by Holloway \ea~\cite{Holloway2008-rr} writes that run-length encoding works best on sorted data.
 
-Run-length encoding is used extensively in \cstore and\vertica~\cite{Barber2012-xt}, which is the commercialization of \cstore. These databases allows for projections that are sorted, and will apply run-length encoding on columns with low cardinality that are sorted.
-
+Run-length encoding is used extensively in \cstore~and \vertica~\cite{Barber2012-xt} (which is the commercialization of \cstore). These databases allows for projections that are sorted, and will apply run-length encoding on columns with low cardinality that are sorted.
+\todo{Find a figure on run-length encoding}
 \section{Other compression techniques}
 \label{sec:Other compression techniques}
 For compressing time series, an efficient compression scheme can be used by blablabla \cite{Pelkonen2015-ko}.
 
-If the data is saved as doubles, a technique explained by Ratanaworabhan \ea~\cite{Ratanaworabhan2006-wb} can be used. This technique predicts each value and XOR it with the true value. If close, it might be compressed, since this value has a lot of leading zeroes.
+If the data is saved as doubles, a technique explained by Ratanaworabhan \ea~\cite{Ratanaworabhan2006-jb} can be used. This technique predicts each value and XOR it with the true value. If close, it might be compressed, since this value has a lot of leading zeroes.
 
 QlikView uses a hash table to compress the data \cite{Qlik2014-vd}, and it yields a compression rate of 20\%-90\% dependent on the data.
-
-\section{Compression of bitmaps}
-\label{sec:Compression of bitmaps}
-Bitmap indexes are another way of compressing the data, especially on unsorted columns with few distinct values \cite{Stonebraker2005-qz}. Since the bitmaps normally are sparse, they can be compressed with techniques like WAH \cite{Bjorklund2011-wh} or Run-Length Encoding. However, inverted indexes are normally always instead of bitmaps \cite{Witten1999-qq}
-
-Another way of compressing bitmaps is using a parameterized ways, which is explored by \cite{Moffat1992-tz}. Although this article is old, it still indicates that the total number of 1's in a bitmaps should be the main parameter when considering which compression method to use.
-
-Hierarchical compression of bitmaps might be used as well \cite{Witten1999-qq}. This method is recommended, since it is very fast to see if a row is present in the bitmap. The key is either way to have fast extraction of single values.
-
-\subsection{Bloom filters}
-\label{sub:Bloom filters}
-Although not directly compression, another way of reducing a bitmaps footprint and increasing query performance, is through the sue of bloom filters \cite{Bloom1970-nr}. A bloom filter may return false positives, but never false negatives.The bloom filters can be used in common database operations, for instance joins \cite{x}
-
-

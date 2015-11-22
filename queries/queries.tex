@@ -37,7 +37,7 @@ The most detailed research we find on hash join, is the work by Barber \ea~\cite
 
 \subsection{Bloom filter based joins}
 \label{sub:Bloom filter based joins}
-Several database systems report to use bloom filter based joins. Bloom filters, invented by Bloom in 1970, is a probabilistic structure and will only return false positives, not false negatives \cite{Bloom1970-nr}. This includes \oracle~\cite{Lahiri2015-mz}, \ibm~\cite{Raman2013-em}. Barber \ea~explain how bloom filters can be applied to eliminate non-matching join outers before they enter the join.
+Although not directly compression, another way of reducing a bitmaps footprint and increasing query performance, is through the use of bloom filters \cite{Bloom1970-nr}. A bloom filter may return false positives, but never false negatives.The bloom filters can be used in common database operations, for instance joins \cite{x} \todo{Consider moving this somewhere else}. Several database systems report to use bloom filter based joins. Bloom filters, invented by Bloom in 1970, is a probabilistic structure and will only return false positives, not false negatives \cite{Bloom1970-nr}. This includes \oracle~\cite{Lahiri2015-mz}, \ibm~\cite{Raman2013-em}. Barber \ea~explain how bloom filters can be applied to eliminate non-matching join outers before they enter the join.
 
 \section{Predicate evaluation}
 \label{sec:Predicate evaluation}
@@ -65,7 +65,8 @@ Queries must also use the available optimizations allowed by the design \cite{Ba
 \label{sec:Grouping and Aggregation}
 Aggregation of results is also an important step of querying. It can be done at the same time as for the scan \cite{Leme2010-is}.
 
-\oracle~uses a technique which they call \term{Vector Group By}, which is a compact multipdimensional array for storing aggregate results.
+\ffigure{img/vector-group-by}{The \term{Vector Group By} technique used in \oracle. Courtesy of \cite{Oracle2015-fs}.}{fig:vector-group-by}
+\oracle~uses a technique which they call \term{Vector Group By}, which is a compact multipdimensional array for storing aggregate results. The operation is depicted in Figure~\ref{fig:vector-group-by}.
 
 \ibm~performs a local groping on local hash tables in parallel, and creates a linked list of overflow buckets \cite{Raman2013-em}. When they are full, they get published globally. In the second phase, each thread reserves a part of the hash table and merges the local hash tables to a global one.
 

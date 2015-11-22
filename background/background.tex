@@ -19,71 +19,91 @@ This chapter will introduce relevant background information.
 \clearpage
 
 \input{background/bi}
-\input{background/imds}
-\input{background/column-store}
 
-\section{Data skew}
-\label{sec:Data skew}
-It is quite common that data is skewed. Typically, for a retailer, 99\% of the sales is done on weekdays, 40\% around christmas \cite{Raman2008-gi}. Although said to improve cache locality \cite{Larson2013-mc}, it is important that structures, compression schemes, and algorithms takes data skew into account. An example of this is \term{PForDelta}, which is a compression that builds on bit packing \cite{Bjorklund2011-wh}. In this scheme, outliers are not bit packed.
+\section{\bd}
+\label{sec:Business Discovery}
+The challenges with data warehouses is many, among them, the lack of flexibility. Reports are normally preconfigured by the IT department, and this can result in long reporting backlogs. To counter these problems, a new type of products have emerged. We call these products \bd~products, a notion that was introduced by \qlikview \cite{Qlik2014-vd}. Examples of these products are \powerpivot, \tableau, and \qlikview. Studied in this thesis are the two latter, and we have denoted these as our reference products.
 
-Data skew can be modelled with a \term{Zipfian} distribution \cite{Holloway2008-rr}.
+\ffigure{img/qlik-hierarchy.png}{Comparison of a traditional reporting application and \qlikview. Courtesy of \cite{Qlik2014-vd}.}{fig:qlik-hierarchy}
+\bd~products allow userss to follow ther "information scent" or "train of though" \cite{Qlik2014-vd, Kamkolkar2015-iq}. There are no particular drill-down patterns that are prespecified, users might navigate through the data as they see fit, as seen in Figure~\ref{fig:qlik-hierarchy}.
 
-
-\section{Reference products}
-\label{sec:Reference products}
-By reference products, we mean systems which the Business Intellingence capabilities in \genusSoftware. Products studied in this thesis is mainly \qlikview~and \tableau.
-
-In these applications, the notion of \term{Business Discovery} is introduced \cite{Kamkolkar2015-iq, Qlik2014-vd}. These products allows users to follow ther "information scent" or "train of though". In general, these systems help IT organizations get out of reporting backlogs.
+We mainly focus on \qlikview~when explaining how a typical \bd~application work. \tableau~and \powerpivot~work similarly. We explain how \bd~applications work here since these products are the main specification for the new functionality in \genusSoftware.
 
 \subsection{How these applications work}
 \label{sub:How these applications work}
-The main requirements for a business discovery product user interface are \cite{Qlik2014-vd}:
+\ffigure{img/qlik-panel.png}{\qlikview~dashboard with various GUI elements. Selections are marked green, matched data remains white, but unrelated data is colored gray. Courtesy of \cite{Qlik2014-vd}.}{fig:qlik-panel}
+Users interact with the \bd~application through a reporting dashboard, as seen in Figure~\ref{fig:qlik-panel}. Requirements for this panel are typically, but not limited to \cite{Qlik2014-vd}:
 \begin{itemize}
   \item Clicking field values in list boxes.
   \item Lassoing data in charts and graphs and maps.
   \item Manipulating sliders.
   \item Choosing dates in calendars.
   \item Cycling through various charts.
-  \item ++
 \end{itemize}
-In the graphical user interface, \qlikview~follows a simple coloring strategy. Green means selected, white means matched, and gray means un-matched. The latter is important, since Business Discovery is not always about what is there, but also what is not present.
 
-\missingfigure{Insert figure on non-hierarchical data from Qlik2014-vd}
-Another important point in these applications, is that they have a state \cite{Qlik2014-vd}. Calculations are normally not preaggregated, they are calculated as needed. 
+In the reporting panel, \qlikview~follows a simple coloring strategy, as seen in Figure \ref{fig:qlik-panel}. Green means selected, white means matched, and gray means unmatched. The reason for displaying unmatched results is that business insight requires knowledge of not only what is there, but also what is missing. The green selections indicates the \term{application state}.
 
-\missingfigure{Figure from Qlik2010-ya on Business Discovery associativity}
+Distinct for the \bd~applications is that they do not favor any particular queries or drill-down paths. Hence, although results might be cached, the data is not preaggregated. Calculations and joins are calculated as needed.
 
-\qlikview~lets the user design data marts and user interface \cite{Qlik2011-ef}. The application is published through a server.
+To design a \bd~panel, a data extract layer must be defined. In \qlikview, this means configuring tables and relations through an import script. The import script uses a language similar to SQL in order to define tables, relations, and import statements. Connections various data sources are defined in this script, and it supports various formats and database systems. When the data import script is run, data is fetched from the sources and put into the \qlikview~in-memory engine such that data can be queried efficiently. \tableau~works similarly, however, in addition to the built in in-memory engine, the application allows for connecting directly to database servers \cite{Kamkolkar2015-iq}. This way, the users can utilize investments in high-performance databases. 
 
-\tableau~works similarly, however, in addition to the built in in-memory engine, the application allows for connecting directly to database servers \cite{Kamkolkar2015-iq}. This way, the users can utilize investments in high-performance databases. \tableau~emphasizes the need for running the database on a server, since mobile devices must be supported. 
+In the data import script, data might be transformed before loaded into the in-memory engine. Here, data can be filtered, summarized and grouped. One can also denormalize the data by joining one or more tables during the import. We look into denormalization in Section \ref{sec:Denormalization}.
 
-In terms of metadata management, both IT and business employees are empowered to modify it.
+A requirement for the data import script, is that the data follows a snowflake schema. That is, if a table is used in multiple relations, the table itself will be duplicated. This ensures that there exists no more than one possible join path between any pairs of tables \cite{noauthor_undated-js}. \todo{Find out that this actually is the definition of a snowflake schema, or another term must be used}
 
-\qlikview~assumes a star or snowflake schema in the data extract design, that is no more than one possible join path between any pair of tables \cite{noauthor_undated-js}.
+Both \qlikview~and \tableau~publish the data through a server \cite{Kamkolkar2015-iq, Qlik2011-ef}. This way, the dashboards are accesible for multiple users at the same time, and can be accessed from different devices, like tablets and mobile phones.
+
+%In terms of metadata management, both IT and business employees are empowered to modify it.
+
+\subsection{Queries}
+\label{sub:Queries}
+We see that queries in \bd~applications have certain distinctions. First of all, the queries are ad-hoc, they cannot be anticipated. Second, not many elements are returned, since the GUI is limited in how many distict elements that can be shown at the same time. \todo{Find the source on this} 
+
+It is worth noting that \bd~applications do not need to support all SQL operations which a DBMS normally does. For instance, joins can be limited to equi-joins over foreign keys, and aggregations may be limited to groups of one or more dimensions in the schema.
 
 \subsection{Performance}
 \label{sub:Performance}
-These systems have the ultimate goal to perform well, however several factors contribute to the system overall performance. When considering performance, it is done from an end-user perspective \cite{Qlik2011-yc}.
+The main selling point for the \bd~products is that they perform well, but several factors contribute to the system overall performance. When considering performance, it is done from an end-user perspective \cite{Qlik2011-yc}.
 
-\qlikview~outlines four aspects of this: Size of data, number of users, number of applications, and application design. The latter aspect means you should avoid too many listboxes, too many tables, too many formulas. In addition to this, columns should be split for better compression, and only pick the fields that are needed.
+\qlikview~outlines four aspects of application performance: Size of data, number of users, number of applications, and application design. The latter aspect means you should avoid too many listboxes, too many tables, too many formulas. In addition to this, columns should be split for better compression, and only pick the fields that are needed.
 
+In other words, not only designing a high performance in-memory backend is important for the user experience; \textbf{much can be done in the application design}. Data can be filtered or summarized during import. An example of this is a business discovery panel for a retail store company, where the highest granularity is per day. Here, transactions should be summarized in the import script in order to reduce data size.
 \subsection{Security settings}
 \label{sub:Security settings}
 
-The main \qlikview~security setting is the document-level authorization \cite{Qlik2011}. Using this technique, certain documents, or data extracts, are restricted to certain users. This way, several data marts with different data extracts can be served to the various user groups. In addition to this, a dynamic filter can be applied to the data, such that new data marts do not need to be defined for every use case. Fields an columns can be removed using a special \texttt{OMIT} keyword.
+The main \qlikview~security setting is the document-level authorization \cite{Qlik2011-hj}. Using this technique, certain documents, or data extracts, are restricted to certain users. This way, several data marts with different data extracts can be served to the various user groups. In addition to this, a dynamic filter can be applied to the data, such that new data marts do not need to be defined for every use case. Fields an columns can be removed using a special \texttt{OMIT} keyword.
 
 As for \tableau, data-level and user-level security is supported \cite{Kamkolkar2015-iq}. Data can be filtered per user as long as the filter matches a where-clause. Like \qlikview, \tableau~can limit the access to different reports and views.
 
 \saph~has special support for analytical privileges that filters the data or applies drill-down limitations \cite{Primsch2011-ij}.
 
+\subsection{Challenges with the current solutions}
+The current solutions in business intelligence lacks a process support.
+
+The soultions of today lacks a two-way binding to the data, and relies on preaggregated dataware-houses. Occasionally, the analytics boils down to a small selection of objects (e. g. employees, or transactions), but there is no way to navigate to the OLTP part of the application again.
+
+They are integrated in the way they talk together through protocols and nightly batches, but they are not integrated on a top level. They are separate products that needs to be installed and maintained.
+
+Lastly, they don't use metadata at the highest level.
+
+%\input{background/imds}
+%\input{background/column-store}
+
+\section{Data skew}
+\label{sec:Data skew}
+It is quite common that data is skewed. Typically, for a retailer, 99\% of the sales is done on weekdays, 40\% around christmas \cite{Raman2008-gi}. Although said to improve cache locality \cite{Larson2013-mc}, it is important that structures, compression schemes, and algorithms takes data skew into account. An example of this is \term{PForDelta}, which is a compression that builds on bit packing \cite{Bjorklund2011-wh}. In this scheme, outliers are not bit packed.
+
+
 \section{Testing analytical workloads}
 \label{sec:Testing analytical workloads}
-To test analytical workloads, it is common to use the TPC-h benchmark \cite{Boncz2002-yj}. This is used for ad-hoc querying. To test for large data-sets, a scaling factor (SF) can be used. The TPC-H query focus on expression calculation, and consists of queries that are both memory and CPU bound \cite{Boncz2005-wj}.
+To test analytical workloads, it is common to use the TPC-H benchmark \cite{Boncz2002-yj}. This is used for ad-hoc querying. To test for large data-sets, a scaling factor (SF) can be used. The TPC-H query focus on expression calculation, and consists of queries that are both memory and CPU bound \cite{Boncz2005-wj}.
 
 Of other benchmarks, we see Star Schema Benchmark \cite{Boncz2002-yj}
 
-As mentioned in Section X, a \term{Zipfian} distribution can be used to model data skew.
+When testing, different selectivities and data distributions should be used. Selectivities may vary from 0.01\% to 50\%, and data should be tested with both uniform and skewed distributions. Data skew can be modelled with a \term{Zipfian} distribution \cite{Holloway2008-rr}.
 
 As a practical test for how much memory and CPU you need, the \qlikview~developers suggest to deploy a smaller scale deployment, and measure resource usage and do a linear extrapolation \cite{Qlik2011-yc}.
 
-Other ways to test the implementation, includes using \pn{callgrind} to observer branches and cache effects \cite{Neumann2011-uq}, \pn{Intel Performance Counter Monitor} to measure cycles and nanoseconds \cite{Willhalm2013-ri}, and \pn{JMeter} to test user interaction.
+Other ways to test the implementation, includes using \pn{callgrind} to observer branches and cache effects \cite{Neumann2011-uq}, \pn{Intel Performance Counter Monitor} to measure cycles and nanoseconds \cite{Willhalm2013-ri}, and \pn{JMeter} to test user interaction \cite{Qlik2012-ku}.
+
+
