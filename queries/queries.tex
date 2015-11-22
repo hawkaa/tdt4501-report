@@ -29,8 +29,27 @@ Another design goal is to keep the hash tables collision free \cite{Raman2013-em
 
 There are ways of improving performance in the caching algorithms in terms of implementation details and cache awareness (Section ?). \monetdb~utilizies a radix cluster algorithms, where multiple passes are used to maximize cache locality \cite{Boncz2002-yj}. They find a performance improvement of 90\% using this technique. \mssql~implementation of the hash join still keeps good performance if some pages are allowed to be spilled to disk \cite{Larson2013-mc}. 
 
-\missingfigure{Figure that illustrates invisible join from \cite{Abadi2008-dd}}
-Another technique, introduced by Abadi \ea~in \term{invisible join} \cite{Abadi2008-dd}. Here, the set of tuples in the larger relation is reduced using selection predicates in one or many relation tables. For each predicate, a bitmap is produced. This is ANDed/ORed at the end of the query. Projected values are not fetched until the end. 
+\begin{figure}
+  \centering
+  \begin{subfigure}{0.45\textwidth}
+    \includegraphics[width=\textwidth]{img/invisible-join-1.png}
+    \caption{The first phase of the invisible join. Predicates are evaluated on every dimension table, and put into a hash map.}
+    \label{fig:invisible-join-1} 
+  \end{subfigure}
+  \begin{subfigure}{0.45\textwidth}
+    \includegraphics[width=\textwidth]{img/invisible-join-2.png}
+    \caption{The second phase of the invisible join. Bitmaps are created per dimension table predicate, and bitwise \texttt{AND} is applied.}
+    \label{fig:invisible-join-1} 
+  \end{subfigure}
+  \begin{subfigure}{0.45\textwidth}
+    \includegraphics[width=\textwidth]{img/invisible-join-3.png}
+    \caption{The third phase of the invisible join. The bitmap calculated in the previous step is uned to extract values from the fact table.}
+    \label{fig:invisible-join-1} 
+  \end{subfigure}
+  \caption{The invisible join. Courtesy of \cite{Abadi2008-dd}.}
+  \label{fig:invisible-join} 
+\end{figure}
+Another technique, introduced by Abadi \ea~in \term{invisible join} \cite{Abadi2008-dd}. Here, the set of tuples in the larger relation is reduced using selection predicates in one or many relation tables. For each predicate, a bitmap is produced. This is ANDed/ORed at the end of the query. Projected values are not fetched until the end. The whole join is depicted in Figure~\ref{fig:invisible-join}.
 
 The most detailed research we find on hash join, is the work by Barber \ea~\cite{Barber2014-ey}. They explain how data independent ranmod access (DIRA) can build hash tables without contention, utilizing prefetching. Through the use of overflow hash tables, they reduce the amount of collisions and get 100\% occupancy. Hash tables are built in parallel.
 

@@ -1,6 +1,16 @@
 \chapter{Future Work and Conclusion}
 \label{chap:Future Work and Conclusion}
 
+\section{Looking ahead}
+\label{sub:Looking ahead}
+We propose using this thesis as a guideline for improving \bd~performance in \genusSoftware. We suggest using techniques outlined in this thesis and implement one or more of these techniques. For every technique implemented, a test suite is run to assess the performance impact. In addition, the improvements are tested together to see if performance can be improved by combining various aspects
+
+\subsection{Testing}
+\label{sub:Testing}
+We propose testing using the TPC-H benchmark. As we have seen in this thesis, this is widely used to test OLAP workloads on database systems. The benchmark is built up systematically, tests a variety of distributions and selectivities.
+
+Second, we propose using \genus' customer data to test \bd~performance from an end user perspective. In this phase, data is loaded into memory and accessed via the panel. Response times for a predifined steps are measured and compared. The main focus here will be the specific cases \genus' customers have pointed out as inadequate performance.
+
 \section{Future work}
 Although this thesis has discussed the key challenges on implementing Business Intelligence in a model-driven framework, there are still challenges that has not been discussed broadly.
 
@@ -9,6 +19,7 @@ The thesis has assumed that data traverse the network at low cost, such that all
 The thesis is based on a model where the data is recycled every night. This means that the most recent data will be left out of the analysis. Here it would be interesting to find out which alterations that needs to be done to avoid this problem. One could look at bla bla.
 
 There is also a lack of discussion of which component should do what. As explanied, \genusSoftware is comprised of a server and a client. Moving functionality between these components will affect the latency and performance.
+
 
 \section{Conclusion}
 \label{sec:Conclusion}
