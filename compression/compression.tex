@@ -30,8 +30,8 @@ Compression has initially been thought of as a measure for saving disk and memor
 However it has been more and more common lately to let the database work directly on compressed data, which means data should not be decompressed until it is materialized and sent to the user. (There is more about materialization in the next chapter). Systems like \monetx does not decompress before the data is put into cache \cite{Johnson2008-cp}. The authors behind \blink \cite{Barber2012-xt} and a research group Lemke \ea~\cite{Lemke2010-is} says that you should never decompress before absolutely needed. 
 
 
-\section{Dictionary compression}
-\label{sec:Dictionary compression}
+\section{Dictionary Compression}
+\label{sec:Dictionary Compression}
 Dictionary compression, or dictionary encoding, is widely used within column store databases. Systems like \ibm~\cite{Raman2013-em}, \saph~\cite{Farber2012-vh}.. use it. Dictionary encoding is a good encoding because ... \ea~\cite{Faust2015-ke}
 
 Dictionaries can be either sorted or unsorted. A sorted dictionary allows for easier value lookup and evaluation of more advanced predicates, like less than, greater than etc. \saph~\cite{Farber2012-vh} uses a sorted dictionary, where value IDs are bit-packed and compressed. If the rows are sorted, run-length encoding, cluster encoding, and sparse coding is used. \sapnw~\cite{Lemke2010-is} is one of the systems where the dictionary is sorted.

@@ -7,8 +7,8 @@ One of the keys to acheiving good parallel performance, is to use structures tha
 \exasol, the top performing system on the TPC-H benchmark, reports to apply \textbf{parallelism on every layer} \cite{Exasol2014-xh}.
 
 \newpage
-\section{Scaling out}
-\label{sec:Scaling out}
+\section{Scaling Out}
+\label{sec:Scaling Out}
 Scaling out is important for performance. Scaling out is the technique where several machines (nodes) are used, and the work is distributed between them. They share no common resources, so all data and control traffic must be passed through explicit network actions. Scaling is necessary in large businesses, and volumes are increasing \cite{Qlik2012-ku}.
 
 The best discussion on the need for scaling out can be found in research executed by Mukherjee \ea~\cite{Mukherjee2015-ul}. Historically, it has been argued that scaling out is the best way to acheive good performance. It does also provide redundancy; if one node in the cluster goes down, another node can be ready to take over.

@@ -40,8 +40,8 @@ The first, is that it can work as column compression. \cstore~uses bitmaps to co
 Another way of compressing a bitmap index is to use WAH compression \cite{Bjorklund2011-wh}, which is a form of run-length encoding. Columns with high cardinality are well represented in this scheme. An implementation of WAH is \algmet{FastBit}.
 
 
-\section{Table statistics}
-\label{sec:Metadata indexes}
+\section{Table Statistics}
+\label{sec:Table Statistics}
 Table statistics can be used to skip certain parts of the data based on attributes, like minimum and maximum value. This is especially handy when the columns are horizontally partitioned, like mentioned in Section \ref{sub:Horizontal partitioning of columns}. Partitions can be skipped on the basis of column maximum or mininum value, or the per-block dictionary can be scanned to see if a certain key is present.
 
 One way to keep track of this metadata is through a synopsis table. \ibm uses this, and the table keeps control over pages with corresponding metadata such that pages can be skipped.
@@ -62,6 +62,10 @@ For join indexes, it is common to use bitmap indexes \cite{Bjorklund2011-wh}.
 Another way to boost performance, is through data duplication. \cstore~and \vertica~allows for storing the columns in multiple sort orders at the same time \cite{Stonebraker2005-qz, Lamb2012-kg}. \blink allows for storing columns in multiple banks, such that predicates can be evaluated in the same bank \cite{Johnson2008-cp}. \exasol~replicates tables across nodes in the system if they are small enough.
 
 Earlier, data was preaggregated to achieve good performance, but this has been considered as inflexible and one of the main challenges with old ROLAP and MOLAP systems \cite{Boncz2002-yj}. Modern systems does not preaggregate results, like \sapnw~\cite{Lemke2010-is} and \qlikview~\cite{Qlik2014-vd}, and calculate all results as needed. \qlikview does however allow data to be preaggregated when loaded into memory \cite{Qlik2011-yc}.
+
+\subsection{Column projections} MOVE TO INDEX, CACHING ETC
+\label{sub:Column projections} 
+C-store allows to have several projections per column, with different sort order. They claim the redundant storage is justified by the additional compression. Configuring these projections requires a DBA. \pn{Vertica}, a commercialized version of \pn{C-Store} supports several narrow projections in addition to one super projection.
 
 \section{Dynamic generation of indexes}
 \label{sec:Dynamic generation of indexes}
