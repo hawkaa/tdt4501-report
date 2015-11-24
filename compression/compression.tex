@@ -2,39 +2,67 @@
 \label{chap:Data Compression}
 When data is stored in a format optimized for analytical workloads, we find the next step in the process of improving performance to apply compression. Compression needs to be light-weight such that one typle can be decompressed at a time. Dictionary compression is the most common compression scheme due to simplicity in predicate evaluation, but delta and run-length encoding may also be used.
 \newpage
-\section{Compression Background}
-\label{sec:Compression Background}
 
-To improve cache locality, reduce memory footprint, and hence increase performance, the most prevalent technique used is compression of data. It is used by nearly all database systems, like the \pn{IMB DB2 with BLU Acceleration} \cite{Raman2013-em}, \pn{C-store} \cite{Stonebraker2005-qz}, \pn{Vertica} \cite{Lamb2012-kg}, and more. There are several sources that indicates that Columns are more easily compressible \todo{insert references to this here}, however the work by Holloway \ea~\cite{Holloway2008-rr} contradicts this and claims that row stores can be compressed just as much if done correctly. The top performing system in the TPC-H benchmark duoes also use highly compressed data, structured for rapid retrieval. \mssql~\cite{noauthor_undated-vq} claim a compression rate of 10x when storing in a columnar format.
+\section{Compression}
+\label{sec:Compression}
+To improve cache locality, reduce memory footprint, and hence increase performance, the most prevalent technique used is compression of data. It is used by nearly all database systems, like the \ibm~\cite{Raman2013-em}, \cstore~\cite{Stonebraker2005-qz}, ~\pn{Vertica} \cite{Lamb2012-kg}, \oracle~\cite{Oracle2015-fs} and more. Reference products \tableau~and \qlikview~has also reported to use compression extensively to achieve good performance \cite{Kamkolkar2015-iq, Qlik2014-vd}. Looking at \exasol, the highest performing database system in the \tpch~does also utilize highly compressed data, structured for rapid retrieval \cite{Exasol2014-xh}.
 
-Historically, compression has been thought of a measure for reducing disk and memory footprint. However, in this setting, compressing the data also comes with the benefit of increased performance. Abadi \ea~\cite{Abadi2008-dd} explores column compression and how it affects performance. In this research, they found a performance increase of two when applying compression, but this was dependent on the query. Compression cause common database operations to go from memory to CPU bound, hence used to overcome the memory wall \cite{Willhalm2009-hu}, and it can be used to reduce CPU cycles \cite{Stonebraker2005-qz}.
+Historically, compression has been thought of a measure for reducing disk and memory footprint. However, in this setting, compressing the data also comes with the benefit of increased performance. Abadi \ea~\cite{Abadi2008-dd} explores column compression and how it affects performance. In this research, they found a performance increase of two when applying compression, but this was dependent on the query. Compression cause common database operations to go from memory to CPU bound, hence used to overcome the memory wall \cite{Willhalm2009-hu}, and it can be used to reduce CPU cycles \cite{Stonebraker2005-qz}. Compression is better suited for read-only functionality \cite{Westmann2000-mz}.
 
 Of more recent work databases, the \gorilla~\cite{Pelkonen2015-ko} claims that compression is one of the main reasons for good performance. The \exasol~\cite{Exasol2014-xh} writes that data is compressed of two reasons. First, it reduces the total storage, and second; it increases performance by reducing pressure on the CPU caches.
 
-The C-store database uses a variety of different compression techniques, which are allowed when certain column values are sorted. For sorted local columns, run-length encoding is used. \todo{Add the rest of C-stores compression techniques here}.
-
-The work of Holloway \ea~\cite{Holloway2008-rr} concludes that dictionary and Run-Length encoding are the best compression schemes for column stores.
-
-However, for compression to work, it must work on compressed data directly \cite{Lemke2010-is}. In addition to this, it must be fast and fine-grained (possible to decode one value at a time). Zukowski2006-qz \ea~\cite{Zukowski2006-oz} concludes that a compression algorithm should care about super-scalar processors, that is it should be loop pipelineable, support out-of-order exectuion, and avoid if-then-else in inner loops. In addition, decompression should happen when data is moved from RAM to cache, not from disk to RAM. 
-
-A study of compressed databases executed by Westmann \ea~investigates the premises of database compression, and that is that the compression must be light-weight \cite{Westmann2000-mz}. In other words, the real benefit of compression can only be leveraged if the decompression effort can be minimized \cite{Lemke2010-is}. Light-weight compression has been defined by Holloway \ea~as bit-packing, dictionary encoding, delta encoding, and Run-Length Encoding \cite{Holloway2008-rr}.
-
-It has also been concluded that compression only improves read-only functionality, not inserts, deletes, and updates \cite{Westmann200-mz}.
-
-Lastly, several sources \cite{Lamb2012-kg, Lahiri2015-mz} have indicated that compression frees space for structures that will aid performance, like inverted indexes and cached results.
-
-\subsection{When to decompress?}
-\label{sub:When to decompress?}
-Compression has initially been thought of as a measure for saving disk and memory usage, but not as a performance argument itself. Hence, early work suggest uncompressiong the data when moved from disk to RAM, or from RAM to cache \cite{Zukowski2006-oz}. 
-
-However it has been more and more common lately to let the database work directly on compressed data, which means data should not be decompressed until it is materialized and sent to the user. (There is more about materialization in the next chapter). Systems like \monetx does not decompress before the data is put into cache \cite{Johnson2008-cp}. The authors behind \blink \cite{Barber2012-xt} and a research group Lemke \ea~\cite{Lemke2010-is} says that you should never decompress before absolutely needed. 
+There are several sources that indicates that Columns are more easily compressible \todo{insert references to this here}. \mssql~\cite{noauthor_undated-vq} claim a compression rate of 10x when storing in a columnar format. However the work by Holloway \ea~\cite{Holloway2008-rr} contradicts this and claims that row stores can be compressed just as much if done correctly. We believe that even though row storage is as compressible as column store, compression of columns are simpler and more practical.
 
 
-\section{Dictionary Compression}
-\label{sec:Dictionary Compression}
-Dictionary compression, or dictionary encoding, is widely used within column store databases. Systems like \ibm~\cite{Raman2013-em}, \saph~\cite{Farber2012-vh}.. use it. Dictionary encoding is a good encoding because ... \ea~\cite{Faust2015-ke}
+Still, even though compression is used to increase database performance, the fact that compression reduces memory usage is also important. Even though DRAM is cheap, it is still rarely over-provisioned and unused \cite{Barber2014-ey}. In addition, compressed data frees up space for other things, like inverted indexes and cached results. \oracle~justifies their dual format by using the space freed up by compressing the columns \cite{Lamb2012-kg, Lahiri2015-mz}.
 
-Dictionaries can be either sorted or unsorted. A sorted dictionary allows for easier value lookup and evaluation of more advanced predicates, like less than, greater than etc. \saph~\cite{Farber2012-vh} uses a sorted dictionary, where value IDs are bit-packed and compressed. If the rows are sorted, run-length encoding, cluster encoding, and sparse coding is used. \sapnw~\cite{Lemke2010-is} is one of the systems where the dictionary is sorted.
+\subsection{Compression Types and Light-Weight Compression}
+\label{sub:Compression Types and Light-Weight Compression}
+A study of compressed databases executed by Westmann \ea~investigates database compression, and concludes that that the compression must be light-weight \cite{Westmann2000-mz}. In other words, the real benefit of compression can only be leveraged if the decompression effort can be minimized \cite{Lemke2010-is}. Light-weight compression has been defined by Holloway \ea~as \bp, \de, \dele, and \rle~\cite{Holloway2008-rr}. Holloway \ea~also concludes that \de~and \rle~ar the best compression schemes for column stores. These compression techniques are fast and fine-grained, which is important for improving performance \cite{Lemke2010-is}.
+
+Zukowski \ea~concludes that a compression algorithm should care about super-scalar processors, that is it should be loop pipelineable, support out-of-order exectuion, and avoid if-then-else in inner loops \cite{Zukowski2006-oz}. 
+
+A database can pick multiple compression schemes. First, most of the light-weight compression techniques can be combined, where the most common combination is \de~and \bp. We study this idea in Section \ref{sec:Dictionary Compression}. Second, different compression schemes can be used for different columns. \cstore~uses the following guidelines when deciding which encoding to use \cite{Stonebraker2005-qz}:
+\begin{itemize}
+  \item \textbf{Self-order, few distinct values:} \rle~is used for these columns, where each value is stored in once together with how many times the value occurs.
+  \item \textbf{Foreign-order, few distinct values:} Each value in the column is stored together with a bitmap indicating the positions in which the value is stored. Since the bitmaps typically are sparse, \rle~can be applied to the bitmaps to save space.
+  \item \textbf{Self-order, many distinct values:} \dele~is used. The idea of this scheme is to save the values as a delta from the previous value in the column.
+  \item \textbf{Foreign-order, many distinct values:} Columns are left uncompressed
+\end{itemize}
+
+We look into the different compression schemes later in this chapter, and see how they can be combined. We will see when the various compression schemes are beneficial.
+
+\subsection{Working Directly on Compressed Data}
+\label{sub:Working Directly on Compressed Data}
+\afigure{img/ram-cache-decompression.png}{I/O-RAM vs RAM-CPU compression. Courtesy of \cite{Zukowski2006-oz}.}{fig:ram-cache-decompression}{0.6}
+Historically, if compression was applied to a disk based database, the data was decompressed when brought up to RAM. In 2006, Zukowski \ea~suggested that data should not be decompressed when moved from disk tor RAM, but when brought from RAM to cache. See Figure \ref{fig:ram-cache-decompression}. \monetx~is a system that decompress when data is moved from RAM to cache \cite{Johnson2008-cp}.
+
+However, the most performance benefit is gained by working on compressed data directly \cite{Lemke2010-is}. This implies that data should not be decompressed until it is materialized and sent to the user. This is backed by the creators of \blink, who says data should never be decompressed before absolutely needed \cite{Barber2012-xt}. This technique is known as late materialization, which we will look closer into in Section \ref{sec:Late Materialization}.
+
+
+\section{\bp}
+\label{sec:Bitpacking}
+\afigure{img/bitpacking.png}{Bitpacked column values. Values are stored with no more bits than needed to represent the column, which results in values that are not aligned to machine word boundaries. They may be spread spread across several machine words and share their machine word(s) with other codewords. Courtesy of \cite{Willhalm2013-ri}.}{fig:bitpacking}{0.8}
+
+\bp~is a trivial form for compression, where values are stored with no more bits than really needed. In other words, if a column has a cardinality of 32, only 5 bits are needed to represent a value, instead of using the full data word, which normally is 32 or 64 bits. \bp~has lower compression than algorithms that allow variable length, but values can be randomly accessed in constant time \cite{Raman2008-gi, Willhalm2013-ri}. Bitpacking is well suited for high cardinality, uniform distribution of values \cite{Holloway2008-rr}.
+
+As seen in Figure \ref{fig:bitpacking}, bitpacked values will not generally be aligned to word boundaries. For processing, values normally have to be moved to the word boundary, but this cost has been found to be neglible \cite{Holloway2008-rr}. Aligning values can be done in a SIMD like fashion, a technique we study in Section \ref{sec:Single Input Multiple Data}.
+
+In its simplest form, \bp~works directly on the column data, but \bp~can be more powerful if combined with other compression types. We see in Section \ref{sec:Dictionary Encoding} that dictionary keys can be bitpacked, and in Section \ref{sec:Delta Encoding} that Delta Encoding benefit from \bp~if the deltas between the values are small. In addition, bitpacked vectors can be used in an inverted index structure \cite{Schwalb2014-hn}.
+
+\subsection{Issues with \bp}
+\label{sub:Issues with Bitpacking}
+\afigure{img/partitioned-bitpack.png}{A normal bitpacked vector (left) and a partitioned bitpacked vector (right). Instead of rebuilding the entire vector on value overflow, the partitioned bitpacked vector has different partitions where each partition is compressed using an increasing number of bits. Courtesy of \cite{Faust2015-ke}.}{fig:partitioned-bitpack}{0.9}
+There are two major limitations with \bp~\cite{Faust2015-ke}. The first is that if the bitpacking overflows, the full bitpacked vector must be rebuilt. What this means in practice is that if all values are mapped, such that there are no available values with $n$ bits, a new bit must introduced, and the entire vector must be rebuilt where each value uses $n + 1$ bits. This is depicted in the left part of Figure \ref{fig:partitioned-bitpack}. To counter this effect, Faust \ea~have suggested a partitioned bitpacked vector structure that creates a new partition with $n + 1$ bits on overflow, as seen in Figure \ref{fig:partitioned-bitpack} \cite{Faust2015-ke}. Although proved to improve performance on insert operations when vector rebuilding is considered, read performance suffers due to the extra overhead of looking up a value.
+
+The second limitation with \bp~is that it does not account very well for data skew. In \bp, each distinct value in a vector contributes to the total number of bits required, completely disregarding the distribution of the values. Often in a database, there are a large number of distinct values, but actually a very low number of those values accounts for more than 90\% \cite{Faust2015-ke}. This problem can be solved with the partitioned vectors explained in the previous paragraph, by mapping the values that occur more frequently to the partitions with the fewest bit per value. Other algorithms map outliers to a separate structure, like \pfdelta~\cite{Bjorklund2011-wh}.
+
+\section{\de}
+\label{sec:Dictionary Encoding}
+\ffigure{img/dictionary.png}{Example of a dictionary compression implementation with inverted indexes. Courtesy of \cite{Psaroudakis2015-lc}.}{fig:dictionary}
+\de, or \term{Dictionary Compression}, is widely used within column store databases. Systems like \ibm~\cite{Raman2013-em}, \saph~\cite{Farber2012-vh}use it. Dictionary encoding is a good encoding because ... \ea~\cite{Faust2015-ke}
+
+Dictionaries can be either sorted or unsorted. A sorted dictionary allows for easier value lookup and evaluation of more advanced predicates, like less than, greater than etc. \saph~\cite{Farber2012-vh} uses a sorted dictionary, where value IDs are bit-packed and compressed. If the rows are sorted, run-length encoding, cluster encoding, and sparse coding is used. \sapnw~\cite{Lemke2010-is} is one of the systems where the dictionary is sorted. As mentioned in Section \ref{sub:Sorting}, a sorted dictionary implies higher overhead on database inserts, updates, and deletes.\
 
 \oracle~utilizes a compression format on their in-memory storage layout \cite{Oracle2015-fs}. Compression is normally considered as a space-saving mechanism, but compression will also improve query performance. All scanning and filtering operations operate directly on the compressed columns which decreases query execution time. Data is decompressed before it is required for the result set. \oracle uses Dictionary Encoding, Run Length Encoding and Bit-Packing is used \cite{Oracle2015-fs}. 
 
@@ -46,12 +74,11 @@ Special considerations should however be taken when implementing dictionary enco
 
 \subsection{Implementation}
 \label{sub:Implementation}
-\ffigure{img/dictionary.png}{Example of a dictionary compression implementation with inverted indexes. Courtesy of \cite{Psaroudakis2015-lc}.}{fig:dictionary}
 An example implementation of a dictionary compressed column can be seen in Figure~\ref{fig:dictionary}. This figure also includes inverted indexes which can be used to look up single value positions.
 
 
-\subsection{Bitpacking}
-\label{sub:Bitpacking}
+\subsection{\de~and \bp}
+\label{sub:Dictionary Encoding and Bitpacking}
 Bitpacking is the compression algorithm normally used in conjunction with dictionary encoding. It has a lower compression than algorithms that allows for variable length, but you get the benefit of constant time lookup \cite{Raman2008-gi}. Bitpacking can also be used directly on the data, that is, the values in the column does not need to be keys to a dictionary.
 
 \qlikview~data is compressed using a hash table and only the number of bits required is used \cite{Qlik2014-vd}.
@@ -71,6 +98,10 @@ The work by Faust \ea~\cite{Faust2015-ke} draws attention to two major issues wi
 Delta compression, or delta encoding, is \todo{Insert information about Delta compression here, and perhaps a figure}. It is used by several database systems, like \pn{Blink}~\cite{Raman2008-gi}
 
 A variant of delta encoding is the \algmet{PForDelta}, which is a bitpacked delta encoding \cite{Bjorklund2011-wh}. This method handles outliers very well, because they are put somewhere else in memory. It has the advantage of being able to be compressed and decompressed without branches.
+
+\subsection{\dele~and \bp}
+\label{sub:Delta Encoding and Bitpacking}
+\bp~can be used in conjunction with \dele. If the deltas are small, which they typically will be if applied to a sorted column, they are candidates for bit packing.
 
 \section{Run-length encoding}
 \label{sec:Run-length encoding}
