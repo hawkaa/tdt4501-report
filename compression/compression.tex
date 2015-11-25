@@ -112,6 +112,12 @@ Queries may benefit from \rle~on sorted columns when performing grouping and agg
 
 %Run-length encoding is used extensively in \cstore~and \vertica~\cite{Barber2012-xt} (which is the commercialization of \cstore). These databases allows for projections that are sorted, and will apply run-length encoding on columns with low cardinality that are sorted.
 
+\section{Other Compression Techniques}
+\label{sec:Other Compression Techniques}
+One way of compressing a column is to use bitmaps \cite{Stonebraker2005-qz}. By representing each column value as a bitmap, where the 1s in the map indicate which rows the value is present, compression can be achieved. Since these bitmaps are typically sparse, they can be compressed further with \rle.
+
+QlikView uses a hash table to compress the data \cite{Qlik2014-vd}, and it yields a compression rate of 20\%-90\% dependent on the data.
+
 \section{Chapter Summary}
 \label{sec:Chapter Summary}
 We have in this chapter concluded that compression is required in a \bd~application. Not only does it reduce memory footprint, but it increases performance by reducing the number of CPU cycles, improve cache performance, and helps overcome the memory wall. Several database vendors claim compression is key for performance, including the top performing database in the \tpch, \exasol. To fully leverage the performance benefits of compression, compression must be light-weight and the queries must be processed directly on the compressed data.
@@ -119,6 +125,5 @@ We have in this chapter concluded that compression is required in a \bd~applicat
 With this is mind, we conclude that \de~in combination with \bp~is the most versitile and promising compression algorithm, and it does not require the columns to be sorted. We do however suggest using a sorted dictionary. One of the disadvantages with this approach is that it does not handle inserts and updates very well, but since we focus on a read-only system, this does not apply. If the values are sorted, and the column have low cardinality, \rle~should be considered, since this scheme also allows for executing queries directly on the compressed data. Applying \dele~can also be considered if the values are sorted, but only if reducing the memory footprint is more important than performance.
 
 
-%QlikView uses a hash table to compress the data \cite{Qlik2014-vd}, and it yields a compression rate of 20\%-90\% dependent on the data.
 
 %\oracle~utilizes a compression format on their in-memory storage layout \cite{Oracle2015-fs}. Compression is normally considered as a space-saving mechanism, but compression will also improve query performance. All scanning and filtering operations operate directly on the compressed columns which decreases query execution time. Data is decompressed before it is required for the result set. \oracle uses Dictionary Encoding, Run Length Encoding and Bit-Packing is used \cite{Oracle2015-fs}. 
