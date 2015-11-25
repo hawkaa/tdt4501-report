@@ -37,7 +37,7 @@ We look into the different compression schemes later in this chapter, and see ho
 \afigure{img/ram-cache-decompression.png}{I/O-RAM vs RAM-CPU compression. Courtesy of \cite{Zukowski2006-oz}.}{fig:ram-cache-decompression}{0.6}
 Historically, if compression was applied to a disk based database, the data was decompressed when brought up to RAM. In 2006, Zukowski \ea~suggested that data should not be decompressed when moved from disk tor RAM, but when brought from RAM to cache. See Figure \ref{fig:ram-cache-decompression}. \monetx~is a system that decompress when data is moved from RAM to cache \cite{Johnson2008-cp}.
 
-However, the most performance benefit is gained by working on compressed data directly \cite{Lemke2010-is}. This implies that data should not be decompressed until it is materialized and sent to the user. This is backed by the creators of \blink, who says data should never be decompressed before absolutely needed \cite{Barber2012-xt}. This technique is known as late materialization, which we will look closer into in Section \ref{sec:Late Materialization}.
+However, the most performance benefit is gained by working on compressed data directly \cite{Lemke2010-is}. This implies that data should not be decompressed until it is materialized and sent to the user. This is backed by the creators of \blink, who says data should never be decompressed before absolutely needed \cite{Barber2012-xt}. This technique is known as late materialization, which we will look closer into in Section \ref{sec:Late Materialization}. \oracle~claim one of the main performance benefits is to work directly on the compressed data \cite{Oracle2015-fs}.
 
 
 \section{\bp}
@@ -59,60 +59,66 @@ The second limitation with \bp~is that it does not account very well for data sk
 
 \section{\de}
 \label{sec:Dictionary Encoding}
-\ffigure{img/dictionary.png}{Example of a dictionary compression implementation with inverted indexes. Courtesy of \cite{Psaroudakis2015-lc}.}{fig:dictionary}
-\de, or \term{Dictionary Compression}, is widely used within column store databases. Systems like \ibm~\cite{Raman2013-em}, \saph~\cite{Farber2012-vh}use it. Dictionary encoding is a good encoding because ... \ea~\cite{Faust2015-ke}
+\de, or \term{Dictionary Compression}, is widely used within column store databases. \de~is used in \oracle~\cite{Lahiri2015-mz}, \ibm~\cite{Raman2013-em}, \saph~\cite{Farber2012-vh}, \sapnw~\cite{Lemke2010-is}, \blink~\cite{Johnson2008-cp}, \mssql~\cite{Larson2013-mc}, and more. \qlikview~stores each distinct data point only once \cite{Qlik2011-ef}. This is confirmed in a blog post at \textit{DBMS2}\footnote{http://www.dbms2.com/} \cite{noauthor_undated-js}. \tableau~does not mention anything about \de~in their whitepapers, but an official blog post claim that this technique is used \cite{noauthor_undated-us}.
 
-Dictionaries can be either sorted or unsorted. A sorted dictionary allows for easier value lookup and evaluation of more advanced predicates, like less than, greater than etc. \saph~\cite{Farber2012-vh} uses a sorted dictionary, where value IDs are bit-packed and compressed. If the rows are sorted, run-length encoding, cluster encoding, and sparse coding is used. \sapnw~\cite{Lemke2010-is} is one of the systems where the dictionary is sorted. As mentioned in Section \ref{sub:Sorting}, a sorted dictionary implies higher overhead on database inserts, updates, and deletes.\
+\afigure{img/dictionary-sorted.png}{A sorted dictionary. Courtesy of \cite{Psaroudakis2014-ma}.}{fig:dictionary-sorted}{0.4}
+In \de, data is compressed by storing all the distinct values in a dictionary, such that each data point contains a pointer to the dictionary entry, and not the value itself. \de~using a sorted dictionary is illustrated in Figure \ref{fig:dictionary-sorted}. \de~is particularly effective when a column in a column store has only a few distinct values in a large dataset \cite{Faust2015-ke}.
 
-\oracle~utilizes a compression format on their in-memory storage layout \cite{Oracle2015-fs}. Compression is normally considered as a space-saving mechanism, but compression will also improve query performance. All scanning and filtering operations operate directly on the compressed columns which decreases query execution time. Data is decompressed before it is required for the result set. \oracle uses Dictionary Encoding, Run Length Encoding and Bit-Packing is used \cite{Oracle2015-fs}. 
+One of the major advantages with using \de, is that many database operations can be performed directly on the encoded values \cite{Faust2015-ke}, which we have already seen in Section \ref{sec:Working Directly on Compressed Data} is key to achieve good performance. Integer comparison is generally less expensive than comparing the actual value, especially when the actual values are strings. Additionally, range and \texttt{LIKE} predicates can be turned into \texttt{IN}-list operations, since the dictionary can be scanned first to find matching integer key \cite{Barber2012-xt}
 
-In addition to above \ibm~and \blink~uses bitpacked dictionary encoding where each partition has their own dictionary. All rows are order preserved.
-
-Among the direct competitors of \genusSoftware, there is strong identication that \qlikview~uses dictionary encoding, based on the fact that they claim the less spread in the data, the more compression \cite{Qlik2011-ef}. This is confirmed in a blog post at \textit{DBMS2}\footnote{http://www.dbms2.com/} \cite{noauthor_undated-js}. \tableau~also points towards dictionary encoding, since they claim that they have good compression rate if the data includes text values \cite{Kamkolkar2015-iq}.
+If the columns are partitioned horizontally, which we have discussed in Section \ref{sec:Horizontal Partitioning}, it is common that each partition has its own dictionary. This is the case for most database systems, like \oracle~\cite{Lahiri2015-mz}, \blink~\cite{Barber2012-xt}, and \mssql~\cite{Larson2013-mc}. When a dictionary is stored per partition, the dicitonary can be used for data pruning. If a key is not present in a dictionary associated with a partition, we know the value is not present in than partition. This technique is used by \blink~and \monetx~\cite{Barber2012-xt, Boncz2012-xt}.
 
 Special considerations should however be taken when implementing dictionary encoding. First of all, the dictionary should fit inside the L2 cache, and it should not be used if the dictionary turns out bigger than the value it is replacing \cite{Holloway2008-rr}. 
 
-\subsection{Implementation}
-\label{sub:Implementation}
-An example implementation of a dictionary compressed column can be seen in Figure~\ref{fig:dictionary}. This figure also includes inverted indexes which can be used to look up single value positions.
+Like \bp, \de~does not account very much for data skew, since each unique value need an entry in the dictionary no matter how often that value is present in the column. In addition, if the column consist of almost exclusively unique values, the dictionary compression scheme does not apply that much compression, and only applies an extra layer of indirection. \todo{Add more disadvantages about dictionary encoding}.
 
+\subsection{Sorted Values}
+\label{sub:Sorted Values}
+Dictionaries can be either sorted or unsorted. Using a sorted dictionary enables easier value lookup using a binary search, but more importantly is perhaps that range scans can easily be turned into simple integer comparisons because the integers are ordered \cite{Faust2015-ke}. When for instance we want to find all sales in 2010, we only need to look up the integer codes for January 1st 2010 and January 1st 2011, and find all integers within this range. Sorted dictionaries are used by most database systems today. \saph~is an example of such system \cite{Farber2012-vh}.
+
+However, as briefly mentioned in Section \ref{sub:Sorting}, a keeping a dictionary sorted implies a higher overhead on database inserts, updates and deletes. Therefore, some systems use a sorted dictionary for the read-optimized store, but an unsorted one for the delta store \cite{Plattner2014-fr}.  We look into delta stores in Section \ref{sub:Delta Store}.
 
 \subsection{\de~and \bp}
 \label{sub:Dictionary Encoding and Bitpacking}
-Bitpacking is the compression algorithm normally used in conjunction with dictionary encoding. It has a lower compression than algorithms that allows for variable length, but you get the benefit of constant time lookup \cite{Raman2008-gi}. Bitpacking can also be used directly on the data, that is, the values in the column does not need to be keys to a dictionary.
+It is common to use \de~in conjunction with \bp. Using this combination, the dictionary keys stored in the columns are stored with no more bits than neccesary. Since no integers are higher than the number of keys present in the dictionary, this scheme allows for highly compressed values. Systems using this scheme include \ibm~\cite{Raman2013-em}, \blink \cite{Barber2012-xt}, \sapnw~\cite{Willhalm2009-hu}, and \saph~\cite{Psaroudakis2014-ma}. \mssql~does not apply \bp~on the column values \cite{Larson2013-mc}. \qlikview~has also reported to compress data with only the number of bits required \cite{Qlik2014-vd}
 
-\qlikview~data is compressed using a hash table and only the number of bits required is used \cite{Qlik2014-vd}.
+The same advantages and disadvantages of \bp~applies to \de~with bitpacked columns. In addition to the increased compression rate, values can be looked up in constant time and queries can be processed in a SIMD-like fashion. However, insertions to the dictionary might lead to overflow, which requires the vector to be rebuilt.
 
-\subsection{Query optimizations}
-\label{sub:Query optimizations}
-When dictionary compression is used, several optimizations can be done. First of all, if the queries are executed directly on the compressed data, predicate evaluation are reduced to simple integer comparisons \cite{Johnson2008-cp}.  
 
-Another optimization allowed for when using dictionary compression is that \texttt{LIKE} predicates can be turned into \texttt{IN} predicates \cite{Barber2012-xt}. Additionally, entire partitions may be skipped if the key is not in the dictionary, which is what is done in \blink~\cite{Barber2012-xt}.
+\section{\dele}
+\label{sec:Delta Encoding}
+\ffigure{img/delta-encoding.png}{\de. The difference between the current and the previous value is stored instead of the actual value. Courtesy of \cite{Victor_Lavrenko2014-hv}.}{fig:delta-encoding}
+\dele, or \term{Delta Compression}, is a form of compression where instead of storing the data itself, the difference between the previous and the current value is stored \cite{Wikipedia_contributors2015-cb}. This is illustrated in Figure \ref{fig:delta-encoding}. \de~is particularly effective i columns where the differences between consequtive values are small. Systems using this form for encoding include \vertica~\cite{Lamb2012-kg} and \blink~\cite{Raman2008-gi}. \dele~works particularly well on sorted data, since the sizes of the deltas are minimized. In addition, it handles columns with high cardinality better than other compression algorithms, like \rle~\cite{Stonebraker2005-qz}.
 
-\subsection{Challenges with Dictionary Encoding}
-\label{sub:Challenges with Dictionary Encoding}
-The work by Faust \ea~\cite{Faust2015-ke} draws attention to two major issues with bitpacking. The first is that on bitpacking overflow, the entire vector must be rebuilt. Secondly, it does not account very well for data skew. A place in the bitpacked vector must be allocated for every unique instance in the column, no matter how many occurences. The team behind \blink~\cite{Raman2008-gi} solves this by applying frequency partitioning to the data, such that more frequent values are compressed with fewer bits.
+One of the major drawbacks of \dele~is that values cannot be accesed in constant time, that is to find a specific value at index $i$, the all the values from $0$ to $i - 1$ must be decoded. In addition, it is in general not trivial to work directly on the compressed data.
 
-\section{Delta compression}
-\label{sec:Delta compression}
-Delta compression, or delta encoding, is \todo{Insert information about Delta compression here, and perhaps a figure}. It is used by several database systems, like \pn{Blink}~\cite{Raman2008-gi}
+\subsection{\dele~and other compression techniques}
+\label{sub:Delta Encoding and other compression techniques}
+\bp~can be used in conjunction with \dele. If the deltas are small, which they typically will be if applied to a sorted column, they are candidates for bit packing. The column can be compressed even further by using \de, \dele, and \bp~a the same time, because the variance in the column values will be reduced when replaced with dictionary keys. However, applying \dele~to \de~results in that queries can no longer trivially work directly on the compressed data using simlpe integer operations. In other words, we get greater compression, but at the cost of reduction in performance.
 
-A variant of delta encoding is the \algmet{PForDelta}, which is a bitpacked delta encoding \cite{Bjorklund2011-wh}. This method handles outliers very well, because they are put somewhere else in memory. It has the advantage of being able to be compressed and decompressed without branches.
+An algorithm that combines \dele~with \bp~is \pfdelta, which is a bitpacked delta encoding \cite{Bjorklund2011-wh}. This method handles outliers very well, because they are put somewhere else in memory. It has the advantage of being able to be compressed and decompressed without branches. \todo{Elaborate on \pfdelta}
 
-\subsection{\dele~and \bp}
-\label{sub:Delta Encoding and Bitpacking}
-\bp~can be used in conjunction with \dele. If the deltas are small, which they typically will be if applied to a sorted column, they are candidates for bit packing.
+\ffigure{img/timestamp-compression.png}{Compression of timestamps in \gorilla. By \texttt{XOR}ing consecutive values, meaningful bits are extracted. Courtesy of \cite{Pelkonen2015-ko}.}{fig:timestamp-compression}
+If the deltas are similar, like for instance if timestamp data where each data entry inserted into the database at a constant rate, another form of compression can be used. If the data is saved as doubles, a technique explained by Ratanaworabhan \ea~\cite{Ratanaworabhan2006-jb} can be used. This technique predicts each value and XOR it with the true value. If the predicted value is close to the actual value, only a few bits in the XOR result will be significant, and only the significant bits are saved. A similar compression algorithm is depicted in Figure \ref{fig:timestamp-compression}, an algorithm which is used by \gorilla~\cite{Pelkonen2015-ko}\todo{Drop this paragraph?}.
 
 \section{Run-length encoding}
 \label{sec:Run-length encoding}
-For sorted values, Run-length encoding can be used \cite{Bjorklund2011-wh}. A typical bla bla. The work by Holloway \ea~\cite{Holloway2008-rr} writes that run-length encoding works best on sorted data.
+\ffigure{img/rle.png}{\rle~on a sorted value range. Courtesy of \cite{Stoimen_undated-js}.}{fig:rle}
+\rle~is a lossless data compression algorithm that replaces repeating data values with only one instance of the data and a number of how many times that value appear in the sequence \cite{Stoimen_undated-js}, like illustrated in Figure \ref{fig:rle}. Although it can be used for any sequence, \rle~works best on sorted data \cite{Bjorklund2011-wh, Holloway2008-rr}. In this case, each unique value in the sequence is represented exactly once, and this implies that \rle~works best for columns with low cardinality. \rle~is used in \cstore~\cite{Stonebraker2005-qz}, \vertica~\cite{Lamb2012-kg}, \oracle~\cite{Oracle2015-fs}, and \sapnw~\cite{Lemke2010-is}, but only if the values are sorted. \rle~can also be applied to compress sparse bitmaps \cite{Stonebraker2005-qz}.
 
-Run-length encoding is used extensively in \cstore~and \vertica~\cite{Barber2012-xt} (which is the commercialization of \cstore). These databases allows for projections that are sorted, and will apply run-length encoding on columns with low cardinality that are sorted.
-\todo{Find a figure on run-length encoding}
-\section{Other compression techniques}
-\label{sec:Other compression techniques}
-For compressing time series, an efficient compression scheme can be used by blablabla \cite{Pelkonen2015-ko}.
+Queries may benefit from \rle~on sorted columns when performing grouping and aggregation, since values are already put in groups. By keeping a prefix sum over all values, row ranges can easily be extracted for equality and range predicates. This is a form of letting the system work directly on the compressed data. \todo{Find source, rephrase}
 
-If the data is saved as doubles, a technique explained by Ratanaworabhan \ea~\cite{Ratanaworabhan2006-jb} can be used. This technique predicts each value and XOR it with the true value. If close, it might be compressed, since this value has a lot of leading zeroes.
+%For sorted values, Run-length encoding can be used \cite{Bjorklund2011-wh}. A typical bla bla. The work by Holloway \ea~\cite{Holloway2008-rr} writes that run-length encoding works best on sorted data.
 
-QlikView uses a hash table to compress the data \cite{Qlik2014-vd}, and it yields a compression rate of 20\%-90\% dependent on the data.
+%Run-length encoding is used extensively in \cstore~and \vertica~\cite{Barber2012-xt} (which is the commercialization of \cstore). These databases allows for projections that are sorted, and will apply run-length encoding on columns with low cardinality that are sorted.
+
+\section{Chapter Summary}
+\label{sec:Chapter Summary}
+We have in this chapter concluded that compression is required in a \bd~application. Not only does it reduce memory footprint, but it increases performance by reducing the number of CPU cycles, improve cache performance, and helps overcome the memory wall. Several database vendors claim compression is key for performance, including the top performing database in the \tpch, \exasol. To fully leverage the performance benefits of compression, compression must be light-weight and the queries must be processed directly on the compressed data.
+
+With this is mind, we conclude that \de~in combination with \bp~is the most versitile and promising compression algorithm, and it does not require the columns to be sorted. We do however suggest using a sorted dictionary. One of the disadvantages with this approach is that it does not handle inserts and updates very well, but since we focus on a read-only system, this does not apply. If the values are sorted, and the column have low cardinality, \rle~should be considered, since this scheme also allows for executing queries directly on the compressed data. Applying \dele~can also be considered if the values are sorted, but only if reducing the memory footprint is more important than performance.
+
+
+%QlikView uses a hash table to compress the data \cite{Qlik2014-vd}, and it yields a compression rate of 20\%-90\% dependent on the data.
+
+%\oracle~utilizes a compression format on their in-memory storage layout \cite{Oracle2015-fs}. Compression is normally considered as a space-saving mechanism, but compression will also improve query performance. All scanning and filtering operations operate directly on the compressed columns which decreases query execution time. Data is decompressed before it is required for the result set. \oracle uses Dictionary Encoding, Run Length Encoding and Bit-Packing is used \cite{Oracle2015-fs}. 

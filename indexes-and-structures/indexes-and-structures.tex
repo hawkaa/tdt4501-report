@@ -78,3 +78,7 @@ Boncz \ea~\cite{Boncz2006-md} also mentions "index on-the-fly" briefly.
 In order to improve performance, caching might be used. In dedicated database systems, like the \exasol, joins, queries, and aggregates are cached to keep the system scalable \cite{Exasol2014-xh, Plattner2014-fr}. The cache can be put in the delta store, mentioned in Section \ref{sub:Delta Store}.
 
 For read-only, business intelligence engines, caching can be used more aggressively. In \qlikview, the server has a central cache function such that calculations only need to be done once \cite{Qlik2011-ef}. This gives better user experience and lower the CPU footprint. When deciding which results to cache, the system takes into consideration how long it takes to generate the results \cite{noauthor_undateds-js}. In addition, cache is shared among users \cite{Qlik2011-yc}. Hence, if adding "one user at a time", the cache builds up, and the system can gradually serve more and more users. In \tableau, data and calculations are cached and shared among the users \cite{Kamkolkar2015-iq}. \vertipaq~also cache data, and this improves performance compared to \mssql~\cite{Ferrari2012-hm}.
+
+\section{Inverted indexes}
+\label{sec:Inverted indexes}
+\ffigure{img/dictionary.png}{Example of a dictionary compression implementation with inverted indexes. Courtesy of \cite{Psaroudakis2015-lc}.}{fig:dictionary}
