@@ -114,7 +114,7 @@ Queries may benefit from \rle~on sorted columns when performing grouping and agg
 
 \section{Other Compression Techniques}
 \label{sec:Other Compression Techniques}
-One way of compressing a column is to use bitmaps \cite{Stonebraker2005-qz}. By representing each column value as a bitmap, where the 1s in the map indicate which rows the value is present, compression can be achieved. Since these bitmaps are typically sparse, they can be compressed further with \rle.
+One way of compressing a column is to use bitmaps \cite{Stonebraker2005-qz}. By representing each column value as a bitmap, where the 1s in the map indicate which rows the value is present, compression can be achieved. Compression is best on unsorted columns with few distinct values. Since these bitmaps are typically sparse, they can be compressed further with techniques like \rle, which we study in Section \ref{sub:Compression of Bitmaps}.
 
 QlikView uses a hash table to compress the data \cite{Qlik2014-vd}, and it yields a compression rate of 20\%-90\% dependent on the data.
 

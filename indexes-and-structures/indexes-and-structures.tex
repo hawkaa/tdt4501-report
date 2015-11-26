@@ -6,69 +6,80 @@ Indexes are extensively used in \qlikview. According to a whitepaper on scalabil
 
 \newpage
 
-\section{Value Lookups}
-\label{sec:Value Lookups}
+\section{Inverted Indexes}
+\label{sec:Inverted Indexes}
 \ffigure{img/dictionary.png}{Example of a dictionary compression implementation with inverted indexes. Courtesy of \cite{Psaroudakis2015-lc}.}{fig:dictionary}
 \afigure{img/static-inverted-index.png}{A static, dictionary column indexed using an inverted indexes structure. The dictionary (D) is is used to look up positions (P) in the column (AV) using an offset array (O). Courtesy of \cite{Schwalb2014-hn}.}{fig:static-inverted-index}{0.4}
-Even though most OLAP queries cover a large number of rows, there are situations where a position, or positions, for a single value need to be looked up. This situation benefits from an index structure. For such situations, inverted indexes are normally used \cite{Lemke2010-is}. An implementation of inverted indexes for a dictionary encoded column is shown in Figure \ref{fig:dictionary}. 
+Even though most OLAP queries cover a large number of rows, there are situations where a position, or positions, for a single value need to be looked up. This situation benefits from an index structure, and inverted indexes are normally used \cite{Lemke2010-is}. An implementation of inverted indexes for a dictionary encoded column is shown in Figure \ref{fig:dictionary}. 
 
-\hyrise~exploits the fact that the columns are immutable, such that the inverted indexes can be optimized in terms of storage size and cache awareness \cite{Schwalb2014-hn}. This index leverages the read-only assumption by creating an immutable structure, as seen in Figure \ref{fig:static-inverted-index}. This implementations  maps dictionary entries to an offset vector $O$, which is used to look up value positions in vector $P$. For composite keys on multiple columns, a separate dictionary used only for the index is used to map entries to the offset vector. When using this structure, the dictionary keys for the columns included in the index must be looked up prior to checking the composite index dictionary.
+\hyrise~exploits the fact that the columns are immutable, such that the inverted indexes can be optimized in terms of storage size and cache awareness \cite{Schwalb2014-hn}. Since we operate under the read-only assumption, that is that the columns are immutable, we may also store the inverted indexes in an immutable structure. As seen in Figure \ref{fig:static-inverted-index}, dictionary entries are mapped to an offset vector $O$ over position vector $P$ which contains positions in the column $AV$ containing that value. Since this technique can only be used for single column indexes, separate dictionaries and offset vectors are created for composite indexes. Looking up a composite index requires an extra step, since the original dictionary values must be fetched first.
 
-The inverted index structure in \hyrise~is only is suited for situations where the columns are immutable, as adding elements to this will require the entire structure to be rebuilt \cite{Schwalb2014-hn}. Hence, for columns supporting inserts, deletes and updates, tree-based indexes are used instead. \mssql~does not use inverted indexes, only hash and BW-tree indexes \cite{Delaney2014-ip, noauthor_undated-vq}.
+The inverted index structure explained above is only is suited for situations where the columns are immutable, as adding elements to this will require the entire structure to be rebuilt \cite{Schwalb2014-hn}. Hence, for columns supporting inserts, deletes and updates, tree-based indexes are used instead. \mssql~does not use inverted indexes, only hash and BW-tree indexes \cite{Delaney2014-ip, noauthor_undated-vq}.
 
-However, the cost of keeping inverted indexes must always be weighted against the benefits \cite{Lemke2010-is}, since inverted indexes normally take more space than the documents they are storing \cite{Moffat1992-tz}. If memory footprint must be kept low, and none of the queries benefit from value lookups, systems will benefit from dropping inverted indexes.
+However, the cost of keeping inverted indexes must always be weighted against the benefits \cite{Lemke2010-is}, since inverted indexes normally take more space than the documents they are storing \cite{Moffat1992-tz}. If memory footprint must be kept low, inverted indexes should be limited to only a few rows. In certain caseses, inverted indexes might even be skipped entirely
 
 \subsection{Index Lookup vs Table Scan}
 \label{sub:Index Lookup vs Table Scan}
-Although an index structure exist in the database, there are several situations where a table scan is better than looking up multiple values using an index. Boncz \ea~\cite{Boncz2006-md} shows how easily a table scan should be triggered, and that index based lookups actually can degrade performance. Several researches indicate this \cite{Boncz2002-yj, Abadi2008-dd}. The work of Holloway \ea~\cite{Holloway2008-rr} sees an increased importance of a full table scan. \qlikview~has also been reported to calculate much of the results via scans \cite{noauthor_undated-js}. \todo{Back this section up with more theory}
+Although an index structure exist in the database, there are several situations where a table scan is better than looking up multiple values using an index. Boncz \ea~\cite{Boncz2006-md} shows how easily a table scan should be triggered, and that index based lookups actually can degrade performance. Several researches indicate this \cite{Boncz2002-yj, Abadi2008-dd}. The work of Holloway \ea sees an increased importance of a full table scan \cite{Holloway2008-rr}. \qlikview~has also been reported to calculate much of the results via scans \cite{noauthor_undated-js}. \todo{Back this section up with more theory} 
 
-Early versions of \blink~had a design goal to avoid structures that benefit particular queries. Hence, they skipped indexes and calculated all the results on denormalized tables via scans.
+The most extreme case is found in \blink, a DMBS that has a design goal of constant time query processing \cite{Raman2008-gi}. \blink~systematically avoid structures that benefit particular queries, hence indexes are skipped and tables are accessed using nothing but scans \cite{Barber2012-xt}. This greatly reduces the work of the query optimizer: No need to decide whether to use index lookup or scan, and joins and grouping is always performed in the same order. Even though table scans access more data than index based plans, scans are easier to parallelize and has more consistent runtimes \cite{Raman2008-gi}. The core of \blink~is the generalized scan which performs selection, grouping and aggregation. \todo{Redo this paragraph}
 
 \section{Bitmap indexes}
 \label{sec:Bitmap indexes}
-A Bitmap index is a special structure where each distinct value at a column is represented as a bitmap where all rows containing that value has the value 1. Bitmap indexes has two main purposes: Column compression, and easy lookup and combination of predicates. Work from 1999 \cite{Witten1999-qq} claims that compressed inverted indexes are almost always superior to bitmap indexes in practical situations. However, Bjørklund claims that bitmap indexes are widely used in Decision Support Systems \cite{Bjorklund2011-wh}. 
+\ffigure{img/bitmap-query.png}{Executing a query using bitmap indexes. Courtesy of \cite{noauthor_undated-hp}.}{fig:bitmap-query}
+A \biti~is a special structure where each distinct value in a column is represented as a bitmap, and all rows containing that value is set to 1. As we have seen in Section \ref{sec:Other Compression Techniques}, bitmap indexes can reduce the total storage needed to store a column. However, they can also aid predicate evaluation. A \biti~is most effective on queries that contain multiple \texttt{WHERE} clauses since many candidate rows can be excluded using bitwise \texttt{AND} and \texttt{OR} operations as seen in Figure \ref{fig:bitmap-query} \cite{noauthor_undated-hp}. Since bitmap indexes combine so easily, composite indexes are extraneous.
 
-Bitmap indexes has been used in \term{Information Retrieval} software, but is it now replaced by inverted indexes \cite{Bjorklund2011-wh}. They are faster and generally outperform bitmap indexes. For single value lookups, inverted indexes is normally used instead of bitmap indexes \cite{Moffat1992-tz}.
+\genusSoftware~reference product \qlikview~reports that it uses binary indexes for each fields \cite{Qlik2011-ef}, which we believe the same as bitmap indexes. Some database management systems also support bitmap indexes, including \oracle~and \ibm.
 
-Bitmap indexes is suited for OLAP \cite{Stonebraker2005-qz}
+In general, low cardinality columns, that is columns with few distinct values, are better suited for bitmap indexes than high cardinality columns \cite{noauthor_undated-hp}. This is because for each unique value in the column, a bitmap must be created and maintained. In addition, since these indexes are hard to maintain, they are not suited for OLTP workloads. When deciding whether to add a \biti~to a column, \oracle~recommends at least 100 rows per distinct value per column, and that the queries put the column in the \texttt{WHERE} clause.
 
-\genusSoftware~reference product \qlikview~use binary indexes for each fields, which is the same as bitmap indexes \cite{Qlik2011-ef}. \qlikview~also utilizes some sort of bitmap indexes, which are created for each field \cite{Qlik2011-ef}.
+Bitmap indexes may also be used as join indexes, and is much more efficient in storage than storing prejoined materialized views \cite{noauthor_undated-hp}. We study join indexes in Section \ref{sec:Join Indexes}.
 
-\subsection{Compression of bitmaps}
-\label{sub:Compression of bitmaps}
+
+\subsection{Compression of Bitmaps}
+\label{sub:Compression of Bitmaps}
 \ffigure{img/wah.png}{Example WAH compression. Courtesy of \cite{Bjorklund2011-wh}.}{fig:wah}
-Bitmap indexes are another way of compressing the data, especially on unsorted columns with few distinct values \cite{Stonebraker2005-qz}. Since the bitmaps normally are sparse, they can be compressed with techniques like WAH \cite{Bjorklund2011-wh} (Figure \ref{fig:wah}) or Run-Length Encoding. However, inverted indexes are normally always instead of bitmaps \cite{Witten1999-qq}
+Since bitmaps in a \biti~are typically sparse, they can be compressed with \rle-like techniques. One popular compression algorithm is the \algmet{WAH} encoding, since it is delevoped to ensure bitwise operations on the compressed bitmaps are still efficient \cite{Bjorklund2011-wh}. In \algmet{WAH}, if a word size $w$ is used, the bitmap is partitioned into slices with length $w-1$. If the slice contains both 0's and 1's, then the literal bitmap is stored. If it only contains 0's or 1's, run-length encoding is applied by setting the first bit in the word to 1, and the second bit indicating which value that is repeated (0 or 1). The rest of the bits in the word compressed indicate how many sequential words that have the same value. \algmet{WAH} is depicted in Figure \ref{fig:wah}.
 
-Another way of compressing bitmaps is using a parameterized ways, which is explored by \cite{Moffat1992-tz}. Although this article is old, it still indicates that the total number of 1's in a bitmaps should be the main parameter when considering which compression method to use.
+Other bitmap compression techniques include parameterizied ways, which is explored by Moffat \ea~\cite{Moffat1992-tz}. In this kind of compression, the total number of 1's is used to generate parameters for efficient bitmap compression. Witten \ea~suggests using a hierarchical compression, since it is very fast to see if a row is present in the bitmap \cite{Witten1999-qq}. \todo{Drop this paragraph or make better}
 
-Hierarchical compression of bitmaps might be used as well \cite{Witten1999-qq}. This method is recommended, since it is very fast to see if a row is present in the bitmap. The key is either way to have fast extraction of single values.
-The first, is that it can work as column compression. \cstore~uses bitmaps to compress columns if they have few distinct values. Since the bitmaps normally are sparse, they can be compressed even further by applying run-length encoding.
+%Another way of compressing bitmaps is using a parameterized ways, which is explored by \cite{Moffat1992-tz}. Although this article is old, it still indicates that the total number of 1's in a bitmaps should be the main parameter when considering which compression method to use. Hierarchical compression of bitmaps might be used as well \cite{Witten1999-qq}. This method is recommended, since it is very fast to see if a row is present in the bitmap. The key is either way to have fast extraction of single values.
 
+\subsection{\bloom}
+\label{sub:Bloom Filter}
+Bitmaps can be made smaller at the expense of false matches \cite{Witten1999-qq}. Bloom filters, conceived by Bloom in 1970, is a probibalistic structure with a 100\% recall rate \cite{Bloom1970-nr, Wikipedia_contributors2015-lq}. Words used by Wikipedia Contributers say that a \bloom~returns either "possibly in set" or "definitely not in set" \cite{Wikipedia_contributors2015-lq}. A value can be looked up efficiently in a bloom filter, and will quickly reject values that are not present in the original bitmap. Bloom filters are used joins, which we study further in Section \ref{sec:Joins}.
 
-Another way of compressing a bitmap index is to use WAH compression \cite{Bjorklund2011-wh}, which is a form of run-length encoding. Columns with high cardinality are well represented in this scheme. An implementation of WAH is \algmet{FastBit}.
+\ffigure{img/bloom-filter.png}{A \bloom~where $x$, $y$, and $z$ is added to the bitmap. $w$ hash to three bits, but since one of bits is set to $0$, $w$ is not in the set. Courtesy of \cite{fig:Wikipedia_contributors2015-lq}.}{fig:bloom-filter}
+A bloom filter works by specifying a number of bits used for the filter, and a hash function that hash values to bits in this filter. If a value is added to the set, all 1's are set, but 1's that are 0's in the set is never set back. In order to check if a value is in the set, all 1's for that value is checked. If one of the bits are 0, the value is definitely not in the set, and a false is returned. If all are 1, the value might be in the set, but false positives might also exist since the bits may have been set by a value with the same hash, or the 1s might have been set by multiple different values. The number of elements in the set, as well as the length of the bloom filter determines the false positive rate. See Figure \ref{fig:bloom-filter}.
 
-\subsection{Bloom Filters}
-\label{sub:Bloom Filters}
-Bitmaps can be made smaller at the expense of false matches \cite{Witten1999-qq}. This can be used for an inner loop join \todo{Add from Bratsbergs book}.
+\subsection{Inverted Indexes vs Bitmap Indexes}
+\label{sub:Inverted Indexes vs Bitmap Indexes}
+We find several sources that discuss whether to use inverted indexes over bitmap indexes. Witten \ea~claim inverted indexes are almost always superior to bitmap indexes in practical situations \cite{Witten1999-qq}. Bitmap indexes has been used in \term{Information Retrieval} software, but is it now replaced by inverted indexes \cite{Bjorklund2011-wh}. They are faster and generally outperform bitmap indexes. For single value lookups, inverted indexes is normally used instead of bitmap indexes \cite{Moffat1992-tz}.
 
-\section{Table Statistics}
-\label{sec:Table Statistics}
-Table statistics can be used to skip certain parts of the data based on attributes, like minimum and maximum value. This is especially handy when the columns are horizontally partitioned, like mentioned in Section \ref{sub:Horizontal partitioning of columns}. Partitions can be skipped on the basis of column maximum or mininum value, or the per-block dictionary can be scanned to see if a certain key is present.
+However, the work of Bjrøklund claims that bitmap indexes are widely used in Decision Support Systems \cite{Bjorklund2011-wh}. Stonebraker \ea~has reported that a \biti~is better suited for OLAP workloads \cite{Stonebraker2005-qz}. \oracle~suggest using bitmap indexes in data warehouses, because it improves response time and reduces storage requirements \cite{noauthor_undated-hp}.
 
-One way to keep track of this metadata is through a synopsis table. \ibm uses this, and the table keeps control over pages with corresponding metadata such that pages can be skipped.
+We conclude that inverted indexes are better suited for single value lookups on high cardinality columns, and bitmap indexes aids OLAP and data warehouse queries on columns with lower cardinality.
 
-The storing of block metadata for quick data pruning is used by \oracle~\cite{Lahiri2015-mz}, \ibm~\cite{Roman2013-em}, \vertica~\cite{Lamb2012-kg}, \monetx~\cite{Boncz2005-wj}, \mssql~\cite{Larson2013-mc}, and \exasol~\cite{Exasol2014-xh}.
+\section{Join Indexes}
+\label{sec:Join Indexes}
+A \term{Join Index} is a structure that stores precomputed join results and aids join performance. A \term{Join Index} has various implementations, although bitmap is the most common representation \cite{Bjorklund2011-wh}. Join indexes are used by \monetdb~\cite{Boncz2002-yj}, \monetx~\cite{Boncz2005-wj}, and \oracle~\cite{noauthor_undated-hp}. Since \exasol~caches joins, we believe similar techniques are used in this DBMS \cite{Exasol2014-xh}.
 
-To calculate table statistics, histograms of the table value distributions can be made. This is done by \ibm~\cite{Raman2013-em, Raman2008-gi} and \mssql~\cite{Larson2013-mc}. To make these histograms, random sampling can be used, and here two techniques apply. The first one is truly random, where values are picked across the whole column. The second one is a grouped version, where a random sample range is picked.
+\missingfigure{Figure on Oracle join indexes here}
+In \oracle, join indexes are basically a bitmap index on a foreign key column, and is a space efficient way of reducing the join data volume by applying restrictions to the tables before entering the join \cite{noauthor_undated-xi}. A \term{Join Index} stores a bitmap for every row in the joined relation. Using join indexes, \oracle~may improve performance by an order of magnitude \cite{noauthor_undated-hp}.
 
-\section{Join indexes}
-\label{sec:Join indexes}
 \afigure{img/join-index.png}{Example join index structure in \cstore. Courtesy of \cite{Stonebraker2005-qz}.}{fig:join-index}{0.4}
-Join indexes is a structure that stores precomputed join results, and are discussed in several articles. Join indexes are used by \monetdb~\cite{Boncz2002-yj} and \monetx~\cite{Boncz2005-wj}. \todo{Add information about the impact in memory using this technique.} 
+\cstore~uses join indexes to recostruct tuples from the original table \cite{Lamb2012-kg}, as seen in Figure \ref{fig:join-index}. However, in the commercialization of \cstore, \vertica, this construct was dropped entirely since the benefits was outweighted by the costs. The join indexes was hard to maintain, and they consumed significant disk space for large tables. \monetdb~and \monetx~work similarly \cite{Boncz2002-yj, Boncz2005-wj}.
 
-\cstore uses join indexes as it allows for quick joining \cite{Stonebraker2005-qz}, but in \vertica, the commercialized version of \cstore, the cost of join indexes was outweighed by the benefits \cite{Lamb2012-kg}.
 
-For join indexes, it is common to use bitmap indexes \cite{Bjorklund2011-wh}. We discuss bitmap indexes in Section \ref{sec:Bitmap Indexes}.
+\section{\term{Database Statistics}}
+\label{sec:Database Statistics}
+\term{Database Statistics} is commonly used by a query optimizer to make better decisions about creating efficient execution plans. These statistics may include number of records, selectivity, column cardinality, value distribution, and more. In our case, \term{Database Statistics} can be used to prune horizontal partions based on the column minimum and maximum value. This exploits clustering in the columns, especially when the columns are sorted, or partially sorted, like timestamps. The storing of block metadata for quick data pruning is used by \oracle~\cite{Lahiri2015-mz}, \ibm~\cite{Roman2013-em}, \vertica~\cite{Lamb2012-kg}, \monetx~\cite{Boncz2005-wj}, \mssql~\cite{Larson2013-mc}, and \exasol~\cite{Exasol2014-xh}.
+
+Most database systems keep the statistics stored together with the table, however other schemes exist. \ibm~uses a synopsis table to keep track over all column partitions (pages), including mininmum and maximum values. This way, irrelevant pages can easily be skipped \cite{Raman2013-em}.
+
+We have previously discussed how a partition dictionary can checked for a key's existence before scanning an entire block, that is, if a key is not present in the dictionary, the partition can be skipped. We consider this technique as a part of utilizing \term{Database Statistics} to improve performance.
+
+It can sometimes be useful to know a column's value distribution. A column's value distribution is used when determining the frequency partitioning used in \blink~and \ibm~\cite{Raman2008-gi, Raman2013-em}. The query optimizer in \mssql~also uses the value distributions when creating execution plans \cite{Larson2013-mc}. Value distributions are normally determined by creating histograms, and to make these, random sampling can be used. Two techniques apply: The first one is truly random, where values are picked across the whole column. The second one is a grouped version, where a random sample range is picked.
 
 \section{Data duplication and preaggregation}
 \label{sec:Data duplication and preaggregation}
@@ -92,7 +103,19 @@ In order to improve performance, caching might be used. In dedicated database sy
 
 For read-only, business intelligence engines, caching can be used more aggressively. In \qlikview, the server has a central cache function such that calculations only need to be done once \cite{Qlik2011-ef}. This gives better user experience and lower the CPU footprint. When deciding which results to cache, the system takes into consideration how long it takes to generate the results \cite{noauthor_undateds-js}. In addition, cache is shared among users \cite{Qlik2011-yc}. Hence, if adding "one user at a time", the cache builds up, and the system can gradually serve more and more users. In \tableau, data and calculations are cached and shared among the users \cite{Kamkolkar2015-iq}. \vertipaq~also cache data, and this improves performance compared to \mssql~\cite{Ferrari2012-hm}.
 
-\section{Partition Indexing}
-\label{sec:Partition Indexing}
-If columns are horizontally partitioned, as discussed in Section \ref{sec:Horizontal Partitioning}, an index structure might be required to look up the partitions. \ibm~uses a B+ tree for this purpose \cite{Raman2013-em}.
+%\section{Partition Indexing}
+%\label{sec:Partition Indexing}
+%If columns are horizontally partitioned, as discussed in Section \ref{sec:Horizontal Partitioning}, an index structure might be required to look up the partitions. \ibm~uses a B+ tree for this purpose \cite{Raman2013-em}.
+
+\section{Chapter Conclusion}
+\label{sec:Chapter Conclusion}
+We conclude this chapter by acknowledging that indexes and other structures are required for a \bd~product.
+
+We point at \biti~as the most promising index structure. It is well suited for OLAP workloads, handles \texttt{WHERE} clauses well, and can be used as a join index at the same time. We also suggest looking into bitmap compression schemes, like \algmet{WAH} compression, since this allows for bitwise operations on the compressed bitmap.
+
+We find \term{Table Statistics} to be important for query performance. By checking minimum and maximum values for column partitions, data can easily be pruned by exploiting local clustering. We also suggest looking up the dictionary and check if the value is present.
+
+%\qlikview, \powerpivot, \tableau~caches data and join, and we believe this should be done in our \bd~product.
+
+We are reluctant to recommend inverted indexes~in a \bd~product, as they consume much memory and we are unsure of how important single value lookups will be in such application.
 
