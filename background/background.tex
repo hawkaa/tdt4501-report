@@ -57,9 +57,19 @@ Both \qlikview~and \tableau~publish the data through a server \cite{Kamkolkar201
 
 \subsection{Queries}
 \label{sub:Queries}
-We see that queries in \bd~applications have certain distinctions. First of all, the queries are ad-hoc, they cannot be anticipated. Second, not many elements are returned, since the GUI is limited in how many distict elements that can be shown at the same time. \todo{Find the source on this} 
+We see that queries in \bd~applications have certain distinctions. First of all, the queries are ad-hoc, they cannot be anticipated. Second, not many elements are returned, since the GUI is limited in how many distict elements that can be shown at the same time. \todo{Find the source on this} We try to keep aggregations and grouping results to less than 10 \cite{Johnson2008-cp}. Not many rows should be returned \cite{Ferrari2012-hm}.
 
 It is worth noting that \bd~applications do not need to support all SQL operations which a DBMS normally does. For instance, joins can be limited to equi-joins over foreign keys, and aggregations may be limited to groups of one or more dimensions in the schema.
+
+We still need joins in performing \bd~queries, since the presentation will consist of multiple tables. As we see in Section \ref{sec:Denormalization}, denormalizing can actually hurt performance. For these queries, groups will always be predefined (per panel), but new aggregation based using the group definitions will be calculated.
+
+Since we study many DBMSes that uses SQL as interface, we here enumerate the SQL subset needed for \bd~applications:
+\begin{itemize}
+  \item \textbf{Listing of tuples}. Listing a table must be supported. We study column storage in Section \ref{sec:Column Storage}, so this requirement implies columns must have the ability to be "stitched back together".
+  \item \textbf{Filtering}. \bd~queries must support filtering on a table based on one or multiple attributes, including foreign keys.
+  \item \textbf{Joins over foreign keys}. We limit the join functionality to equi-joins over foreign keys. Join functionality is needed such to apply filters on foreign tables based on a filter. An example here, is that if a table is filtered, all related tables must be updated.
+  \item \textbf{Grouping and aggregation}. Grouping and aggregation must be supported, however we limit the grouping keys to dimension attributes. In a \bd~application, the group keys will not unless the application is redesigned.
+\end{itemize}
 
 \subsection{Performance}
 \label{sub:Performance}

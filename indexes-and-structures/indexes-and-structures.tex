@@ -27,9 +27,9 @@ The most extreme case is found in \blink, a DMBS that has a design goal of const
 \section{Bitmap indexes}
 \label{sec:Bitmap indexes}
 \ffigure{img/bitmap-query.png}{Executing a query using bitmap indexes. Courtesy of \cite{noauthor_undated-hp}.}{fig:bitmap-query}
-A \biti~is a special structure where each distinct value in a column is represented as a bitmap, and all rows containing that value is set to 1. As we have seen in Section \ref{sec:Other Compression Techniques}, bitmap indexes can reduce the total storage needed to store a column. However, they can also aid predicate evaluation. A \biti~is most effective on queries that contain multiple \texttt{WHERE} clauses since many candidate rows can be excluded using bitwise \texttt{AND} and \texttt{OR} operations as seen in Figure \ref{fig:bitmap-query} \cite{noauthor_undated-hp}. Since bitmap indexes combine so easily, composite indexes are extraneous.
+A \biti~is a special structure where each distinct value in a column is represented as a bitmap, and all rows containing that value is set to 1. As we have seen in Section \ref{sec:Other Compression Techniques}, bitmap indexes can reduce the total storage needed to store a column. However, they can also aid predicate evaluation. A \biti~is most effective on queries that contain multiple \texttt{WHERE} clauses since many candidate rows can be excluded using bitwise \texttt{AND} and \texttt{OR} operations as seen in Figure \ref{fig:bitmap-query} \cite{noauthor_undated-hp}. Since bitmap indexes combine so easily, composite indexes are extraneous. \todo{SEB 30/11: Queries first, then create indexes}
 
-\genusSoftware~reference product \qlikview~reports that it uses binary indexes for each fields \cite{Qlik2011-ef}, which we believe the same as bitmap indexes. Some database management systems also support bitmap indexes, including \oracle~and \ibm.
+\genusSoftware~reference product \qlikview~reports that it uses binary indexes for each fields \cite{Qlik2011-ef}, which we believe the same as bitmap indexes. Some database management systems also support bitmap indexes, including \oracle~\cite{noauthor_undated-hp} and \ibm~\cite{Raman2013-em}.
 
 In general, low cardinality columns, that is columns with few distinct values, are better suited for bitmap indexes than high cardinality columns \cite{noauthor_undated-hp}. This is because for each unique value in the column, a bitmap must be created and maintained. In addition, since these indexes are hard to maintain, they are not suited for OLTP workloads. When deciding whether to add a \biti~to a column, \oracle~recommends at least 100 rows per distinct value per column, and that the queries put the column in the \texttt{WHERE} clause.
 
@@ -62,13 +62,29 @@ We conclude that inverted indexes are better suited for single value lookups on 
 
 \section{Join Indexes}
 \label{sec:Join Indexes}
-A \term{Join Index} is a structure that stores precomputed join results and aids join performance. A \term{Join Index} has various implementations, although bitmap is the most common representation \cite{Bjorklund2011-wh}. Join indexes are used by \monetdb~\cite{Boncz2002-yj}, \monetx~\cite{Boncz2005-wj}, and \oracle~\cite{noauthor_undated-hp}. Since \exasol~caches joins, we believe similar techniques are used in this DBMS \cite{Exasol2014-xh}.
+A \term{Join Index} is a structure that stores precomputed join results to increase join performance. Although a \term{Join Index} can have various implementations, a bitmap is the most common representation \cite{Bjorklund2011-wh}. Join indexes are explicitly used by \monetdb~\cite{Boncz2002-yj}, \monetx~\cite{Boncz2005-wj}, and \oracle~\cite{noauthor_undated-hp}. In addition, since \exasol~reports an ability to cache joins \cite{Exasol2014-xh}, we believe similar techniques are used here.
 
-\missingfigure{Figure on Oracle join indexes here}
-In \oracle, join indexes are basically a bitmap index on a foreign key column, and is a space efficient way of reducing the join data volume by applying restrictions to the tables before entering the join \cite{noauthor_undated-xi}. A \term{Join Index} stores a bitmap for every row in the joined relation. Using join indexes, \oracle~may improve performance by an order of magnitude \cite{noauthor_undated-hp}.
+\begin{figure}
+    \centering
+    \begin{tabular}{l | c | c}
+     & customer\_gender='M' & customer\_gender='F'  \\
+     \hline
+     Sales Record 1 & 1 & 0 \\
+     Sales Record 2 & 0 & 1 \\
+     Sales Record 3 & 1 & 0 \\
+     Sales Record 4 & 1 & 0 \\
+     Sales Record 5 & 1 & 0 \\
+     Sales Record 6 & 1 & 0 \\
+     Sales Record 7 & 1 & 0 \\
+    \end{tabular}
+    \caption{A join index the customer's gender for the sales record. With this index, sales by each gender can easily be found. Courtesy of \cite{noauthor_undated-xi}.}
+    \label{fig:oracle-join-index}
+\end{figure}
+
+In \oracle, join indexes are bitmap indexes on foreign key columns, and is a space efficient way of reducing the join data volume by applying restrictions to the tables before entering the join \cite{noauthor_undated-xi}. As seen in Figure \ref{fig:oracle-join-index}, a \term{Join Index} stores a bitmap for every distinct value in a foreign column. Using join indexes, \oracle~may improve performance by an order of magnitude \cite{noauthor_undated-hp}.
 
 \afigure{img/join-index.png}{Example join index structure in \cstore. Courtesy of \cite{Stonebraker2005-qz}.}{fig:join-index}{0.4}
-\cstore~uses join indexes to recostruct tuples from the original table \cite{Lamb2012-kg}, as seen in Figure \ref{fig:join-index}. However, in the commercialization of \cstore, \vertica, this construct was dropped entirely since the benefits was outweighted by the costs. The join indexes was hard to maintain, and they consumed significant disk space for large tables. \monetdb~and \monetx~work similarly \cite{Boncz2002-yj, Boncz2005-wj}.
+\cstore~uses join indexes to recostruct tuples from the original table \cite{Lamb2012-kg}, as seen in Figure \ref{fig:join-index}. \monetdb~and \monetx~work similarly \cite{Boncz2002-yj, Boncz2005-wj}. However, in the commercialization of \cstore, \vertica, this construct was dropped entirely since the benefits was outweighted by the costs. The join indexes was hard to maintain, and they consumed significant disk space for large tables. \todo{SEB 30/11: How do they cope without it? Explain figure better.}
 
 
 \section{\term{Database Statistics}}
@@ -83,29 +99,33 @@ It can sometimes be useful to know a column's value distribution. A column's val
 
 \section{Data duplication and preaggregation}
 \label{sec:Data duplication and preaggregation}
-Another way to boost performance, is through data duplication. \cstore~and \vertica~allows for storing the columns in multiple sort orders at the same time \cite{Stonebraker2005-qz, Lamb2012-kg}. \blink allows for storing columns in multiple banks, such that predicates can be evaluated in the same bank \cite{Johnson2008-cp}. \exasol~replicates tables across nodes in the system if they are small enough.
+Performance can be boosted by data duplication. \cstore~and \vertica~allows for storing the columns in multiple sort orders at the same time \cite{Stonebraker2005-qz, Lamb2012-kg} to increase query performance for certain queries. The sort orders are defined by a database administrator. In these systems, the extra storage needed to store columns in multiple sort orders are justified by the compression enabled by column storage.
 
-Earlier, data was preaggregated to achieve good performance, but this has been considered as inflexible and one of the main challenges with old ROLAP and MOLAP systems \cite{Boncz2002-yj}. Modern systems does not preaggregate results, like \sapnw~\cite{Lemke2010-is} and \qlikview~\cite{Qlik2014-vd}, and calculate all results as needed. \qlikview does however allow data to be preaggregated when loaded into memory \cite{Qlik2011-yc}.
+\blink allows for storing columns in multiple banks, such that predicates can be evaluated in the same bank \cite{Johnson2008-cp}. This does not use more storage, as only columns that fit within the free space in a word will be added. In Figure \ref{fig:banked-layout}, this means the A column can be placed in both bank $\beta 1$ and $\beta 2$, since A fits within $\beta 2$ as well.
 
-\subsection{Column projections} MOVE TO INDEX, CACHING ETC
-\label{sub:Column projections} 
-C-store allows to have several projections per column, with different sort order. They claim the redundant storage is justified by the additional compression. Configuring these projections requires a DBA. \pn{Vertica}, a commercialized version of \pn{C-Store} supports several narrow projections in addition to one super projection.
+Data can also be duplicated across nodes in a distributed environment. \exasol~replicates tables across nodes in the system if they are small enough, such that queries can be processed more efficiently. This is typically used in a \bi~scenario where the dimension tables are replicated across different nodes. This results in turning a costly global operation into a cheap local one \cite{Exasol2014-xh}.
 
-\section{Dynamic generation of indexes}
-\label{sec:Dynamic generation of indexes}
-Indexes are used extensively by \exasol, where they are produces, maintained, and deleted as needed \cite{Exasol2014-xh}. This gives faster filter operations.
+Historically, data was preaggregated to achieve good performance, but this has been considered as inflexible and one of the main challenges with old ROLAP and MOLAP systems \cite{Boncz2002-yj}. Therefore, most modern systems do not preaggregate results, like \sapnw~\cite{Lemke2010-is} and \qlikview~\cite{Qlik2014-vd}, and calculate all results as needed. However, \qlikview~ allows data to be preaggregated when loaded into memory \cite{Qlik2011-yc}.
 
-Boncz \ea~\cite{Boncz2006-md} also mentions "index on-the-fly" briefly.
+%Another way to boost performance, is through data duplication. \label{sub:Column projections}  C-store allows to have several projections per column, with different sort order. They claim the redundant storage is justified by the additional compression. Configuring these projections requires a DBA. \pn{Vertica}, a commercialized version of \pn{C-Store} supports several narrow projections in addition to one super projection.
 
-\section{Caching}
+
+\section{Caching and Dynamic Index Generation}
 \label{sec:Caching}
-In order to improve performance, caching might be used. In dedicated database systems, like the \exasol, joins, queries, and aggregates are cached to keep the system scalable \cite{Exasol2014-xh, Plattner2014-fr}. The cache can be put in the delta store, mentioned in Section \ref{sub:Delta Store}.
+To improve performance and keep the system scalable, caching can be used \cite{Plattner2014-fr}. \exasol~stores the results of previous queries along with metadata that allows the system to decide if records are still valid \cite{Exasol2014-xh}. 
 
-For read-only, business intelligence engines, caching can be used more aggressively. In \qlikview, the server has a central cache function such that calculations only need to be done once \cite{Qlik2011-ef}. This gives better user experience and lower the CPU footprint. When deciding which results to cache, the system takes into consideration how long it takes to generate the results \cite{noauthor_undateds-js}. In addition, cache is shared among users \cite{Qlik2011-yc}. Hence, if adding "one user at a time", the cache builds up, and the system can gradually serve more and more users. In \tableau, data and calculations are cached and shared among the users \cite{Kamkolkar2015-iq}. \vertipaq~also cache data, and this improves performance compared to \mssql~\cite{Ferrari2012-hm}.
+In \bd~products, which are mostly read-only, caching can be used more aggressively. In \qlikview~and \tableau, the server has a central cache function such that calculations only need to be done once \cite{Kamkolkar2015-iq, Qlik2011-ef}. This gives better user experience and lower the CPU footprint. When deciding which results to cache, the system takes into consideration how long it takes to generate the results \cite{noauthor_undateds-js}. In addition, cache is shared among users \cite{Qlik2011-yc}. In \tableau, data and calculations are cached and shared among the users \cite{Kamkolkar2015-iq}. \vertipaq~also cache data, and this improves performance compared to \mssql~\cite{Ferrari2012-hm}.
 
-%\section{Partition Indexing}
-%\label{sec:Partition Indexing}
-%If columns are horizontally partitioned, as discussed in Section \ref{sec:Horizontal Partitioning}, an index structure might be required to look up the partitions. \ibm~uses a B+ tree for this purpose \cite{Raman2013-em}.
+Caches are normally shared among different users using the same server. This is done in \qlikview~and \tableau~\cite{Kamkolkar2015-iq Qlik2011-yc}. We see in Section \ref{?} that server cache is an argument for scale-up.
+
+Not only query results, but also intermediate structures used in the query can be cached. Join Indexes are used extensively by \exasol, and they are produced, maintained, and deleted as needed \cite{Exasol2014-xh}. This gives faster filter operations. \monetxq~creates temporary indexes on non-equie theta-joins \cite{Boncz2006-md}
+
+%Hence, if adding "one user at a time", the cache builds up, and the system can gradually serve more and more users. 
+%In dedicated database systems, like the \exasol, joins, queries, and aggregates are cached to keep the system scalable \cite{Exasol2014-xh, Plattner2014-fr}. 
+
+%The cache can be put in the delta store, mentioned in Section \ref{sub:Delta Store}.
+
+
 
 \section{Chapter Conclusion}
 \label{sec:Chapter Conclusion}
@@ -115,7 +135,11 @@ We point at \biti~as the most promising index structure. It is well suited for O
 
 We find \term{Table Statistics} to be important for query performance. By checking minimum and maximum values for column partitions, data can easily be pruned by exploiting local clustering. We also suggest looking up the dictionary and check if the value is present.
 
-%\qlikview, \powerpivot, \tableau~caches data and join, and we believe this should be done in our \bd~product.
+We find all of the studied \bd~products, \qlikview, \powerpivot, \tableau, to cache data and calculation results. The same is the case for \exasol, which also creates, maintains, and deletes indexes as needed. We therefore reccomend caching data in our implentation of \bd~capabilities. Data candidate for caching are not limited to query results, intermediate structures used in the query processing may be cached, especially join indexes. We look closer into which structures that can be cached in Chapter \ref{chap:Query Processing}.
 
 We are reluctant to recommend inverted indexes~in a \bd~product, as they consume much memory and we are unsure of how important single value lookups will be in such application.
+
+%\section{Partition Indexing}
+%\label{sec:Partition Indexing}
+%If columns are horizontally partitioned, as discussed in Section \ref{sec:Horizontal Partitioning}, an index structure might be required to look up the partitions. \ibm~uses a B+ tree for this purpose \cite{Raman2013-em}.
 
