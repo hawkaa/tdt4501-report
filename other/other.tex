@@ -4,8 +4,8 @@
   Chapter about design considerations that does not fit anywhere else
 \end{secex}
 
-\section{Disk support}
-\label{sec:Disk support}
+\section{Disk Support}
+\label{sec:Disk Support}
 \afigure{img/page-thrashing.png}{This figure show two things. First, when a database system starts spilling pages to disk, the throughput is drastically reduced. Second, databases without buffer managers performs better when data is in memory, but when the OS starts paging, they are much slower than the systems using a buffer manager. Courtesy of \cite{Graefe2014-ds}.}{fig:page-thrashing}{0.7}
 In this thesis, we propose a system that will work in-memory. According to research executed by Kemper \ea~\cite{Kemper2011-ap}, this is safe to assume, because ... However, it is important to be aware of the consequences when the database is too large to fit entirely in memory.
 

@@ -1,39 +1,21 @@
 \section{Problem statement, goals, and deliverables}
 \label{sec:problem-statement-and-goals}
-%\begin{secex}
-%This section should explain what I will to to aid \genus~in solving the above motivation. That is more specifically studying the litterature, and see which techniques are used to enhance OLAP performance, because none of us know too much about what is going on out there. It should state the research question, which should be pretty similar to the Monet thesis.
-%\end{secex}
+Based on our motivation, we define the goal of the project as following: 
 
-We define the goal for the project as following: 
+\textbf{G1: Implement \bd~capabilities in \genusSoftware~ that has high performance, handles large datasets, and utilizes the available hardware. The new product must be competitive to other \bd~products regarding performance and functionality.}
 
-\textbf{G1: Implement \bd~capabilities in \genusSoftware~ that has high performance, handles large datasets, and utilizes the available hardware. The new product must be competitive to other \bd~ products in terms of performance and fuctionality.}
+By \bd~products, we mean high-performance systems that allow for ad-hoc querying and data navigation in all dimensions without relying on preaggregation of data. Examples of such products are \qlikview, \tableau, and \powerpivot. We study \bd~pcoducts in greater detail in Section \ref{sec:Business Discovery}.
 
-By \bd~products we mean products that allows for ad-hoc querying, data navigation in all dimensions, and high performance systems that does not rely on preaggregation of data. We look closer into \bd~products in Section \ref{sec:Business Discovery}. Examples of such products are \qlikview, \tableau, and \powerpivot.
+We define \textit{competitive to other \bd~products in terms of performance and fuctionality} as following:
+\begin{itemize}
+  \item We compare performance directly to alternative \bd~products. Here, we mainly consider application response time for end users, but we also consider memory footprint.
+  \item Regarding functionality, we only consider essential functionality in the \bd~products that helps end users to obtain business insight. Essential functionality includes support for a configurable GUI with a variety of elements and graphs, in addition to selections and filters.
+\end{itemize}
 
-Working towards this goal does not mean that the newly developed software must be equal in terms of functionality, it is a mere statement that \bi~in \genusSoftware~will be compared directly to its alternative products, like \qlikview, \tableau, and \powerpivot. In terms of performance and "waiting" it is directly comparable, but lack of functionality in \genusSoftware~will be directly be weighted against the benefits of having everything in one solution.
+We have defined this goal because we are aware that \genus' customers will compare the \bd~capabilities in \genusSoftware with alternative products. 
 
-As a first step towards this goal, we address the following research question:
+As a first step towards reaching \textbf{G1}, we address the following research question:
 
-\textbf{RQ1: How to design a high performance database software that is capable of supporting \bd~workloads on large datasets?} \todo{Should in-memory, read-only restriction be directly addressed in RQ1?}
+\textbf{RQ1: How to design a high-performance database software that is capable of supporting \bd~workloads on large datasets?} 
 
-The question will be answered by reviewing the current litterature, scrutinizing the competing products, and analysing the bits and bolts needed to develop \bd~capabilities in \genusSoftware. In this thesis, we familiarize ourselves with the most recent research within the field, and have a look at how reference products solve the problems. 
-
-%Based on the results from the RQ1, we continue with the following research question:
-
-%\textbf{RQ2: Which of the techiques and concepts are the most promising and pracical to implement in \genusSoftware~in order to reach the goal, and which challenges are identified?}
-
-%This question will be answered by combining the results from RQ1 with a brief analysis of the \genusSoftware~architecture into a discussion.
-
-%Based on some workshops and discussions with \genus , they have pointed out some key issues they consider important. Based on these key points, I've come up with the following hypotheses:
-%\begin{enumerate}\bfseries
-%  \item Data needs to be accessed fast. To do this, data has to be stored in a format for quick access. Data access patters need to be analyzed and optimization for data retrieval must be done dynamically.
-%  \item The security layer in \genusSoftware~will affect the implementation, and some indexes and formula results will have to be stored per user.
-%  \item Indexes, data, and data interchange formats must be compressed to get performance and utilize the system resources efficiently.
-%  \item \sout{Formulas must be calculated efficiently to not become a bottleneck.}
-%  \item \sout{Network traffic must be reduced by compressing data queries.}
-%  \item \sout{In order to create a high-performance system without a database administrator, indexes have to be created dynamically, and there is a question of which and when.}
-%\end{enumerate}
-%
-%Each hypthesis will be studied in the terms of research, competitor solutions, as well as design proposal. In addition to this, I will look for unindentified issues which will affect the design.
-
-
+We answer \textbf{RQ1} by reviewing the current literature on \bi~and online analytical workload (OLAP) systems. Also, we scrutinize reference \bd~products.

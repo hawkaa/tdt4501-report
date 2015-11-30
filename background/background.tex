@@ -99,6 +99,15 @@ Lastly, they don't use metadata at the highest level.
 %\input{background/imds}
 %\input{background/column-store}
 
+\section{\genusSoftware}
+\label{sec:Genus Application Framework}
+bla bla bla
+
+\subsection{Current \bd~capabilities}
+\label{sub:Current Business Discovery Capabilities}
+An early stage of \bd~capabilities in \genusSoftware~has already been implemented by \genus~and released to certain test customers. This system uses columnar storage and bitmap indexes, and the data is put entirely into memory.
+
+
 \section{Data skew}
 \label{sec:Data skew}
 It is quite common that data is skewed. Typically, for a retailer, 99\% of the sales is done on weekdays, 40\% around christmas \cite{Raman2008-gi}. Although said to improve cache locality \cite{Larson2013-mc}, it is important that structures, compression schemes, and algorithms takes data skew into account. An example of this is \term{PForDelta}, which is a compression that builds on bit packing \cite{Bjorklund2011-wh}. In this scheme, outliers are not bit packed.
