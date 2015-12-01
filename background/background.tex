@@ -63,6 +63,8 @@ It is worth noting that \bd~applications do not need to support all SQL operatio
 
 We still need joins in performing \bd~queries, since the presentation will consist of multiple tables. As we see in Section \ref{sec:Denormalization}, denormalizing can actually hurt performance. For these queries, groups will always be predefined (per panel), but new aggregation based using the group definitions will be calculated.
 
+\subsection{\bd~and SQL}
+\label{sub:Business Discovery and SQL}
 Since we study many DBMSes that uses SQL as interface, we here enumerate the SQL subset needed for \bd~applications:
 \begin{itemize}
   \item \textbf{Listing of tuples}. Listing a table must be supported. We study column storage in Section \ref{sec:Column Storage}, so this requirement implies columns must have the ability to be "stitched back together".
@@ -108,13 +110,9 @@ bla bla bla
 An early stage of \bd~capabilities in \genusSoftware~has already been implemented by \genus~and released to certain test customers. This system uses columnar storage and bitmap indexes, and the data is put entirely into memory.
 
 
-\section{Data skew}
-\label{sec:Data skew}
-It is quite common that data is skewed. Typically, for a retailer, 99\% of the sales is done on weekdays, 40\% around christmas \cite{Raman2008-gi}. Although said to improve cache locality \cite{Larson2013-mc}, it is important that structures, compression schemes, and algorithms takes data skew into account. An example of this is \term{PForDelta}, which is a compression that builds on bit packing \cite{Bjorklund2011-wh}. In this scheme, outliers are not bit packed.
 
-
-\section{Testing analytical workloads}
-\label{sec:Testing analytical workloads}
+\section{Testing Analytical workloads}
+\label{sec:Testing Analytical workloads}
 To test analytical workloads, it is common to use the TPC-H benchmark \cite{Boncz2002-yj}. This is used for ad-hoc querying. To test for large data-sets, a scaling factor (SF) can be used. The TPC-H query focus on expression calculation, and consists of queries that are both memory and CPU bound \cite{Boncz2005-wj}.
 
 Of other benchmarks, we see Star Schema Benchmark \cite{Boncz2002-yj}
@@ -125,4 +123,8 @@ As a practical test for how much memory and CPU you need, the \qlikview~develope
 
 Other ways to test the implementation, includes using \pn{callgrind} to observer branches and cache effects \cite{Neumann2011-uq}, \pn{Intel Performance Counter Monitor} to measure cycles and nanoseconds \cite{Willhalm2013-ri}, and \pn{JMeter} to test user interaction \cite{Qlik2012-ku}.
 
+\subsection{Data Skew}
+\label{sub:Data Skew}
+It is quite common that data is skewed. Typically, for a retailer, 99\% of the sales is done on weekdays, 40\% around christmas \cite{Raman2008-gi}. Although said to improve cache locality \cite{Larson2013-mc}, it is important that structures, compression schemes, and algorithms takes data skew into account. An example of this is \term{PForDelta}, which is a compression that builds on bit packing \cite{Bjorklund2011-wh}. In this scheme, outliers are not bit packed.
 
+Hence, it is important to test data on not only uniform datasets, but also on skewed ones.

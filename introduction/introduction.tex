@@ -11,36 +11,47 @@ We restrict our research to databases that assume the entire dataset can fit in 
 
 Several of these systems require the database to fit entirely in memory, and does not have a buffer manager. We see in Section \ref{sec:Disk Support} that omiting the buffer manager can increase performance since an extra layer of indirection is removed \cite{Graefe2014-ds}, and it has been shown that databases without buffer managers performs better than those who do \cite{Ferrari2012-hm}. However, databases without buffer managers rely on operating system swapping mechanisms if the database is larger than the provisioned RAM.
 
-According Kemper \ea~, it is safe to assume the entire dataset can fit in memory \cite{Kemper2011-ap} if a large scale server is used. Amazon, one of the largest commercial enterprises, has \~1 billion yearly transactions, and if each transaction is stored using 54 bytes, 54 GB is needed to store all transactions for a year. In addition to this, RAM is getting cheaper \cite{Exasol2014-xh}, and together with 64-bits CPUs \cite{Delaney2014-ip}, in-memory databases are making an increasingly more important role. Much progress has been done in the development of non-volatile RAM, which suggests the era of magnetic disks as the primary database storage hardware might soon be over. \todo{Rephrase paragraph}
+According Kemper \ea, it is safe to assume the entire dataset can fit in memory \cite{Kemper2011-ap} if a large scale server is used. Amazon, one of the largest commercial enterprises, has $~1$ billion yearly transactions, and if each transaction is stored using 54 bytes, 54 GB is needed to store all transactions for a year. In addition to this, RAM is getting cheaper \cite{Exasol2014-xh}, and together with 64-bits CPUs \cite{Delaney2014-ip}, in-memory databases are making an increasingly more important role. Much progress has been done in the development of non-volatile RAM, which suggests the era of magnetic disks as the primary database storage hardware might soon be over. \todo{Rephrase paragraph}
 
 It is worth noting that even though we focus on in-memory performance, optimizations performed for disk-based databases will still be applicable. We have just moved one step up through the memery hierarchy \cite{Boncz2002-yj}. That is, optimizations done to better utilize available memory for a disk based database will help an in-memory database utilize available CPU caches. We are aware that certain optimizations are better suited for disk-based databases than for in-memory solutions, however since most research does not specify if they emphasize on disk or in-memory performance, we believe their optimizations contribute to both databaes types. \todo{Make this much clearer}
 
 We continue this research keeping the in-memory assumption true. However, even though DRAM is cheap, it is still rarely over-provisioned and unused \cite{Barber2014-ey}. Therefore, we find techniques that try to keep the memory footprint as low as possible.
 
-\subsection{Read-only}
-\label{sub:Read-only}
+\subsection{Read-mostly and Read-only}
+\label{sub:Read-mostly and Read-only}
 In the first iteration towards the main goal, we assume that the system will be read-only. By not supporting inserts, updates, and deletes, we simplify the database design. In Section \ref{sec:Write-support and mixed workloads}, we explain which techniques might be applied if we need write support.
 
-\ffigure{img/compromise.png}{Conceptual figures of how we expect the performance of mixed workloads to be affected by (a) data freshness, (b) flexibility, and (c) scheduling. Courtesy of \cite{Psaroudakis2014-ma}.}{fig:compromise}
+\ffigure{img/compromise.png}{Conceptual figures of how performance of mixed workloads are affected by (a) data freshness, (b) flexibility, and (c) scheduling. Courtesy of \cite{Psaroudakis2014-ma}.}{fig:compromise}
 We choose to focus on read-only because our main design goal is performance. A research paper by Psaurodakis \ea~explains how "one size does not fit all" in a database setting, and in order to get good read performance, data freshness, query flexibility, and query scheduling must be compromised \cite{Psaroudakis2014-ma}. Figure \ref{fig:compromise}~depicts how performance decreases when write support is added. In addition, restricting the research to read-only databases, we limit the scope of the thesis. 
+
+However, we relax the requirement that updates in the underlying data source must be available in our \bd~application once they are performed.
 
 Write support can be separated into two types. The first type is the most involved and first and foremost relates to DBMSes. This type supports inserts, updates, and deletes directly, and in some cases transactions. In these systems, correctness and consistency is the key goal.
 
 The other type which is a more light-weight alternative to the above, is to have the \bd~solution listen to updates performed by another system, say a DBMS. These solutions are not guaranteed to be timely, but timely enough for most cases. \qlikview~and \tableau~supports the latter. If write support is to be considered for \bd~in \genusSoftware, this type is considered first.
 
+To conclude this section, for all practical reasons, we may focus on read-only techniques and can several places assume immutable structures. We do however need some sort of updates, but this can happen in batches or through periodical merge, but we do not need updates in the data to be available to our application immediately. \todo{Adjust entire section to read-mostly.}
 
-%Write support comes in two levels. The first, and most involved level is to have the database system support inserts, updates, and deletes directly. These systems might also support transactions. Typical systems are DBMS, where the focus is correctness, and the systems might emphasize read performance, write performance or both. The other, more light-weight alternative, %\input{introduction/deliverables}
 \input{introduction/methodology}
 
 \section{Contributions}
 \label{sec:Contributions}
+\todo{Add from research plan}
 The novelty of this thesis is two-fold. Most related work presesnts a single system and explains the techniques use there. Here, we present the litterature by category, not by product. This way, comparisons can be made more easily, and simplifies the process to getting an overview over where the litterature agrees, and where there are contradictions. We have found work X and work Y. These systems present single concepts, but neither of these span as broadly as we do in this thesis.
 
 The second contribution, is a thorough discussion on where the various techniques presented applies. \genusSoftware have several fundamental and practical limitations, and based on these, We present the techniques that are the most fruitful. Optimizations in columnar storage have already been investigated by Abadi \ea~\cite{Abadi2008-dd}, however this work focus on the fundamental differences between row and column stores. We present a more holistic picture, considering more concepts and techniques. In addition to this, this thesis specifically targets \genusSoftware.
 
 \section{Definitions}
 \label{sec:Definitions}
-This section presents terms and definitions used throughout this thesis.
+This section presents terms, definitions, and important products that are relevant to understading the content of this thesis.
+
+\paragraph{Online Analytical Processing (OLAP)}
+\label{par:Online Analytical Processing (OLAP)}
+Online Analytical Processing (OLAP) is a term thet we use extensively in this thesis. OLAP is defined as systems capable of analytical queries, typically aggregations over large ranges of rows and groping in one or multiple dimensions. OLAP workloads are typically read-only queries.\todo{Source and improve}
+
+\paragraph{Online Transactional Processing (OLTP)}
+\label{par:Online Transactional Processing (OLTP)}
+Online Transactional Processing (OLTP) is often considered as the opposite of OLAP. OLTP is defined as systems capable of transactional queries, typically inserts, updates, and deletes. \todo{Source and improve}
 
 \paragraph{Database Management System (DBMS)}
 \label{par:Database Management System (DBMS)}
@@ -54,16 +65,10 @@ We look into several Database Management Systems (DBMS) in this thesis. These sy
 \label{par:Reference products}
 By reference products we mean product pointed out \genus, products which \bd~in \genusSoftware~will be directly compared to. Studied in this thesis are \qlikview~and \tableau.
 
-\paragraph{Online Analytical Processing (OLAP)}
-\label{par:Online Analytical Processing (OLAP)}
-Online Analytical Processing (OLAP) is a term thet we use extensively in this thesis. OLAP is defined as systems capable of analytical queries, typically aggregations over large ranges of rows and groping in one or multiple dimensions. OLAP workloads are typically read-only queries.\todo{Source and improve}
-\paragraph{Online Transactional Processing (OLTP)}
-\label{par:Online Transactional Processing (OLTP)}
-Online Transactional Processing (OLTP) is often considered as the opposite of OLAP. OLTP is defined as systems capable of transactional queries, typically inserts, updates, and deletes. \todo{Source and improve}
 
 \paragraph{\exasol}
 \label{par:exasol}
-Although not a definition per se, \exasol~is important in this thesis because it is as of November 2014 the highest performing database for the official TPC-H benchmark \cite{noauthor_undated-vr}. This benchmark test datas database performance for analytical workloads on a predefined set of queries on various database sizes ranging from 100 GB to 100,000 GB. \exasol outperforms other systems tested in this benchmark by a factor of 10 in average.
+Although not a definition per se, \exasol~is important in this thesis because it is as of November 2015 the highest performing database for the official TPC-H benchmark \cite{noauthor_undated-vr}. This benchmark test datas database performance for analytical workloads on a predefined set of queries on various database sizes ranging from 100 GB to 100,000 GB. \exasol outperforms other systems tested in this benchmark by a factor of 10 in average.
 
 \input{introduction/thesis-structure}
 

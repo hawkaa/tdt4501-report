@@ -33,7 +33,21 @@ To avoid branches and exploin loop pipelining, two techniques are used. The firs
 
 \subsection{Compiling into machine code}
 \label{sub:Compiling into machine code}
-\missingfigure{Insert two figures here from \cite{Neumann2011-uq}. First one is the pseudo-code, second is the pipeline breakres.}
+\begin{figure}
+  \centering
+  \begin{subfigure}{0.45\textwidth}
+    \includegraphics[width=\textwidth]{img/pipeline-boundary-1.png}
+    \caption{...}
+    \label{fig:pipeline-boundary-1} 
+  \end{subfigure}
+  \begin{subfigure}{0.45\textwidth}
+    \includegraphics[width=\textwidth]{img/pipeline-boundary-2.png}
+    \caption{...}
+    \label{fig:pipeline-boundary-2} 
+  \end{subfigure}
+  \caption{Pipeline boundaries. Courtesy of \cite{Neumann2011-uq}.}
+  \label{fig:pipeline-boundary} 
+\end{figure}
 The work by Neumann \ea~\cite{Neumann2011-uq} explains how queries are compiled into native machine code using the LLVM compiller framework. Doing this, the processing of queries are data centric and not operator centric. Classical query processing always wipes the CPU registers, but in their solution they push tuple values until a pipeline is broken. They tried using the C++ compiler, but it turned out too slow. Therefore, the major application was developed in C++. According to the developers behind the \hyper~database, compilation of queries will increase the performance of ad-hoc queries because ...
 
 The technique of compiling queries and data structures are used by several databases. \blink~\cite{Barber2012-xt}, \ibm~\cite{Raman2013-em}, \vertica~\cite{Lamb2012-kg} generates a different code per frequency partition, since the dictionaries are different. 

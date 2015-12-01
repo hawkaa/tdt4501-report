@@ -47,12 +47,12 @@ There are ways of improving performance in the caching algorithms in terms of im
   \begin{subfigure}{0.45\textwidth}
     \includegraphics[width=\textwidth]{img/invisible-join-2.png}
     \caption{The second phase of the invisible join. Bitmaps are created per dimension table predicate, and bitwise \texttt{AND} is applied.}
-    \label{fig:invisible-join-1} 
+    \label{fig:invisible-join-2} 
   \end{subfigure}
   \begin{subfigure}{0.45\textwidth}
     \includegraphics[width=\textwidth]{img/invisible-join-3.png}
     \caption{The third phase of the invisible join. The bitmap calculated in the previous step is uned to extract values from the fact table.}
-    \label{fig:invisible-join-1} 
+    \label{fig:invisible-join-3} 
   \end{subfigure}
   \caption{The invisible join. Courtesy of \cite{Abadi2008-dd}.}
   \label{fig:invisible-join} 
@@ -66,6 +66,16 @@ In this algorithm, bitmap filters based on foreign tables are created, which are
 Although not directly compression, another way of reducing a bitmaps footprint and increasing query performance, is through the use of bloom filters \cite{Bloom1970-nr}. A bloom filter may return false positives, but never false negatives.The bloom filters can be used in common database operations, for instance joins \cite{x} \todo{Consider moving this somewhere else}. Several database systems report to use bloom filter based joins. Bloom filters, invented by Bloom in 1970, is a probabilistic structure and will only return false positives, not false negatives \cite{Bloom1970-nr}. This includes \oracle~\cite{Lahiri2015-mz}, \ibm~\cite{Raman2013-em}. Barber \ea~explain how bloom filters can be applied to eliminate non-matching join outers before they enter the join.
 
 Since the inner table might be splitted, there is a large chance the key is not present in the relation when probed. Here, bloom filters can be used to determine if the matching key is not in the working space \cite{Bratbergsengen2015}. The use of bloom filters is encouraged if the inner relation is partitioned, to avoid going into the hash structure.
+
+\subsection{Joining in parallel}
+\label{sub:Joining in parallel}
+Joining becomes a challenge when done in parallel.
+
+In \ibm, each thread performs a local grouping on a local hash tables and creates a linked list of overflow buckets \cite{Raman2013-em}. When they are full, they get published globally. Second phase, each thread reserves a partition to merge, and it merges all local hash tables to a global one.
+
+The hash tables can be built in parallel \cite{Barber2014-ey}. Hyperthreading will speed up the probe phase \todo{Because the memory gap is hidden?}.
+
+Several join algorithms discussed in Section X partitions the input in order to improve cache locality. This decision might as well be a parallelization decision \cite{Neumann1011-uq}.
 
 \section{Grouping and Aggregation}
 \label{sec:Grouping and Aggregation}
@@ -82,6 +92,12 @@ On composite \texttt{GROUP BY} operations, a multidimensional structure may be u
 If the columns are partitioned horizontally, grouping and aggregation must be performed in two phases: A scan phase per partition followed by a global merge phase \cite{Lemke2010-is}. In a distributed system, the grouping is even more involved. For \ibm, local grouping is performed per node in parallel \cite{Raman2013-em}\todo{elaborate}. In \exasol~and \oracle, an attribute in a table might specifiy table partitioning \cite{Exasol2014-xh, Lahiri2015-mz}. If a query is grouped by the same attribute, the work is already done.
 
 As mentioned in Section \ref{sub:Queries}, in \bd~workloads, the groups will be predefined in the panel. However, new aggregation results must be populated when filters are applied.
+
+\subsection{Grouping in parallel}
+\label{sub:Grouping in parallel}
+Vendors say their grouping operations scale linearly with the number of threads until the CPU is saturated \cite{Farber2012-vh}
+
+In \ibm~, each thread performs a local grouping on a local hash tables and creates a linked list of overflow buckets \cite{Raman2013-em}. When they are full, they get published globally. Second phase, each thread reserves a partition to merge, and it merges all local hash tables to a global one.
 
 \section{Query Optimization}
 \label{sec:Query Optimization}
