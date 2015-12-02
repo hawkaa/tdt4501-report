@@ -1,96 +1,111 @@
 \chapter{Parallelization and Scaling}
 \label{chap:Parallelization and Scaling}
 
-We find the ability to utilize available hardware important when designing a high performance system for OLAP workloads. For maximal performance, a system must be parallelized on all levels:
+We find the ability to utilize available hardware important when designing a high-performance system for OLAP workloads. For ultimate performance, a system must be parallelized on all levels:
 
 \begin{enumerate}
   \item Utilize computing power in a distributed, share-nothing environment.
   \item Utilize all sockets in a non-uniform memory access (NUMA) architecture.
   \item Exploit thread-level parallelism within a multicore processor.
-  \item Exploit instruction level parallelism within a single core.
+  \item Exploit instruction-level parallelism within a single core.
   \item Use single input, multiple data (SIMD) instructions available in the processors.
 \end{enumerate}
 
-One of the keys to acheiving good parallel performance, is to use structures that are built for distributed and multi-core environments \cite{Primsch2011-ij}. \exasol, the top performing system on the TPC-H benchmark, applies parallelism on every layer \cite{Exasol2014-xh}.
+One of the keys to achieving good parallel performance is to use structures built for distributed and multi-core environments \cite{Primsch2011-ij}. \exasol, the top performing system on the TPC-H benchmark, applies parallelism on every layer \cite{Exasol2014-xh}.
+
+Parallelization can be applied not only to improve database performance but also to support more users and data.
 
 \newpage
 
-\section{Parallelism in a Distributed, Shared-Nothing Architecture}
-\label{sec:Parallelism in a Distributed, Shared-Nothing Architecture}
-For performance reasons, a database may be distributed across multiple servers. We refer to this as a \textit{shared-nothing} architecture, as all communication between the servers in the cluster must explicitly be passed through the network \cite{DeWitt1992-ki}. Operations are performed locally on each server, and only refined and processed data is sent back to the client program. This reduces network traffic and keeps the system scalable.
+\section{Distributed Architecture}
+\label{sec:Distributed Architecture}
+For performance reasons, a database may be distributed across multiple servers. We refer to this as a \textit{shared-nothing} architecture, as all communication between the servers in the cluster must explicitly be passed through the network \cite{DeWitt1992-ki}. Operations are performed locally on each server,  such that only filtered and preprocessed data is sent back to the client program. This technique reduces network traffic and keeps the system scalable. 
 
 
-%Scaling out is the technique where several machines (nodes) are used, and the work is distributed between them. They share no common resources, so all data and control traffic must be passed through explicit network actions. This technique can be used to support (i) more users, (ii) more data, and (iii) improve performance.
+Several of the systems studied in this research support a distributed architecture. Among them are \oracle~\cite{Mukherjee2015-ul}, \cstore~\cite{Stonebraker2005-qz}, \saph~\cite{Farber2012-vh} and \exasol~\cite{Exasol2014-xh}. These systems distribute data across nodes in the cluster, such that a single query normally runs on all servers.
 
-Several of the systems studied in this research supports a distributed architecture. Among them are \oracle~\cite{Mukherjee2015-ul}, \cstore~\cite{Stonebraker2005-qz}, \saph~\cite{Farber2012-vh} and \exasol~\cite{Exasol2014-xh}. These systems are distributed in terms of intra-query parallelism, that is each query are may be executed on all servers.
+\afigure{img/oracle-distributed.png}{\oracle~in-memory compression units (IMCUs) distributed across different nodes in a shared-nothing architecture. A page structure persists tables to disk, and the tables are brought up into memory as IMCUs. Different colors in the figure represent which IMCUs belong to which node in the cluster. Courtesy of \cite{Mukherjee2015-ul}.}{fig:oracle-distributed}{0.7}
+In Section \ref{sec:Horizontal Partitioning}, we saw that \oracle~horizontally partitions the columns into in-memory compression units (IMCUs). In a distributed environment, these IMCUs can be spread across different nodes \cite{Mukherjee2015-ul}, as seen in Figure \ref{fig:oracle-distributed}. \oracle~supports distributed SQL execution, where a central query engine coordinates query execution across nodes in the cluster. 
 
-\afigure{img/oracle-distributed.png}{\oracle~in-memory compression units (IMCUs) distributed across different nodes in a shared nothing architecture. Courtesy of \cite{Mukherjee2015-ul}.}{fig:oracle-distributed}{0.7}
-In Section \ref{sec:Horizontal Partitioning}, we saw that \oracle~horizontally partitions the columns into in-memory compression units (IMCUs). In a distributed environment, these IMCUs can be spread across different nodes \cite{Mukherjee2015-ul}, as seen in Figure \ref{fig:oracle-distributed}. The blocks is be distributed using a two-phase strategy. First, a centralized coordination phase is performed such that servers can a minimal consensus can be established. Second, IMCUs are spread in a decentralized manner. \oracle~in a distributed environment can be configured to be both \term{1-safe}and \textit{(N-1)-safe}.
+The blocks in \oracle~are distributed using a two-phase strategy \cite{Mukherjee2015-ul}. First, a centralized coordination phase is performed such that servers can reach a minimal consensus. Second, IMCUs are distributed over the network in a decentralized manner. \oracle~in a distributed environment can be configured to be both \term{1-safe}and \textit{(N-1)-safe}.
 
+\qlikview, one of the studied reference products, also supports a distributed architecture \cite{Qlik2012-ku}. We saw in Section \ref{sec:Business Discovery} that \qlikview~uses the definition of \textit{an application}, where an application is one or more \bd~panels connected to a specific data extract. An application is also the minimum distribution unit in \qlikview, which in practice means that only one server in the cluster will handle a single request.
 
-\qlikview~too supports a distributed architecture, but more in terms of supporting more users, which we will look into closer in the section about scaling (Section \ref{sec:Scaling}). Using different load balancing strategies, like random, and loaded document, more users are supported \cite{Qlik2012-ku}. However, each application application cannot be spread across multiple servers, an entire copy must be kept per server \todo{find out more about this}. 
+However, a single application might still be served by multiple machines in the cluster \cite{Qlik2012-ku}. A load balancer will assign a user session to one of the servers in the cluster. Once a user session has been assigned a server, all requests are directed to that server.
 
-\subsection{Distributed Dictionary}
-\label{sub:Distributed Dictionary}
+\subsection{Column Distribution}
+\label{sub:Column Distribution}
 \ffigure{img/dictionary-scale-out}{Different data placements of a dictionary encoded column with an inverted index. Courtesy of \cite{Psaroudakis2015-lc}.}{fig:dictionary-scale-out}
-In a shared-nothing architecture, the column can be spread out in three different ways, as seen in Figure \ref{fig:dictionary-scale-out}. When using dictionary compression, there are several ways to spread the dictionaries across the partition \cite{Psaroudakis2015-lc}. Physical partitioning, as used by for instance \oracle~has the disadvantage of reducing compression rates. The various schemes has a time to build versus performance trade-off. \todo{Elaborate and explain the figure more}.
+We have previously pointed out the potential of \de~for OLAP workloads. Psaroudakis \ea~have studied three techniques of how dictionary compressed columns with inverted indexes can be distributed in a shared-nothing architecture \cite{Psaroudakis2015-lc}. These techniques are \textit{round-robin}, \textit{index vector partitioning}, and \textit{physically partitioning}, all which are illustrated in Figure \ref{fig:dictionary-scale-out}. All techniques comes with different benefits and disadvantages.
 
-\paragraph{Round-robin (RR)}
-\label{par:Round-robin (RR)}
-Each node in the cluster get a column each. Here, compression is maximized, but it does not account for data skew and certain columns might be hot-spots.
+\subsubsection{Round-robin (RR)}
+\label{ssub:Round-robin (RR)}
+RR the simplest form of data placement, where whole columns are placed on a single node in the cluster. This way, all scans and lookups on the column can happen locally. In a round-robin fashion, multiple columns can be spread across the cluster.
 
-\paragraph{Index-Vector Partitioned (IVP)}
-\label{par:Index-Vector Partitioned (IVP)}
-This keeps a maximum compression for the dictionary, and values are spread evenly accross all data nodes. However, this structure is hard to construct and maintain. Lastly, this technique requires inverted indexes on the dictionary, a structure we have recommended against in Chapter \ref{chap:Indexes and Auxiliary Structures}.
+RR does not account very well for data skew and fails to utilize the processing power of a cluster. A node might end up with one or more hot columns, which results in that node becoming the bottleneck of query execution.
+
+\subsubsection{Index-Vector Partitioning (IVP)}
+\label{ssub:Index-Vector Partitioning (IVP)}
+IVP is a technique developed to overcome the challenges with RR, where the index structure for the columns decides data partitioning. This way, all instances of the same distinct value in a column will be placed on the same node. This scheme accounts for data skew and better utilizes all nodes in a system.
+
+However, this method suffers from high overhead when stitching column results back together. This overhead only gets larger as the number of nodes increases. Needless to say, this structure requires that the columns are indexed using an inverted index structure, a structure we have recommended against in Chapter \ref{chap:Indexes and Auxiliary Structures}.
 
 \paragraph{Physically Partitioned (PP)}
 \label{par:Physically Partitioned (PP)}
-Here, the columns are split, and for each column partition, a dictionary is constructed. This technique minimizes compression (as dictionary entries might be duplicated per block) and certain operations might be more tedious to implement. 
+Challenges with IVP can be overcome by partitioning the columns in the database. This technique distributes work evenly across nodes in the cluster, and allows for data pruning based on minimum and maximum values, a technique we discussed in Section \ref{sec:Database Statistics}. Database systems using PP include \oracle~and \saph.
 
-\section{Thread-level parallelism}
-\label{sec:Intra-query Parallelism and Scheduling}
+There are two main disadvantages with PP. First, it is time and resource consuming to perform or repartition. Second, since dictionaries across partitions are expected to contain common values, PP potentially consume more memory.
+
+\section{Thread-level Parallelism}
+\label{sec:Thread-lever Parallelism}
 % paragraph introducing the "problem"
-Within a single multiprocessor, where all processing units share memory, parallelization can be performed by using threads. Ideally, queries should use all available resources, and if a query is run one by one, the ultimate goal is that a query speeds up linearly with the number of processing units available. In a database system, Parallelization is normally solved by partitioning the input onto the available processing units and merge the results after computation is done \cite{Neumann2011-uq}.
+Within a single multiprocessor, where all processing units share memory, parallelization can be performed by using threads. Ideally, queries should use all available cores, and the ultimate goal is that query performance increases linearly with the number of processing units available. Conceptually, parallelization is simple: Partition the input onto the available processing units and merge the results after computation is done \cite{Neumann2011-uq}.
 
 % paragraph of which systems using parallelism
-Most modern database management systems use thread-level parallelism to improve performance. Systems here include \vertica~\cite{Lamb2012-kg}, \mssql~\cite{Larson2013-mc}, \blink~\cite{Barber2012-xt, Johnson2008-cp}, \saph~\cite{Farber2012-vh}. \exasol, the top performing system on the TPC-H benchmark, reports to apply \textbf{parallelism on every layer} \cite{Exasol2014-xh}. As for reference products in our research, \qlikview~has reported that it scales almost perfectly with the addition of more cores \cite{Qlik2011-ef}.
+Most modern database management systems use thread-level parallelism to improve performance. Systems here include \vertica~\cite{Lamb2012-kg}, \mssql~\cite{Larson2013-mc}, \blink~\cite{Barber2012-xt, Johnson2008-cp}, and \saph~\cite{Farber2012-vh}. \exasol, the top performing system on the TPC-H benchmark, applies parallelism on every layer, which includes thread-level parallelism \cite{Exasol2014-xh}. As for reference products in our research, both \qlikview~and \tableau~have reported that they scale almost perfectly with the addition of more processing units \cite{Kamkolkar2015-iq, Qlik2011-ef}. 
 
 % paragraph explaining how each system splits queries
-In terms of work distribution, \blink~parallelized on a block level, where each partition is split into blocks and assigned to a thread \cite{Johnson2008-cp, Barber2012-xt}. \mssql~divides the query into batches, and the batches are consumed and processed by all the threads in the system \cite{Larson2013-mc}. One execution model is the task-based query execution model which is used by \hyrise~\cite{Swhalb2014-hn}. They claim almost perfect load balancing on multi-core CPUs, and it has efficient workload management.
+\blink~parallelizes SQL queries by breaking them up into \term{single-table queries} (STQ) that that belongs to a column partition. Each STQ is divided into blocks which are processed by threads in a thread pool. Since some partitions will be heavier to process, threads that finish their partition early will help the heavier-loaded threads by "stealing" some unprocessed blocks. We refer to the technique where idle threads "steal" tasks from active threads as \textit{work stealing}. 
+
+\mssql~works similar to \blink. In this system, queries are divided into batches and processed in parallel by all threads in the system \cite{Larson2013-mc}.
 
 % paragraphs illustrating the main challenges with parallelization and techniques used to fix it
-The barriers for linear speedup is startup costs, interference and communication, and unevendistribution of work (data skew)\cite{DeWitt1992-ki}, which translates to that the key challenges in query processing is work distribution and scheduling \cite{Neumann2011-uq}. In addition, parallel joining and grouping/aggregation is not trivial to do in parallel. We study this in Section \ref{sub:Parallel Joining} and Section \ref{sub:Parallel Grouping and Aggregation} respectively.
+The barriers for linear speedup are startup costs, interference and communication, and uneven distribution of work (data skew) \cite{DeWitt1992-ki}. In other words, the primary challenges in query processing are work distribution and scheduling \cite{Neumann2011-uq}. Besides, parallel joining and grouping/aggregation are not trivial to do in parallel. We study this in Section \ref{sub:Parallel Joining} and Section \ref{sub:Parallel Grouping and Aggregation} respectively.
 
 \subsection{Scheduling}
 \label{sub:Scheduling}
-Getting scheduling right is a hard process \cite{Psaroudakis2013-fn}. First of all, all scheduling cannot be given to the operating system due to high creation costs and context switches. Secondly, all available threads for a node should be in one single thread pool. \oracle~uses three thread pools (dispatchers, executors, and receivers), but these are oblivious to each other and hurt performance. One of the main problems addressed in this paper is that queries divides into a number of tasks irrespective of how many other concurrent tasks that are running. That is, if the CPU is processing on six out of eigth cores, only two threads should be spawned for a query.
+Psaroudakis \ea~ have studied the details of thread scheduling \cite{Psaroudakis2013-fn}. Their research highlight three important aspect that must be considered that regards scheduling of threads:
+\begin{enumerate}
+  \item The responsibility of scheduling cannot be given to the operating system (OS). If the OS is responsible for scheduling threads, severe overhead must be expected due to high creation costs and several context switches. Time sharing policies implemented in the OS are also sub-optimal for database workloads.
+  \item A single thread pool should manage all threads in the system. \saph~uses three different thread pools: (i) dispatcher threads for partitioning queries, (ii) executor threads for SQL execution, and (iii) receiver threads that process network requests. The independence of the thread pools poses a problem since there exists no shared structure that keeps track of how many cores are actually in use.
+  \item Granularity of tasks should consider holistically. When a task divides forks out to parallel subtasks, the number of subtasks should consider how many processing cores that are available at the time. For instance, if six out of eight processing units are busy, a task should only be split in two.
+\end{enumerate}
 
 \ffigure{img/scheduler.png}{Data structures used by a task scheduler. Courtesy of \cite{Psaroudakis2013-fn}.}{fig:scheduler}
-A typical query can be represented as a directed acyclic graph (DAG), where each node is a separate task. Each thread can pick any task from the DAGs where the predecessor has already been processed. The throughput/latency tradeoff can be adjusted by changing the probability that a root node (new query) is selected. The structures used by the scheduler is depicted in Figure \ref{fig:scheduler}.
+A directed acyclic graph (DAG) can represent a parallelizable query where each node is a separate task that can be performed by a single thread \cite{Psaroudakis2013-fn}. Each thread can pick any task from the DAGs where the predecessor has already been processed. Also, task priorities can be supported by having a queue and a task pool per priority. The structures used by the scheduler is depicted in Figure \ref{fig:scheduler}.
 
-Conclusion: One single thread pool. Queries should calculate the number of tasks based on how many threads that are already running.
+Using the method described in the above paragraph, changing the probability that a root node (new query) is selected can adjust the throughput/latency tradeoff. If the probability of picking a root node is high, multiple queries execute simultaneously, and simpler queries might complete before heavier queries even though they were submitted first. Hence, latency is reduced. If the probability of picking a root node is low, started queries normally finish before execution of new queries start. In this situation, throughput is maximized, but it comes at the cost of higher latency for simpler queries.
 
-Performance can be boosted if tasks are allowed to be stolen from other work units. This is done in \blink~\cite{Barber2012-xt}. However, special attention should be given to which tasks that are stolen. Ideally, one should only steal computing intensive tasks, not memory intensive ones \cite{Psaroudakis2015-lc}.
+A system known to implement such task-based scheduling discussed in this section is \hyrise~\cite{Schwalb2014-hn}. In this system, all partitionable operators are split dynamically into tasks at runtime, and the size of the tasks are determined based on system parameters and the input size of the data. \hyrise~reports almost perfect load balancing. 
 
+\subsection{NUMA Awareness}
+\label{sub:NUMA Awareness}
+\afigure{img/numa.png}{Representation of NUMA nodes. Accessing RAM local to a CPU is faster than accessing RAM that belongs to another processor. Courtesy of \cite{Qlik2013-an}.}{fig:numa}{0.7}
+Non-Uniform Memory Access (NUMA) is a multiprocessor memory architecture designed to overcome the scalability limits of other known architectures \cite{Qlik2013-an}. As illustrated in Figure \ref{fig:numa}, a NUMA machine consists of several sockets where each socket has a multicore processor and local memory. Communication between sockets is done over an interconnection network. In other words, memory in NUMA machines are decentralized, so communication costs between the different sockets must be taken into consideration when making parallelization decisions \cite{Psaroudakis2015-lc}. A database that runs on a NUMA architecture should be aware that not all memory can be accessed with the same latency. A scheduler that is \textit{NUMA aware} can have up to 5x performance compared to a scheduler that is not \cite{Psaroudakis2015-lc}. 
 
-\subsection{NUMA awareness}
-\label{sub:NUMA awareness}
-\afigure{img/numa.png}{4-socket server with Ivybridge-EX CPU. Each socket has its own caches, an transfering data between sockets takes longer time than accessing data local to a socket. Courtesy of \cite{Psaroudakis2015-lc}}{fig:numa}{0.7}
-We saw in the background section that non-uniform memory access (NUMA) machines are machines where different parts of memory have different access time. Memory in these machines are decentralized, so communication costs must be taken account for among sockets \cite{Psaroudakis2015-lc}. On such machines, the database system should be aware of this to make better scheduling decisions. A NUMA aware system can have up to 5x performance compared to a system which is not \cite{Psaroudakis2015-lc}. \todo{QlikView2011-yc also has some background on NUMA}
+We saw that \blink~uses \term{work stealing} among threads, a technique known to increase database performance \cite{Barber2012-xt}. However, in a NUMA architecture, \textit{work stealing} might hurt performance. Psaroudakis \ea~distinguish between memory-intensive and CPU-intensive tasks \cite{Psaroudakis2015-lc}. If a memory-intensive task is stolen across a socket in a NUMA architecture, throughput can be hurt up to 58\%. To keep track of which socket a task belongs to, a page socket mapping structure can be used.
 
-An example of such system is \hyper~\cite{Psaroudakis2014-ma, Psaroudakis2015-lc}. \hyper distributes works across socekts, uses task stealing and elastic parallelism. Data locality is optimized. In this system, tasks are divided into two classes: Memory intensive and CPU intensive. Memory intensive tasks should not be stolen across sockets, but this is OK for CPU intensive tasks.
+An example of a NUMA aware system is \hyper~\cite{Psaroudakis2014-ma, Psaroudakis2015-lc}. \hyper~distributes works across sockets,  uses task stealing, and exploits elastic parallelism. Data locality is optimized. In this system, tasks are divided into two classes: Memory intensive and CPU intensive. Memory intensive tasks should not be stolen across sockets, but this is OK for CPU intensive tasks.
 
-The \qlikview~developers conclude that NUMA is great if the application can take advantage of it, but if not, NUMA might have a negative impact \cite{Qlik2013-an}. By turning off NUMA, either through a soft switch in the program, or in the node's BIOS, \qlikview~performs better.
+The \qlikview~developers conclude that NUMA is great if the application can take advantage of it \cite{Qlik2013-an}. However, if it does not, NUMA might have a negative impact on performance. \qlikview~actually performs better if NUMA is disabled in BIOS. When NUMA is disabled, the operating system will use the local memory for one CPU at a time.
 
-Lastly, utilizing techniques for distributed, shared-nothing architectures might enhance performance on NUMA nodes \cite{Mukherjee2015-ul}. By treating each socket as a single server instance, and let all communication be performed with explicit message passing, performance might be improved.
-
-Psaroudakis \ea~suggest using a page socket mapping structure for keeping track which processor owns which partition \cite{Psaroudakis2015-lc}.
+We conclude this section by emphasizing the fact that techniques developed for distributed, shared-nothing architectures can be used to enhance performance on NUMA nodes \cite{Mukherjee2015-ul} (Section \ref{sec:Distributed Architecture}). Each socket in a NUMA architecture can be treated as a single server in a shared-nothing architecture such that all communication are performed with explicit message passing. The column distribution schemes we discussed in Section \ref{sub:Column Distribution} can also be applied to a NUMA system, both as a distributed, shared-nothing system, but also when memory are shared in a non-uniform fashion.  
 
 \subsection{Hyperthreading}
 \label{sub:Hyperthreading}
-Hyper-threading is a technique used in most modern processors where each core has two logical cores per actual core. It is mainly used as a technique to reduce the memory-gap. Hyperthreading will for instance speed up the probe phase in joins \cite{Barber2014-ey}.
+Hyperthreading is a technique implemented in modern CPUs to improve parallelization of computations \cite{Wikipedia_contributors2015-yx}. For each physical core in the processor, the operating system addresses two logical cores. The core function of hyperthreading is to increase the number of independent instructions to utilize the potential of super-scalar processors. It also helps with closing the \textit{memory gap}, which means the processor is better utilized when executing threads that are memory-bound. Hyperthreading can be used to speed up certain database operations, like the probe phase in joins \cite{Barber2014-ey}.
 
-However, if a thread never waiting for memory, hyperthreading will degrade performance. \qlikview~whitepaper say that hyperthreading should be disabled for maximum performance \cite{QlikView2011-yc}. 
+However, if a single thread manages to keep a processing core busy with computations, hyperthreading will degrade performance due to unnecessary context switching and overhead. A whitepaper from \qlikview~says that hyperthreading should be disabled for maximum performance \cite{Qlik2011-yc}.
 
 \section{Instruction Level Paralellism}
 \label{sec:Instruction Level Paralellism}

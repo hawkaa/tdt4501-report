@@ -67,8 +67,8 @@ Although not directly compression, another way of reducing a bitmaps footprint a
 
 Since the inner table might be splitted, there is a large chance the key is not present in the relation when probed. Here, bloom filters can be used to determine if the matching key is not in the working space \cite{Bratbergsengen2015}. The use of bloom filters is encouraged if the inner relation is partitioned, to avoid going into the hash structure.
 
-\subsection{Joining in parallel}
-\label{sub:Joining in parallel}
+\subsection{Parallel Joining}
+\label{sub:Parallel Joining}
 Joining becomes a challenge when done in parallel.
 
 In \ibm, each thread performs a local grouping on a local hash tables and creates a linked list of overflow buckets \cite{Raman2013-em}. When they are full, they get published globally. Second phase, each thread reserves a partition to merge, and it merges all local hash tables to a global one.
@@ -93,8 +93,8 @@ If the columns are partitioned horizontally, grouping and aggregation must be pe
 
 As mentioned in Section \ref{sub:Queries}, in \bd~workloads, the groups will be predefined in the panel. However, new aggregation results must be populated when filters are applied.
 
-\subsection{Grouping in parallel}
-\label{sub:Grouping in parallel}
+\subsection{Parallel Grouping and Aggregation}
+\label{sub:Parallel Grouping and Aggregation}
 Vendors say their grouping operations scale linearly with the number of threads until the CPU is saturated \cite{Farber2012-vh}
 
 In \ibm~, each thread performs a local grouping on a local hash tables and creates a linked list of overflow buckets \cite{Raman2013-em}. When they are full, they get published globally. Second phase, each thread reserves a partition to merge, and it merges all local hash tables to a global one.
@@ -133,13 +133,17 @@ Other work has suggested that standard SQL can be cumbersome and expensive \cite
 
 \bd~applications do not need to support all SQL operations which a DBMS normally does. For instance, joins can be limited to equi-joins over foreign keys, and aggregations may be limited to groups of one or more dimensions in the schema.
 
-\section{Predicate evaluation}
-\label{sec:Predicate evaluation}
+\section{Predicate Evaluation}
+\label{sec:Predicate Evaluation}
 We see various techniques that improves the predicate evaluation.
 
 It is common to use bitmaps in predicate evaluation \cite{Raman2008-gi, Raman2013-em}. In \blink, bitmaps are calculated and operations are performed directly on the bitmaps.
 
 Predicates are also evaluated in a Single Input Multipe Data (SIMD) fashion, which is a technique described by Johnson \ea~\cite{Johnson2008-cp}. Extensive use of processor SIMD instructions is explained by Willhalm \ea~\cite{Willhalm2009-hu, Willhalm2013-ri}. Evaluating predicates in a SIMD like fashion is done in \blink~\cite{Raman2008-gi}.  This system reports a performance increase when three or more predicates are evaluated at the same time.
+
+\subsection{Predicate Evaluation in Parallel}
+\label{sub:Predicate Evaluation in Parallel}
+\blink~runs all predicates in parallel, with no pipelining \cite{Raman2008-gi}.
 
 \section{Chapter Conclusion}
 \label{sec:Chapter Conclusion}
