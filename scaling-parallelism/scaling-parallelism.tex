@@ -17,7 +17,10 @@ One of the keys to acheiving good parallel performance, is to use structures tha
 
 \section{Parallelism in a Distributed, Shared-Nothing Architecture}
 \label{sec:Parallelism in a Distributed, Shared-Nothing Architecture}
-For maximum performance, a database can be distributed across multiple servers. We refer to this as a \textit{shared-nothing} architecture, as all communication between the servers in the cluster must explicitly be passed through the network \cite{DeWitt1992-ki}. Operations are performed locally on each server, and only processed data is sent to the client program. This allows for a more scalable design by minimizing traffic on the interconnection network. Scaling out is the technique where several machines (nodes) are used, and the work is distributed between them. They share no common resources, so all data and control traffic must be passed through explicit network actions. This technique can be used to support (i) more users, (ii) more data, and (iii) improve performance.
+For performance reasons, a database may be distributed across multiple servers. We refer to this as a \textit{shared-nothing} architecture, as all communication between the servers in the cluster must explicitly be passed through the network \cite{DeWitt1992-ki}. Operations are performed locally on each server, and only refined and processed data is sent back to the client program. This reduces network traffic and keeps the system scalable.
+
+
+%Scaling out is the technique where several machines (nodes) are used, and the work is distributed between them. They share no common resources, so all data and control traffic must be passed through explicit network actions. This technique can be used to support (i) more users, (ii) more data, and (iii) improve performance.
 
 Several of the systems studied in this research supports a distributed architecture. Among them are \oracle~\cite{Mukherjee2015-ul}, \cstore~\cite{Stonebraker2005-qz}, \saph~\cite{Farber2012-vh} and \exasol~\cite{Exasol2014-xh}. These systems are distributed in terms of intra-query parallelism, that is each query are may be executed on all servers.
 

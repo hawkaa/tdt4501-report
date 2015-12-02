@@ -30,8 +30,8 @@ There are two ways to mitigate the problems caused by virtual memory. The first 
 However falling back to virtual memory has been claimed to be unacceptible for performance and correctness reasons \cite{Graefe2014-ds}. To overcome this challenge, major database vendors like \oracle~and \mssql~use buffer managers for all their database operations. However, adding this layer of indirection comes at a significant performance cost. They explain a method where pointers are swizzeled from domain idenfiers to physical identifiers once brought up to memory. This way, they achieve the best of both worlds. \todo{Read the notes from this paper and elaborate} \mssql~has been showed to perform worse than \vertipaq~because the latter does not have a buffer manager \cite{Ferrari2012-hm}
 
 
-\section{Write-support and mixed workloads}
-\label{sec:Write-support and mixed workloads}
+\section{Write Support and Mixed Workloads}
+\label{sec:Write Support and Mixed Workloads}
 \ffigure{img/delta-store-index}{Different index implementation for read optimized store and delta store in \hyrise. Courtesy of \cite{Schwalb2014-hn}.}{fig:delta-store-index}
 As explained in Section X, we have focused on read-only workloads. We have seen that this has simplified the design. \tableau, \qlikview, and \vertipaq~has chosen not to support write support, but this is supported in most of the other systems. Some systems are optimized for analycital workloads even though they allow for inserts, updates, and deletes, but some systems suports mixed workloads; that is transactional and analycial workloads equally well. Schwalb \ea~writes that although the traditional OLAP and OLTP separation continues, people have started working on unifying them \cite{Schwalb2014-hn} into OLXP \cite{Plattner2014-fr}. Other vendors, like \oracle and \saph, strive to keep the transparency in the queries, such that applications using the database can be used as it always have been \cite{Lahiri2015-mz, Farber2012-vh}.
 
