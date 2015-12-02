@@ -11,7 +11,8 @@ Modern CPUs has pipelining with dependencies, branch predictions. In addition, 3
 
 \section{Branch avoidance}
 \label{sec:Branch avoidance}
-Avoiding branches in when processing queries is an important factor for performance. Modern CPUs have branch predictors, but if a branch is mispredicted, the whole pipeline must be flushed. If branches are taken with a probability of 50\%, branch prediction is very expensive \cite{Neumann2011-uq}. This can happen in processing a query with 50\% selectivity. 
+\ffigure{img/branch-selectivity.png}{Courtesy of \cite{Boncz2005-wj}.}{fig:branch-selectivity}
+Avoiding branches in when processing queries is an important factor for performance. Modern CPUs have branch predictors, but if a branch is mispredicted, the whole pipeline must be flushed. If branches are taken with a probability of 50\%, branch prediction is very expensive \cite{Neumann2011-uq}. This can happen in processing a query with 50\% selectivity. See Figure \ref{fig:branch-selectivity}.
 
 A common way of avoiding branches, is to leave out short circuiting from the code. Short circuiting is the technique where you only evaluate one predicate at a time, or one tuple at a time, and only proceed if the predicate is true or the tuple is valid from the candidate. This results in many if statements within the query. Short circuiting will only improve performance on low selectivity queries \cite{Johnson2008-cp}.
 

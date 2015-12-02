@@ -107,28 +107,29 @@ Hyperthreading is a technique implemented in modern CPUs to improve parallelizat
 
 However, if a single thread manages to keep a processing core busy with computations, hyperthreading will degrade performance due to unnecessary context switching and overhead. A whitepaper from \qlikview~says that hyperthreading should be disabled for maximum performance \cite{Qlik2011-yc}.
 
-\section{Instruction Level Paralellism}
-\label{sec:Instruction Level Paralellism}
-Due to super-scalar CPUs, one might optimize for instruction level paralellism. This is exploited by \blink, where query execution is executed in batches on multiple rows at the same time \cite{Johnson2008-cp}. In general, the idea is that if a processor can find enough independet work, it can be a magintude or two faster \cite{Boncz2005-wj}.\todo{Insert something here about DIRA?}
+\section{Instruction Level Parallelism}
+\label{sec:Instruction Level Parallelism}
+If a processor can find operations that are independent, instruction level parallelism (ILP) can be exploited \cite{Wikipedia_contributors2015-vg}. ILP allows a processor to perform multiple instructions simultaneously. Techniques that allow multiple operations to be executed at the same time include \term{instruction pipelining} and \term{superscalar execution}. The latter is where there are multiple processing units within a processor, such that the numbers of instructions per cycle (IPC) can be larger than one. As most programming languages does not require application programmers to specify which instructions are independent, so a goal for compiler and processor designers' goal is to take advantage of as much ILP as possible.
 
-\section{Single Input, Multiple Data (SIMD)}
-\label{sec:Single Input, Multiple Instructions (SIMD)}
-\ffigure{img/simd.png}{SIMD execution model: In (a) scalar mode: one operation produces one result. In (b) SIMD mode: one operation produces multiple results. Courtesy of \cite{Willhalm2009-hu}.}{fig:simd}
+It is still possible to implicitly design applications that are optimized for ILP. In general, the idea is that if a processor can find enough independet work, it can be a magnitude or two faster \cite{Boncz2005-wj}. We see in Section \ref{sec:Branch Avoidance} that avoiding branches reduces independence between between instructions. This is why \monetx~and \blink~works on multiple rows at the same time \cite{Boncz2005-wj, Johnson2008-cp}. Operating on multiple values at the same time keeps the CPU pipeline full with independent instructions since loops can be unrolled. We study this technique further in Chapter \ref{chap:Implementation Details}.
+
+
+\section{SIMD}
+\label{sec:SIMD}
+\afigure{img/simd.png}{SIMD execution model: In (a) scalar mode: one operation produces one result. In (b) SIMD mode: one operation produces multiple results. Courtesy of \cite{Willhalm2009-hu}.}{fig:simd}{0.8}
 % Present problem
-Within a single thread, it instructions working on more than one element at a time can be used to enhance query performance. It is a good idea, especially if we can keep the whole block in the registers \cite{Neumann2011-uq}. An example SIMD instruction is depicted in Figure \ref{fig:simd}.
+Within a single execution contex, instructions working on multiple elements at a time can be used to ehance query performance. We refer to these instructions as single input, multiple data (SIMD) instructions \cite{Wikipedia_contributors2015-ax}. As seen in Figure \ref{fig:simd}, a SIMD instruction applies the same operation to multiple operands simultaneously. SIMD processing in a database context is particularly effective if we can keep an entire processing block in the CPU registers \cite{Neumann2011-uq}. Willhalm \ea~show how powerfull SIMD processing can be, by presenting results that a vectorized model can be up to 1.5 times faster than databases optimized for scalar execution \cite{Willhalm2009-hu}
 
+Our research show that SIMD parallelization is used in several database systems. This includes \oracle~\cite{Lahiri2015-mz}, \blink~\cite{Barber2012-xt}, and \ibm~\cite{Raman2013-em}. A whitepaper about \exasol~says that SIMD features of modern processors are used for reaching the highest performance on every level.
 
-This is used by \oracle~\cite{Lahiri2015-mz}, \blink~\cite{Barber2012-xt}, \ibm~\cite{Raman2013-em}. \exasol~also reports uning SIMD instructions in query execution.
+\afigure{img/oracle-simd.png}{Filter operation using SIMD vector processing. Courtesy of \cite{Lahiri2015-mz}.}{fig:oracle-simd}{0.5}
+\oracle~performs scans against the columns using instructions that work on multiple operands simultaneously \cite{Lahiri2015-mz}. As seen in Figure \ref{fig:oracle-simd}, finding the occurencs of a value in a culomn to perform aggregations can all be vectorized down to one or two instructions. Bitpacking of column values further increase SIMD performance, as more values fit within a data word. Later versions of \blink~and \ibm~works similarly \cite{Barber2012-xt, Raman2013-em}.
+
+We saw in Section \ref{sec:Alternative Storage Layouts} that \blink uses a banked layout, where rows are densely packed within word banks \cite{Raman2008-gi}. This allows for evaluating predicates for multiple columns simultaneously by applying one or more bitwise operations. For instance, evaluating a conjunction of equality predicates on a tuple is done by first extracting the needed fields by applying a suitable mask, then compare the result against a second mask containing expected values. The masks are computed exactly once per partition.
 
 Many ALUs does not support long words, like the Intel SSE and Intel AVX2 extension \cite{Willhalm2009-hu, Willhalm2013-rl}. The key is to pack columns densely and work on multiple rows or columns at a time \cite{Johnson2008-cp}. SIMD instructions can evaluate equal-value and value-range predicates without the need of decompression.
 
-Several compression techniques benefits from SIMD \cite{Lemke2010-is}. This is especially the case for dictionary compression.
-
-Although algorithms can be optimized for scalar execution, the research of Willhalm \ea~show that a vectorized model is 1.58 times faster than query processing optimized for scalar execution \cite{Willhalm2009-hu}. In addition, byte aligned columns perform the best.
-
-The highest performing database on the TPC-H benchmark uses SIMD instructions \cite{Exasol2014-xh}.
-
-All predicates are run in parallel in \blink~\cite{Raman2008-gi} with no branching or short-circuiting.
+Several compression techniques benefits from SIMD \cite{Lemke2010-is}. This is especially the case for dictionary compression. Byte aligned columns perform the best \cite{Willhalm2009-hu}.
 
 \subsection{Aligning Words for SIMD Execution}
 \label{sub:Aligning words for SIMD execution}
@@ -148,6 +149,8 @@ All predicates are run in parallel in \blink~\cite{Raman2008-gi} with no branchi
   \label{fig:simd-align} 
 \end{figure}
 In order to use SIMD instructions, words must be aligned for the execution \cite{Willhalm2009-hu}, as seen in Figure \ref{fig:simd-align}.
+
+On bitpacked columns, the least significant bit of each tuple denote whether the predicate was satisfied \cite{Raman2013-em}.
 
 Using its row-bank layout, \blink~has does not require aligning data in a word \cite{Johnson2008-cp}. For each partition, a special bitmap can be created to query the column. One or a couple of bitmap operations on every column, and then checking for null, predicates can be evaluated in a \textit{SIMD like fashion}.
 

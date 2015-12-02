@@ -64,8 +64,8 @@ The \pn{Blink} database and IBM DB2 with BLU acceleration  \cite{Barber2012-xt, 
 
 We see that it is common that each partition has its own dictionary. This is not only the case for \mssql, \oracle, and \blink, but also ... By storing each dictionary in a partition, we see that \blink~benefits from increased compression rates. In addition, horizontal partitions can be skipped if the current predicate is not present in the dictionary, which we will read more about in Section \ref{sec:Dictionary Compression}.
 
-\section{Alternative storage layouts}
-\label{sec:Alternative storage layouts}
+\section{Alternative Storage Layouts}
+\label{sec:Alternative Storage Layouts}
 Although column storage is normally seen as superior to row storage on analytical workloads, some related work have questioned this.
 
 \ffigure{img/oracle-dual.png}{The \oracle~dual format. Courtesy of \cite{Oracle2015-fs}.}{fig:oracle-dual}
