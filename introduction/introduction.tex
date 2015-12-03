@@ -38,42 +38,48 @@ We conclude it is safe to focus on optimizations for read-only workloads. Even t
 
 \input{introduction/methodology}
 
-\section{Contributions}
-\label{sec:Contributions}
-\todo{Add from research plan}
-The novelty of this thesis is two-fold. Most related work presesnts a single system and explains the techniques use there. Here, we present the litterature by category, not by product. This way, comparisons can be made more easily, and simplifies the process to getting an overview over where the litterature agrees, and where there are contradictions. We have found work X and work Y. These systems present single concepts, but neither of these span as broadly as we do in this thesis.
+\section{Deliverables and Contributions}
+\label{sec:Deliverables and Contributions}
 
-The second contribution, is a thorough discussion on where the various techniques presented applies. \genusSoftware have several fundamental and practical limitations, and based on these, We present the techniques that are the most fruitful. Optimizations in columnar storage have already been investigated by Abadi \ea~\cite{Abadi2008-dd}, however this work focus on the fundamental differences between row and column stores. We present a more holistic picture, considering more concepts and techniques. In addition to this, this thesis specifically targets \genusSoftware.
+The main deliverable of this phase of the research is a report summarizing our findings. The report outlines the big picture of OLAP and \bd~product optimizations and studies some interesting cases in detail. The intention of the report is not, and has never been, to be a complete text covering all that is needed to improve \bd~performance. The report is first and foremost written to get an overview of the big picture, inspire, and encourage further studying of referred sources. 
+
+The research has also resulted in many notes, where the report covers roughly one-fourth of these. For convenience, the notes are left out of the report, but they can be used in following parts of the research.
+
+Our contributions of this research are threefold. First, we plan to \textit{improve the evidence} of optimization techniques for OLAP databases. We study techniques category by category, instead of product by product, to get a better a better overview. Besides, this setup enables comparisons between different systems. We know that Abadi \ea~have studied the effects of compression, late materialization, and column store \cite{Abadi2008-dd}. Raman \ea~have studied the impact of SIMD processing in databases \cite{Raman2008-gi}. Sidlauskas \ea~have studied the consequences of how different implementation of the same algorithm affects performance \cite{Sidlauskas2014-ef}. However, this research is limited in scope and fails to provide the big picture for the reader. In our work, we take a more holistic approach.
+
+Second, we plan to \textit{introduce new evidence} to optimizations that are specifically related to \bd~products. Current products do not reveal much about how they work internally. We plan to close the gap between the well studied OLAP databases and commercial \bd~products by relating our findings to in-memory and read-only constraints.
+
+Lastly, our research contributes to an \textit{improved computer-based product}. As explained in Section \ref{sec:Background and Motivation}, we plan to integrate \bd~capabilities within the business' main IT system to overcome the challenges of product isolation, integration, and maintenance. We plan to integrate a system where users can access \bd~dashboards and data extracts that seamlessly interact with their main IT system.
 
 \section{Definitions}
 \label{sec:Definitions}
-This section presents terms, definitions, and important products that are relevant to understading the content of this thesis.
+
+This section presents terms, definitions, and important products that are relevant to understanding the content of this report.
 
 \paragraph{Online Analytical Processing (OLAP)}
 \label{par:Online Analytical Processing (OLAP)}
-Online Analytical Processing (OLAP) is a term thet we use extensively in this thesis. OLAP is defined as systems capable of analytical queries, typically aggregations over large ranges of rows and groping in one or multiple dimensions. OLAP workloads are typically read-only queries.\todo{Source and improve}
+  We use the term Online Analytical Processing (OLAP) extensively in this thesis. By OLAP, we mean systems that enable users to analyze multidimensional data interactively from multiple perspectives \cite{Wikipedia_contributors2015-hw}. OLAP is usually dominated by ad hoc, complex queries that group, aggregate and summarize over large datasets \cite{Bjorklund2011-wh}. Column storage is considered to be an attractive solution for OLAP systems, a technique we study further in Chapter \ref{chap:Data Layout}.
+
 
 \paragraph{Online Transactional Processing (OLTP)}
 \label{par:Online Transactional Processing (OLTP)}
-Online Transactional Processing (OLTP) is often considered as the opposite of OLAP. OLTP is defined as systems capable of transactional queries, typically inserts, updates, and deletes. \todo{Source and improve}
+Online Transactional Processing (OLTP) is a class of database systems that manage transaction-oriented applications \cite{Wikipedia_contributors2015-cw}. Transactional workloads are typically referred to as insertion of new records, as well as updates and deletes of single records in the database. An OLTP system normally uses row storage for its data.
 
 \paragraph{Database Management System (DBMS)}
 \label{par:Database Management System (DBMS)}
-We look into several Database Management Systems (DBMS) in this thesis. These systems are general purpose systems for storage of data. DBMSes can focus on read performance for analytical workloads, write performance for transactional workloads, or both. These systems do not come with user interfaces for \bd, but is designed such that other applications can be built on top of them. The normal interface with the DBMSes is SQL. In this thesis, we look at \oracle, \ibm, \saph, \sapnw, \mssql, \cstore, \vertica, \blink, \exasol, \oracle, \hyper, and \hyrise.
+A Database Management System (DBMS) is a computer software application for storage and analysis of data \cite{Wikipedia_contributors2015-pb}. The most common way to interface with a database is through SQL, although other methods exist. Regarding performance, DBMSes can focus on analytical workloads (OLAP), transactional performance (OLTP), or even both. DMBSes do not come with user interfaces for \bd but is designed such that other applications can be built on top of them. In this thesis, we look at \oracle, \ibm, \saph, \sapnw, \mssql, \cstore, \vertica, \blink, \exasol, \oracle, \hyper, and \hyrise.
 
 \paragraph{\bd}
 \label{par:Business Discovery}
-\bd~is a term introduced by \qlikview~\cite{Qlik2014-vd}. \bd~is different from traditional \bi~by focusing more on the end user. By not relying on preaggregated data, the user can follow his own "information scent" and click his way through the data. \bd~platforms delivers panels and dashboards to multiple devices, and allows for easy sharing. They typically build on storage systems that are specifically designed for \bd~workloads, but some of them integrate directly with read-optimized DBMSes. \bd~products include \tableau, \qlikview, \powerpivot, and more. \bd~is explained in greater detail is Section~\ref{sec:Business Discovery}.
+\bd~is a term introduced by a \qlikview~whitepaper \cite{Qlik2014-vd}. \bd~products differs from traditional \bi~systems by focusing more on the end user. \bd~products does not rely on aggregated data such that the user can follow his "information scent" and click his way through the data. \bd~platforms often provide an architecture that enables panels and dashboards to be shared with multiple clients, both on desktops and mobile devices. Current \bd~products typically build on tailored storage systems that are specifically designed for \bd~workloads, but some of them integrate directly with read-optimized DBMSes. \bd~products include \tableau, \qlikview, \powerpivot, and more. \bd~is explained in greater detail is Section~\ref{sec:Business Discovery}.
 
 \paragraph{Reference products}
 \label{par:Reference products}
-By reference products we mean product pointed out \genus, products which \bd~in \genusSoftware~will be directly compared to. Studied in this thesis are \qlikview~and \tableau.
-
+We will occasionally use the term \textit{reference products} in this report. By reference products we mean \bd~products pointed out by \genus~that \bd~capabilities in \genusSoftware~will be compared to. In this report, we study \qlikview~and \tableau.
 
 \paragraph{\exasol}
 \label{par:exasol}
-Although not a definition per se, \exasol~is important in this thesis because it is as of November 2015 the highest performing database for the official TPC-H benchmark \cite{noauthor_undated-vr}. This benchmark test datas database performance for analytical workloads on a predefined set of queries on various database sizes ranging from 100 GB to 100,000 GB. \exasol outperforms other systems tested in this benchmark by a factor of 10 in average.
+\exasol~is important in this report because as of November 2015, it is the highest performing DBMS in the official TPC-H benchmark \cite{noauthor_undated-vr}. This benchmark test database performance for analytical workloads on a predefined set of queries. \exasol outperforms other systems tested in this benchmark by a factor of 10 in average. We, therefore, study techniques used by this system in extra detail.
+
 
 \input{introduction/thesis-structure}
-
-
