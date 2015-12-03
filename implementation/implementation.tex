@@ -9,8 +9,8 @@ It is all about reducing the number of branches, operate on multiple values at a
 \label{sec:Background information on modern CPUs}
 Modern CPUs has pipelining with dependencies, branch predictions. In addition, 30\% of the instructions are loads and stores \cite{Boncz2005-wj}. \textbf{All in all, CPUs have become highly complex devices where instruction throughput of a processor can vary by orders of magnitude}. \todo{More stuff here in Boncz2005-wj}
 
-\section{Branch avoidance}
-\label{sec:Branch avoidance}
+\section{Branch Avoidance}
+\label{sec:Branch Avoidance}
 \ffigure{img/branch-selectivity.png}{Courtesy of \cite{Boncz2005-wj}.}{fig:branch-selectivity}
 Avoiding branches in when processing queries is an important factor for performance. Modern CPUs have branch predictors, but if a branch is mispredicted, the whole pipeline must be flushed. If branches are taken with a probability of 50\%, branch prediction is very expensive \cite{Neumann2011-uq}. This can happen in processing a query with 50\% selectivity. See Figure \ref{fig:branch-selectivity}.
 

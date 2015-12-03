@@ -1,28 +1,39 @@
 \chapter{Background Information}
 \label{chap:background}
-\begin{secex}
-This chapter will introduce relevant background information.
-\begin{enumerate}
-  \item Analytical vs Tranasctional workloads. How they normally was a separate system, but wants to unite. Use the Pavlic thesis on this. Star and snowflake schema?
-  \item Background on column stores.
-  \item Background on in-memory storages.
-  \item Background on compression.
-  \item Background on business intelligence and how it evolved into business discovery. Should explain the nature of the queries, and that they cannot be anticipated. Perhaps something about non-SQL type of queries.
-  \item Predicate evaluation
-  \item Background on testing (TPC-H, Snowflake, TPC-CH ++)
-  \item Background on which vendors are out there. Explain the TPC-H benchmark, and which vendors are on top.
-  \item Bacground on cardinality of columns
-  \item NUMA
-  \item Selectivity
-\end{enumerate}
-\end{secex}
 \clearpage
 
-\input{background/bi}
+\section{\bi}
+\label{sec:Business Intelligence}
+\bi~is normally described as tools and techniques used to transform unstructured data into useful and meaningful information that can be used to support decisions \cite{Wikipedia_contributors2015-ag}. The goal is to allow for easy interpretation and gain insight in the data, such that businesses end up with a competitive market advantage.
+
+
+\subsection{History}
+\label{sub:History}
+There is a need for analysis in buisness trends, and normally business consists of legacy systems ussing a large number of different OLTP databases.
+
+Later came the decision support systems, which naturally leaded to a data warehouse. A data warehouse is a system specifically designed for OLAP workloads, where data is stored in nightly batch jobs, and preaggregated such that the data can be analysed the next day. Later, the notion of data marts was introduced, where a data mart is a portion of a data warehouse that is relevant for a specific department.
+
+On the way toward the \bd~products we know today, came the Operational Data Store (ODS)~\cite{Pavlic2002-nm}. This is another architectural construct that comes in addition to the OLTP legacy systems and the OLAP data warehouses. An ODS is created for efficient data extraction without affecting OLTP. This can be seen as a first step toward analytics on live data.
+
+Recently, work has been put into uniting OLAP and OLTP systems into OLXP, such that the same system can be used for both transactional systems and business intelligence. Systems here include \hyper~and \hyrise, which offers high performance for OLXP workloads. \todo{Elaborate + sources}
+
+\subsection{Star and Snowflake Schema}
+\label{sub:Star and Snowflake Schema}
+Often used in \bi~applications and data warehouses, are the star or snowflake schemas. This schema distinquishes between dimension tables, which is normally small, and a fact table, which is normally large. The fact table is then connected with one of more dimensions into a schema that looks like a star. A snowflake schema is an extension of the star schema, where dimensions can have more dimensions. 
+
+Distinct for star and snowflake schemas is that there is only one distinct path through the schema. In other words, if the fact table relates to a dimension table through several fields (like \textit{CreatedByUser}, \textit{ModifiedByUser}), the dimension table occurs multiple times in the schema, even though it is the same logical table. \todo{Check if this is correct}
+
+Queries on star and snowflake schemas are easier to optimize \cite{Lamb2012-kg} \todo{More info}. Techniques has been developed that lets you turn a non-star schema into a star or snowflake to help the query optimizer find efficient execution plans.
+
+\subsection{Challenges with Traditional \bi~Systems}
+\label{sub:Challenges with Traditional Business Intelligence Systems}
+In order to know which information is needed in a \bi~application, decision makers must be aware of which types of decicions they should make, and have a model for each \cite{Ackoff1999-wk}. Since managers rarely fufils the latter requirement, they add a safety factor and asks the IT department to provide everything. The result is information overload, and the much of the data is irrelevant. 
+
+The challenges with data warehouses is many, among them, the lack of flexibility. Reports are normally preconfigured by the IT department, and this can result in long reporting backlogs.
 
 \section{\bd}
 \label{sec:Business Discovery}
-The challenges with data warehouses is many, among them, the lack of flexibility. Reports are normally preconfigured by the IT department, and this can result in long reporting backlogs. To counter these problems, a new type of products have emerged. We call these products \bd~products, a notion that was introduced by \qlikview \cite{Qlik2014-vd}. Examples of these products are \powerpivot, \tableau, and \qlikview. Studied in this thesis are the two latter, and we have denoted these as our reference products.
+To counter the challenges with traditional \bi~systems, a new type of products have emerged. We call these products \bd~products, a notion that was introduced by \qlikview \cite{Qlik2014-vd}. Examples of these products are \powerpivot, \tableau, and \qlikview. Studied in this thesis are the two latter, and we have denoted these as our reference products.
 
 \ffigure{img/qlik-hierarchy.png}{Comparison of a traditional reporting application and \qlikview. Courtesy of \cite{Qlik2014-vd}.}{fig:qlik-hierarchy}
 \bd~products allow userss to follow ther "information scent" or "train of though" \cite{Qlik2014-vd, Kamkolkar2015-iq}. There are no particular drill-down patterns that are prespecified, users might navigate through the data as they see fit, as seen in Figure~\ref{fig:qlik-hierarchy}.
