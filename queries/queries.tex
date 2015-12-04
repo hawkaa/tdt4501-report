@@ -145,6 +145,11 @@ Predicates are also evaluated in a Single Input Multipe Data (SIMD) fashion, whi
 \label{sub:Predicate Evaluation in Parallel}
 \blink~runs all predicates in parallel, with no pipelining \cite{Raman2008-gi}.
 
+\section{Late materialization}
+\label{sec:Late materialization}
+Materialization is the word that is used when intermediate results are stored in memory. It can be used on many levels, where materialization can mean moving results from registers to memory \cite{Neumann2011-uq}, or can mean stiching tuples together for columns. Abadi \ea~\cite{Abadi2008-dd} have investigated the effects of late materialization, that is keeping the columns for as long as you can without materializing into rows. This optimization allows for 5\%-50\% performance boost depending on the query. \term{Late materialization} is used by several database systems, like \ibm~\cite{Raman2013-em} and \monetdb~\cite{Boncz2002-yj}. The latter has later been critiziced by materializing too much \cite{Boncz2005-wj}
+
+Holloway \ea~\cite{Holloway2008-rr} has investigated the materialization size, and concluded that vectors of 100 was a good size. The reasoning behind this is that the buffer fits in the first level of cache, while still reducing overhead
 \section{Chapter Conclusion}
 \label{sec:Chapter Conclusion}
 We conclude this chapter that join should be executed using a \term{nested loop} algorithm. This type of algorithm is suited for joins where tables fit in memory, which we assume. We also recommend adding Bloom filters to the structures to limit the number of keys entering the join. We recommend using a technique similar to Abadi \ea's \algmet{Invisible Join} for joining.
