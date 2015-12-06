@@ -5,8 +5,8 @@ One of the most prevalent ways of achieving good performance for OLAP workloads,
 
 \ffigure{img/row-store.png}{Row-oriented layout for example tuples. Courtesy of \cite{Bjorklund2011-wh}.}{fig:row-store}
 \ffigure{img/column-store.png}{Column-oriented layout for example tuples. Courtesy of \cite{Bjorklund2011-wh}.}{fig:column-store}
-\section{Column storage}
-\label{sec:Column storage}
+\section{Column Storage}
+\label{sec:Column Storage}
 Briefly mentioned in Section \ref{sub:History}, the most common storage format for transactional workloads (OLTP systems) has been to store the data in rows. Row storage enables easy fetching of related data, as well as being suited for updates, inserts, and deletes. However, for OLAP workloads, columnar storage has turned out advantageous since data is more easily aggregated and only the attributes required for the query are fetched. Systems supporting column store include, but are not limited to, MonetDB \cite{Boncz2002-yj, Boncz2005-wj}, C-Store \cite{Stonebraker2005-qz}, SAP HANA \cite{Farber2012-vh}, and Microsoft SQL Server \cite{Larson2013-mc, noauthor_undated-vq}, as well as the Business Discovery product Tableau \cite{Kamkolkar2015-iq}. 
 
 In a column store, each column in a table is stored separately in a continous segment (unless data is horizontally partitioned, see Section \ref{sub:Horizontal partitioning of columns}), as opposed to row stores where attributes from a single row is stored together \cite{Bjorklund2011-wh}. Row and column layout are depicted in Figure \ref{fig:row-store} and Figure \ref{fig:column-store} respectively \todo{SEB 30/11: Explain figure, I and P}. When executing a query on a column store, only the columns needed for the query is fetched and processed. However, the results of most queries in a DBMS is returned as rows, so columns must be stiched together before the result is returned, which implies an overhead. In addition, since the different columns are stored on different locations, inserting new values is slightly more involved than in a row store. 
