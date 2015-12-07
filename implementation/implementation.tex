@@ -102,17 +102,17 @@ Since short-circuit boolean operators are control structures and not simple arit
 
 \section{Loop Pipelining and Vectorized Execution}
 \label{sec:Loop Pipelining and Vectorized Execution}
-The absence of loop pipelining can have dramatic effects on query performance \cite{Boncz2005-wj}. Boncz \ea~show that \mysql~uses 49 cycles per tuple because loops are not unrolled. In this system, tuples are processed one at a time with 1-2 funcion calls to extract the needed data from from a tuple per iteration \cite{Abadi2008-dd}. Besides, evaluating a predicate is usually a small operation compared to the overhead associated with calling subroutines. In other words, most of the 49 instructions are spent managing the call stack or waiting for instruction dependencies.
+The absence of loop pipelining can have dramatic effects on query performance \cite{Boncz2005-wj}. Boncz \ea~show that \mysql~uses 49 cycles per tuple because loops are not unrolled. In this system, tuples are processed one at a time with 1-2 function calls to extract the needed data from a tuple per iteration \cite{Abadi2008-dd}. Besides, evaluating a predicate is usually a small operation compared to the overhead associated with calling subroutines. In other words, most of the 49 instructions are spent managing the call stack or waiting for instruction dependencies.
 
-In order to ensure proper loop pipeline behavior, compilers must know that pointers do not overlap, such that loop unrolling can be used \cite{Boncz2005-wj}. Operations in \monetx~are compiled with compiler hints that tell the compiler that processing a tuple is independent from the others. In standard \textit{C} compilers, this can be done by using the \texttt{\_\_restrict\_\_} pointer type.
+To ensure proper loop pipeline behavior, compilers must be aware that pointers do not overlap, such that loop unrolling can be used \cite{Boncz2005-wj}. Operations in \monetx~are compiled with compiler hints that tell the compiler that processing a tuple is independent of the others. In standard \textit{C} compilers, this can be done by using the \texttt{\_\_restrict\_\_} pointer type.
 
 
 \subsection{Vectorized Execution}
 \label{sub:Vectorized Execution}
-To avoid unecessary subroutine invocation overhead and help the compiler identify which instructions are independent, \textit{vectorized execution} is normally used. Vectorized execution, or block iteration, is the technique where multiple rows are processed at the same time to avoid the overhead associated with tuple-at-a-time processing \cite{Abadi2008-dd}. Vectorized execution enables loop unrolling, memory prefetching, and minimizing of cache misses \cite{Larson2013-mc}. Research performed by Abadi \ea~shows that vectorized execution in columns stores improves performance by 50\% on average.
+To avoid unnecessary subroutine invocation overhead and help the compiler identify which instructions are independent, \textit{vectorized execution} is normally used. Vectorized execution, or block iteration, is the technique where multiple rows are processed at the same time to avoid the overhead associated with tuple-at-a-time processing \cite{Abadi2008-dd}. Vectorized execution enables loop unrolling, memory prefetching, and minimizing of cache misses \cite{Larson2013-mc}. Research performed by Abadi \ea~shows that vectorized execution in columns stores improves performance by 50\% on average.
 
 % explain who uses it
-Several systems studied our research use vectorized execution. \ibm~and \mssql~work on batches of thousands of row at a time \cite{Larson2013-mc, Raman2013-em}. \monetdb~and \monetx~use vectors instead of single values as their main structure for storing data \cite{Boncz2005-wj, Boncz2002-yj}. Vectorized execution is also used by \cstore~and \blink~\cite{Johnson2008-cp, Stonebraker2005-qz}.
+Several systems studied our research use vectorized execution. \ibm~and \mssql~work on batches of thousands of row at a time \cite{Larson2013-mc, Raman2013-em}. \monetdb~and \monetx~use vectors instead of single values as their primary structure for storing data \cite{Boncz2005-wj, Boncz2002-yj}. Vectorized execution is also used by \cstore~and \blink~\cite{Johnson2008-cp, Stonebraker2005-qz}.
 
 % Explain how it works.
 \afigure{img/vectorized-execution.png}{\mssql~operators work on row batches. Each row batch contains thousands of rows stored as column vectors. Also, a bit vector indicates which rows that qualifies for a query. Courtesy of \cite{Larson2013-mc}.}{fig:vectorized-execution}{0.4}
@@ -120,7 +120,7 @@ In vectorized execution, blocks of values from the same column are sent to an op
 
 Regarding the size of the vectors in vectorized execution, we have found that vectors should not be too small due to increased overhead and less parallelism, nor too big, as it should fit in CPU cache \cite{Boncz2005-wj}.
 
-Although vectorized execution for column stores normally outperform tuple-at-a-time query processing, there are some disadvantages using this model. Neumann \ea~claim that vectorized execution eliminates a major strength of the iterator model, namely \textit{pipelining} \cite{Neumann2011-uq}. In this context, pipelining means the ability for an operator to pass tuples to its parent operator without copying the value. When vectorized execution is used, intermediate results have to be stored somewhere (materialized), which consumes memory bandwidth. Neumann \ea~address this issue by compiling queries into machine code, a technique we study in Section \ref{sub:Compiling Queries to Machine Code}.
+Although vectorized execution for column stores normally outperforms tuple-at-a-time query processing, there are some disadvantages by using this model. Neumann \ea~claim that vectorized execution eliminates a major strength of the iterator model, namely \textit{pipelining} \cite{Neumann2011-uq}. In this context, pipelining means the ability for an operator to pass tuples to its parent operator without copying the value. When vectorized execution is used, intermediate results have to be stored somewhere (materialized), which consumes memory bandwidth. Neumann \ea~address this issue by compiling queries into machine code, a technique we study in Section \ref{sub:Compiling Queries to Machine Code}.
 
 \section{Code Generation}
 \label{sec:Code Generation}
@@ -129,53 +129,58 @@ In Section \ref{sub:Call Stack and Subroutine Invocations}, we briefly discussed
 
 \subsection{Compiling Queries to Machine Code}
 \label{sub:Compiling Queries to Machine Code}
-Compiling queries to machine native code can be used to increase the performance of expression evaluation, avoid branches, and reduce the number of function calls \cite{Lamb2012-kg, Neumann2011-uq}. It is particularly effective for ad-hoc queries \cite{Psaroudakis2014-ma}, which we know that \bd~queries are. Systems compiling queries into machine code include \blink~\cite{Barber2012-xt}, \ibm~\cite{Raman2013-em}, \vertica~\cite{Lamb2012-kg}, \hyper~\cite{Psaroudakis2014-ma}, and \mssql~\cite{Delaney2014-ip}. This technique is also employed by \qlikview, and it has been claimed that compiled code gives up to 5x performance compared to interperted code for this product \cite{noauthor_undated-js}.
+Compiling queries to native machine code can be used to increase the performance of expression evaluation, avoid branches, and reduce the number of function calls \cite{Lamb2012-kg, Neumann2011-uq}. It is particularly effective for ad-hoc queries \cite{Psaroudakis2014-ma}, which we know that \bd~queries are. Systems compiling queries into machine code include \blink~\cite{Barber2012-xt}, \ibm~\cite{Raman2013-em}, \vertica~\cite{Lamb2012-kg}, \hyper~\cite{Psaroudakis2014-ma}, and \mssql~\cite{Delaney2014-ip}. This technique is also employed by \qlikview, and it has been claimed that compiled code gives up to 5x performance compared to interpreted code for this product \cite{noauthor_undated-js}.
 
-\blink, one of the systems that compiles queries from value to code space, uses dictionary keys directly in the compiled code \cite{Barber2012-xt}. Before compilation, the dictionary keys are looked up and put directly into the generated code, such that scans are performed directly on the columns without using the dictionary at run-time. Besides, the code generated by \blink~operates directly on compressed data. Since each partition in this \blink~have a different dictionary and different amount of bits per value in the bitpacked columns, a query must be compiled per partition. 
+\blink, one of the systems that compile queries from value to code space, uses dictionary keys directly in the compiled code \cite{Barber2012-xt}. Before compilation, the dictionary keys are looked up and put directly into the generated code, such that scans are performed directly on the columns without using the dictionary at run-time. Besides, the code generated by \blink~operates directly on compressed data. Since each partition in this \blink~have a different dictionary and different amount of bits per value in the bitpacked columns, a query must be compiled per partition. 
 
-Data structures and functions for data access can also be compiled to machine code. \mssql~compiles memory-optimized tables and stored procedures that are used to access them \cite{Delaney2014-ip}. This allows for more efficient query execution than the traditional interpreted SQL. Using the Visual C compiler, a dynamic linked library (DLL) per table is created and linked into the \mssql~process.
+Data structures and functions for data access can also be compiled to machine code. \mssql~compiles memory-optimized tables and stored procedures, which allows for more efficient query execution than the traditional interpreted SQL \cite{Delaney2014-ip}. Using the \textit{Visual C compiler}, a dynamically linked library (DLL) per table is created and linked into the \mssql~process.
 
 \begin{figure}
   \centering
   \begin{subfigure}{0.45\textwidth}
     \includegraphics[width=\textwidth]{img/pipeline-boundary-1.png}
-    \caption{...}
+    \caption{A query with corresponding expression tree.}
     \label{fig:pipeline-boundary-1} 
   \end{subfigure}
   \begin{subfigure}{0.45\textwidth}
     \includegraphics[width=\textwidth]{img/pipeline-boundary-2.png}
-    \caption{...}
+    \caption{Execution plan that avoids uneccesary materialization steps.}
     \label{fig:pipeline-boundary-2} 
   \end{subfigure}
-  \caption{Pipeline boundaries. Courtesy of \cite{Neumann2011-uq}.}
+  \caption{Neumann \ea~propose a system where queries are compiled into machine code using the LLVM compiler framework. (a) shows a sample query with corresponding expression tree. (b) shows how the query can be compiled into an execution plan that avoids unecessary materialization steps. Instead of storing intermediate results to memory for every operator in the execution tree, certain operations are performed together (data-centric execution). Courtesy of \cite{Neumann2011-uq}.} 
   \label{fig:pipeline-boundary} 
 \end{figure}
 
-Neumann~\ea have identified the need for machine code compilation of queries \cite{Neumann2011-uq}. Even though vectorized execution has come a long way to utilize modern CPUs, such plans are frequently outperformed by handwritten execution plans. Hand-written queries are data-centric and not operator-centric, in addition to avoiding uncessecary materialization steps.
+Neumann \ea~have identified the need for machine code compilation of queries \cite{Neumann2011-uq}. Even though vectorized execution has come a long way to utilize modern CPUs, it is frequently outperformed by handwritten execution plans. The main reason for the performance difference is that hand-written queries are data-centric and not operator-centric, which in practice means such queries avoid unnecessary materialization steps. To counter the challenges with vectorized execution, and turn queries data-centric, Neumann \ea~propose a system where queries are compiled into machine code using the LLVM compiler framework.
 
-To counter the challenges with vectorized execution, queries was compiled into native machine code using the LLVM compiler framework.
-
-As seen in Figure \ref{fig:pipeline-boundary}, by turning the query from operator centric to data centric, uneccesary data materialization can be avoided by executing several operators on the data at the same time. This way, the data is left in the CPU registers and only utilize memory to retrieve new tuples or to materialize the results. Besides, the complied code has tight loops with good code locality that works on large amounts of data.
-
-
-Vectorized execution, as described in Section \ref{sub:Vectorized Execution}, improves performance on modern CPUs, but such techniques are frequently out-performed by hand-written execution plans \cite{Neumann2011-uq}. The work by Neumann \ea~\cite{Neumann2011-uq} explains how queries are compiled into native machine code using the LLVM compiller framework. Doing this, the processing of queries are data centric and not operator centric. Classical query processing always wipes the CPU registers, but in their solution they push tuple values until a pipeline is broken. They tried using the C++ compiler, but it turned out too slow. Therefore, the major application was developed in C++.
+As seen in Figure \ref{fig:pipeline-boundary}, the compiled queries may execute several operators from the execution tree in the same step. For instance, the filter operations are performed at in the same steps as the hash tables are built, and joining $R_1$, $R_2$, and $R_3$ is done at the same time in a nested loop. The generated execution plans are more efficient. However, the most important aspect is that the plans do not store data to memory (materialize) before it is needed. Besides, the generated code has tight loops with good code locality.
 
 \subsection{Macro Expansions}
 \label{sub:Macro Expansions}
 \afigure{img/macro-expansion.png}{Macro expansions in \monetdb. For different algorithms and data types, the \texttt{select} operator has a total of 173 implementations. Courtesy of \cite{Boncz2002-yj}.}{fig:macro-expansion}{0.6}
-\monetdb~uses macro expansion to reduce layers of indirection optimize query execution performance \cite{Boncz2002-yj}. Since operators normally are type-generic, \monetdb~has for each algorithm multiple implementation routines that are specific to a certain type. The implementations are generated automaticly using macros, hence they are called \textit{macro expansions}. Figure \ref{fig:macro-expansion} shows how the select operator is expanded into 173 implementations, depending on which alorithm and data types are queried.
 
+\monetdb~uses macro expansion to reduce layers of indirection and to optimize query execution performance \cite{Boncz2002-yj}. Since operators normally are type-generic, \monetdb~has for each algorithm multiple implementations that are specific to a certain type. The implementations are generated automatically using macros, which is why they are called \textit{macro expansions}. Figure \ref{fig:macro-expansion} shows how the \texttt{select} operator is expanded into 173 implementations, depending on which algorithm and data types are queried.
 
+The vector data structure in \ibm~is implemented using C++ templates to support multiple data types.
 
 \section{Cache Awareness and Prefetching}
 \label{sec:Cache Awareness and Prefetching}
-We saw in Section \ref{sub:CPU Caches} that efficient utilization of caches is important for database performance. In terms of database algorithm, several cache aware variants have been proposed. \monetdb~\cite{Boncz2002-yj} introduce a clever clustering algorithm called \term{radix cluster}, where cache utilization is maximized by performing muliple passes over the data. \oracle~\cite{Lahiri2015-mz} uses an algorithm known as \term{Vector Group By}, which is a compact multidimensional array for storing aggregate results.
 
-Prefetching is the act of getting data up the storage hierarchy before the data is actually needed. Prefetching is made available to the processors if vectorized execution is used. Explicit prefetching is used by several systems, like \ibm~\cite{Raman2013-em}, \monetx~\cite{Boncz2005-wj}. \exasol~uses special CPU instructions to prefetch certain memory locations to improve data locality \cite{Exasol2014-xh}.
-\todo{Consider skipping the entire section}
+We saw in Section \ref{sub:CPU Caches} that efficient utilization of caches is important for database performance, so data structures and algorithms should be designed such that they are cache-aware. Our research has identified several systems that are designed to be cache-aware, including \monetdb~\cite{Boncz2002-yq}, \mssql~\cite{Lahiri2015-mz}, and \ibm~\cite{Raman2013-em}. The developers of \exasol, the top performing database system in the TPC-H benchmark, claim that high level of data locality is one of the key factors to performance.
 
+radix-cluster bla bla \todo{Input here about radix cluster algorithm if time}.
 
+Prefetching is another way of improving cache performance. Prefetching is the technique where data is proacively loaded into the CPU caches such that it is available when an instruction needs it. Prefetching can be done automatically by a processor or a compiler, but explicit prefetching CPU instructions exist. Explicit prefetching is used by several systems studied in this research, including \ibm~\cite{Raman2013-em}, \monetx~\cite{Boncz2005-wj}, and \exasol~\cite{Exasol2014-xh}.
 
 \section{Chapter Conclusion}
 \label{sec:Chapter Conclusion}
+\todo{Finish this section}
+We conclude this chapter by saying that careful implementation is needed for a high performance \bd~application. Since we operate under the in-memory assumption, this is especially important.
 
+We should avoid structures and algorithms that has a high number of branch mispredictions. we can do this by redisigning our algorithm and avoid short circuiting.
+
+Most promising in this chapter is perhaps \textit{vectorized execution}. Working on multiple values in a vector at the same time increase instruction independence, reduce function invocation overhead, and reduce the number of branches.
+
+We also see that code generation can help us in reducing the number of branches and remove layers of indirection. Both \textit{uhou} and \textit{compilation of queries} are interesting techniques that should be considered.
+
+Lastly, cache should be kept in mind when designing the database system. 
