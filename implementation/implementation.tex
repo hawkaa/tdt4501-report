@@ -16,6 +16,8 @@ Modern processors are capable of performing an enormous amount of calculations p
 
 \subsection{Pipelining, Superscalar Processing, and Independent Instructions}
 \label{sub:Pipelining, Superscalar Processing, and Independent Instructions}
+\afigure{img/superscalar.png}{A simple superscalar pipeline. Multiple execution units allows for processing multiple instructions in parallel. Courtesy of \cite{Wikipedia_contributors2015-kp}.}{fig:superscalar}{0.6} 
+
 Modern processors improve clock rate and IPC by using a technique known as \textit{pipelining} \cite{Boncz2005-wj}. By dividing an instruction execution into multiple steps, there is less work per stage, and the CPU frequency can be increased. Figure \ref{fig:superscalar} depicts an example pipeline with five stages. However, pipelining also introduce two dangers; \textit{instruction dependencies} and \textit{branch misprediction}.
 
 In a pipeline, \textit{dependencies between instructions} impose a problem. If an instruction is dependent on another, it must wait for the other instruction to complete before it enters the pipeline. Dependent instructions can severely hurt performance, especially if the pipeline is long.

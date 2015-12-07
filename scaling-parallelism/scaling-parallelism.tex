@@ -1,19 +1,16 @@
 \chapter{Parallelization and Scaling}
 \label{chap:Parallelization and Scaling}
+We find the ability to parallelize and utilize available hardware important when designing a high-performance system for OLAP workloads. For ultimate performance, a system must be parallelized on all levels:
 
-We find the ability to utilize available hardware important when designing a high-performance system for OLAP workloads. For ultimate performance, a system must be parallelized on all levels:
-
-\begin{enumerate}
+\begin{itemize}
   \item Utilize computing power in a distributed, share-nothing environment.
   \item Utilize all sockets in a non-uniform memory access (NUMA) architecture.
   \item Exploit thread-level parallelism within a multicore processor.
   \item Exploit instruction-level parallelism within a single core.
   \item Use single input, multiple data (SIMD) instructions available in the processors.
-\end{enumerate}
+\end{itemize}
 
-One of the keys to achieving good parallel performance is to use structures built for distributed and multi-core environments \cite{Primsch2011-ij}. \exasol, the top performing system on the TPC-H benchmark, applies parallelism on every layer \cite{Exasol2014-xh}.
-
-Parallelization can be applied not only to improve database performance but also to support more users and data.
+Parallelization can be applied to support more users and larger datasets, not only to improve raw performance.
 
 \newpage
 
@@ -31,16 +28,16 @@ The blocks in \oracle~are distributed using a two-phase strategy \cite{Mukherjee
 
 \qlikview, one of the studied reference products, also supports a distributed architecture \cite{Qlik2012-ku}. We saw in Section \ref{sec:Business Discovery} that \qlikview~uses the definition of \textit{an application}, where an application is one or more \bd~panels connected to a specific data extract. An application is also the minimum distribution unit in \qlikview, which in practise means that a request belonging to an application will be handled by a single server.  In other words, \qlikview~in a distributed environment does not need a central coordination unit to merge results before sent back to the client.
 
-A single application might still be served by multiple machines \cite{Qlik2012-ku}. A load balancer will assign a user session to one of the servers in the cluster, such that all requests from that session are directed to the same server. Hence, two users running the same application might have different servers processing the requests.
+In \qlikview, a single application might still be served by multiple machines \cite{Qlik2012-ku}. A load balancer will assign a user session to one of the servers in the cluster, such that all requests from that session are directed to the same server. Hence, two users running the same application might have different servers processing the requests.
 
 \subsection{Column Distribution}
 \label{sub:Column Distribution}
-\ffigure{img/dictionary-scale-out}{Different data placements of a dictionary encoded column with an inverted index. Courtesy of \cite{Psaroudakis2015-lc}.}{fig:dictionary-scale-out}
-We have previously pointed out the potential of dictionary encoded column storage for OLAP workloads. Psaroudakis \ea~have studied three techniques of how such layout inverted indexes can be distributed in a shared-nothing architecture \cite{Psaroudakis2015-lc}. These techniques are \textit{round-robin}, \textit{index vector partitioning}, and \textit{physically partitioning}, all which are illustrated in Figure \ref{fig:dictionary-scale-out}. The techniques comes with different benefits and disadvantages which we enumerate below.
+\ffigure{img/dictionary-scale-out}{Different data placements of a dictionary encoded column with an inverted index. Each color represents a node in the cluster. Courtesy of \cite{Psaroudakis2015-lc}.}{fig:dictionary-scale-out}
+We have previously pointed out the potential of dictionary encoded column storage for OLAP workloads. Psaroudakis \ea~have studied three techniques of how such layout with inverted indexes can be distributed in a shared-nothing architecture \cite{Psaroudakis2015-lc}. These techniques are \textit{round-robin}, \textit{index vector partitioning}, and \textit{physically partitioning}, all which are illustrated in Figure \ref{fig:dictionary-scale-out}. The techniques comes with different benefits and disadvantages which we enumerate below.
 
 \subsubsection{Round-robin (RR)}
 \label{ssub:Round-robin (RR)}
-RR the simplest form of data placement, where whole columns are placed on a single node in the cluster. This way, all scans and lookups on the column can happen locally. In a round-robin fashion, multiple columns can be spread across the cluster.
+RR the simplest form of data placement, where whole columns are placed on a single node in the cluster. This way, all scans and lookups on the column can happen locally. Columns are assigned a node in the cluster in a round-robin fashion.
 
 RR does not account very well for data skew and fails to utilize the processing power of a cluster. A node might end up with one or more hot columns, which results in that node becoming the bottleneck of query execution.
 
@@ -48,11 +45,11 @@ RR does not account very well for data skew and fails to utilize the processing 
 \label{ssub:Index-Vector Partitioning (IVP)}
 IVP is a technique developed to overcome the challenges with RR, where the index structure for the columns decides data partitioning. This way, all instances of the same distinct value in a column will be placed on the same node. This scheme accounts for data skew and better utilizes all nodes in a system.
 
-However, this method suffers from high overhead when stitching column results back together. This overhead only gets larger as the number of nodes increases. Needless to say, this structure requires that the columns are indexed using an inverted index structure, a structure we have recommended against in Chapter \ref{chap:Indexes and Auxiliary Structures}.
+However, this method suffers from high overhead when stitching column results back together. This overhead only gets larger as the number of nodes increases. Needless to say, this structure requires that the columns are indexed using an inverted index structure, a structure we have recommended against using in Chapter \ref{chap:Indexes and Auxiliary Structures}.
 
 \paragraph{Physically Partitioned (PP)}
 \label{par:Physically Partitioned (PP)}
-Challenges with IVP can be overcome by partitioning the columns in the database. This technique distributes work evenly across nodes in the cluster, and allows for data pruning based on minimum and maximum values, a technique we discussed in Section \ref{sec:Database Statistics}. Database systems using PP include \oracle~and \saph.
+Challenges with IVP can be overcome by partitioning the columns in the database and assign column partitions to machines in the cluster. This technique distributes work evenly across nodes in the cluster, and allows for data pruning based on minimum and maximum values, a technique we discussed in Section \ref{sec:Database Statistics}. Database systems using PP include \oracle~and \saph.
 
 There are two main disadvantages with PP. First, it is time and resource consuming to perform or repartition. Second, since dictionaries across partitions are expected to contain common values, PP potentially consumes more memory.
 
@@ -81,7 +78,7 @@ Psaroudakis \ea~have studied the details of thread scheduling \cite{Psaroudakis2
   \item The state of the whole system should be taken into consideration when deciding task granularity. When a task divides itself into smaller subtasks, the number of subtasks created should be dependent on how many processing cores that are available at the time. A simplified example is if six out of eight processing units are busy, a task should only generate two subtasks instead of eight.
 \end{enumerate}
 
-\ffigure{img/scheduler.png}{Data structures used by a task scheduler. Courtesy of \cite{Psaroudakis2013-fn}.}{fig:scheduler}
+\ffigure{img/scheduler.png}{Data structures used by a task scheduler. Each DAG represents a query. When a query is added to the task scheduler, the root node is put into a queue that corresponds to that query's priority. Courtesy of \cite{Psaroudakis2013-fn}.}{fig:scheduler}
 A directed acyclic graph (DAG) can represent a parallelizable query where each node is a separate task that can be executed by a single thread \cite{Psaroudakis2013-fn}. Each thread can pick any task from the DAGs where the predecessor has already been processed. Also, task priorities can be supported by having a queue and a task pool per priority. Figure \ref{fig:scheduler} depicts the structures used by the scheduler.
 
 Using the method described in the above paragraph, changing the probability that a root node (new query) is selected can adjust the throughput/latency tradeoff. If the probability of picking a root node is high, multiple queries execute simultaneously, and simpler queries might complete before heavier queries even though they were submitted at a later time. Hence, latency is reduced. If the probability of picking a root node is low, started queries normally finish before execution of new queries start. In this situation, throughput is maximized, but it comes at the cost of higher latency for simpler queries.
@@ -99,7 +96,7 @@ An example of a NUMA aware system is \hyper~\cite{Psaroudakis2014-ma, Psaroudaki
 
 The \qlikview~developers conclude that NUMA is great if the application can take advantage of it \cite{Qlik2013-an}. However, if it does not, NUMA might have a negative impact on performance. \qlikview~actually performs better if NUMA is disabled in BIOS. When NUMA is disabled, the operating system will use the local memory for one CPU at a time.
 
-We conclude this section by emphasizing the fact that techniques developed for distributed, shared-nothing architectures can be used to enhance performance on NUMA nodes \cite{Mukherjee2015-ul} (Section \ref{sec:Distributed Architecture}). Each socket in a NUMA architecture can be treated as a single server in a shared-nothing architecture such that all communication is performed with explicit message passing. The column distribution schemes we discussed in Section \ref{sub:Column Distribution} can also be applied to a NUMA system, both in a shared-memory and shared-nothing architecture.
+We conclude this section by emphasizing the fact that techniques developed for distributed, shared-nothing architectures (Section \ref{sec:Distributed Architecture}) can be used to enhance performance on NUMA nodes \cite{Mukherjee2015-ul}. Each socket in a NUMA architecture can be treated as a single server in a shared-nothing architecture such that all communication is performed with explicit message passing. The column distribution schemes we discussed in Section \ref{sub:Column Distribution} can also be applied to a NUMA system, both in a shared-memory and shared-nothing architecture.
 
 \subsection{Hyperthreading}
 \label{sub:Hyperthreading}
@@ -110,11 +107,9 @@ However, if a single thread manages to keep a processing core busy with computat
 \section{Instruction Level Parallelism}
 \label{sec:Instruction Level Parallelism}
 
-\afigure{img/superscalar.png}{A simple superscalar pipeline. Multiple execution units allows for processing multiple instructions in parallel. Courtesy of \cite{Wikipedia_contributors2015-kp}.}{fig:superscalar}{0.6} 
+Instruction-level parallelism (ILP) can be exploited if a processor can find operations that are independent \cite{Wikipedia_contributors2015-vg}, as it allows a processor to execute multiple instructions simultaneously. Techniques that allow multiple operations to be executed at the same time include \term{instruction pipelining} and \term{superscalar execution}. As most programming languages do not require application programmers to specify which instructions are independent, exploiting ILP is the job of the compilers and processors.
 
-Instruction-level parallelism (ILP) can be exploited if a processor can find operations that are independent \cite{Wikipedia_contributors2015-vg}. ILP allows a processor to perform multiple instructions simultaneously. Techniques that allow multiple operations to be executed at the same time include \term{instruction pipelining} and \term{superscalar execution}. Superscalar execution is the concept where there are multiple processing units within a processor, such that the numbers of instructions per cycle (IPC) can be more than one. Figure \ref{fig:superscalar} illustrates a simple superscalar pipeline. As most programming languages do not require application programmers to specify which instructions are independent, exploiting ILP is the job of the compilers and processors.
-
-It is still possible to implicitly design applications that are optimized for ILP. In general, the idea is that if a processor can find enough independent work, it can be a magnitude or two faster \cite{Boncz2005-wj}. We see in Section \ref{sec:Branch Avoidance} that avoiding branches reduce independence between instructions. To avoid branches is the reason \monetx~and \blink~work on multiple rows at the same time \cite{Boncz2005-wj, Johnson2008-cp}. Operating on multiple values at the same time keeps the CPU pipeline full with independent instructions since loops can be unrolled. We study this technique further in Chapter \ref{chap:Implementation Details}.
+It is still possible to implicitly design applications that are optimized for ILP. In general, the idea is that if a processor can find enough independent work, it can be a magnitude or two faster \cite{Boncz2005-wj}. Techniques used to reduce dependencies between instructions include \textit{branch avoidance} and \textit{loop pipelining}, which we study further in Chapter \ref{chap:Implementation Details}.
 
 \section{SIMD}
 \label{sec:SIMD}
@@ -122,10 +117,10 @@ It is still possible to implicitly design applications that are optimized for IL
 % Present problem
 Within a single execution context, instructions that work on multiple elements at a time can be used to increase query performance. We refer to these instructions as single input, multiple data (SIMD) instructions \cite{Wikipedia_contributors2015-ax}. As seen in Figure \ref{fig:simd}, an SIMD instruction applies the same operation to multiple operands simultaneously. SIMD processing in a database context is particularly effective if we can keep an entire processing block in the CPU registers \cite{Neumann2011-uq}, and Willhalm \ea~show that SIMD processing using a vectorized model can be up to 1.5 times faster than databases optimized for scalar execution and ILP \cite{Willhalm2009-hu}.
 
-Our research shows that several database systems use SIMD parallelization. Systems in this category include \oracle~\cite{Lahiri2015-mz}, \blink~\cite{Barber2012-xt}, and \ibm~\cite{Raman2013-em}. A whitepaper from the developers of \exasol~says that SIMD features of modern processors must be used to reach the highest level of performance.
+Our research shows that several database systems use SIMD parallelization. Systems in this category include \oracle~\cite{Lahiri2015-mz}, \blink~\cite{Barber2012-xt}, and \ibm~\cite{Raman2013-em}. A whitepaper from the developers of \exasol~says that SIMD features of modern processors must be used to reach the highest level of performance \cite{Exasol2014-xh}.
 
 \afigure{img/oracle-simd.png}{Filter operation in \oracle~using SIMD vector processing. Courtesy of \cite{Lahiri2015-mz}.}{fig:oracle-simd}{0.6}
-\oracle~performs scans against the columns using instructions that work on multiple operands simultaneously \cite{Lahiri2015-mz}. As seen in Figure \ref{fig:oracle-simd}, a filter operation benefits from SIMD as multiple values can be compared in parallel. \ibm and later versions of \blink~work similarly \cite{Barber2012-xt, Raman2013-em}.
+\oracle~performs scans against the columns using instructions that work on multiple operands simultaneously \cite{Lahiri2015-mz}. As seen in Figure \ref{fig:oracle-simd}, a filter operation benefits from SIMD as multiple values can be compared in parallel. \ibm~and later versions of \blink~work similarly \cite{Barber2012-xt, Raman2013-em}.
 
 \begin{figure}
   \centering
@@ -145,7 +140,7 @@ Our research shows that several database systems use SIMD parallelization. Syste
 
 Bitpacking of column values further increase SIMD performance, because more values fit within a single data word. However, since most SIMD instructions require operands to be aligned, some preprocessing steps must be applied to the column values first \cite{Willhalm2009-hu}. As seen in Figure \ref{fig:simd-align}, a bitpacked vector can be prepared for an SIMD operation using mask and bitshift operations. Vectors that are already aligned with data words can be queried more efficiently since the preprocessing can be skipped.
 
-Most literature refers to SIMD parallelization as utilizing special processor and instruction set extensions, like the Intel SSE and Intel AVX2 extension \cite{Willhalm2013-ri, Willhalm2009-hu}. However, general CPU instructions can also be used to evaluate predicates in a \textit{SIMD-like fashion}. In \blink, equality predicates on a column are done by first extracting the needed fields by applying a suitable mask, then compare the result with a second mask containing the expected values \cite{Johnson2008-cp}. Since the masks are calculated once per query, this technique can become very efficient.
+Most literature refers to SIMD parallelization as utilizing special processor and instruction set extensions, like the Intel SSE and Intel AVX2 extension \cite{Willhalm2013-ri, Willhalm2009-hu}. However, general CPU instructions can also be used to evaluate predicates in a \textit{SIMD-like fashion}. In \blink, ordinary CPU instructions work directly on multiple values in a bitpacked column by applying a suitable mask and compare the result with a second mask containing the expected values \cite{Johnson2008-cp}. This technique can become very efficient since masks for a column are calculated once per query.
 
 \section{Scaling}
 \label{sec:Scaling}
@@ -153,23 +148,20 @@ Most literature refers to SIMD parallelization as utilizing special processor an
 
 
 \afigure{img/scaling.png}{Scale-Up vs Scale-Out. When scaling up, more hardware is added to the single server. When scaling out, more servers are added. Courtesy of \cite{CloudBoost2015-gg}.}{fig:scaling}{0.8}
-We distinguish between two types of scaling, as seen in Figure \ref{fig:scaling}. \textit{Scaling up} refers to scaling by adding more hardware to a single server. Examples of hardware improvement are the addition of more RAM or more processing cores. \textit{Scaling out} refers to the technique where the system scales by adding more servers to a processing cluster. Such system must support a distributed architecture as explained in Section \ref{sec:Distributed Architecture}.
+We distinguish between two types of scaling, as seen in Figure \ref{fig:scaling}. \textit{Scaling up} refers to scaling by adding more hardware to a single server. Examples of hardware improvement are the addition of more RAM or more processing cores. \textit{Scaling out} refers to the technique where the system scales by adding more servers to a processing cluster. A system that allows for scaling out must be built using a distributed architecture, as we explained in Section \ref{sec:Distributed Architecture}.
 
 Whether to scale out or scale up is discussed by Mukherjee \ea~\cite{Mukherjee2015-ul}. Historically, scaling out has been considered as the best and most flexible way to achieve good performance. Scaling out is strictly required for very large systems, since there is a limit of how much processing power and storage capacity a single server can provide. Scaling out also comes at the benefit of redundancy; if one node in the cluster goes down, another node can take over.
 
 However, there are situations where scaling up should be considered. First of all, a shared-memory application is easier to program than a shared-nothing, distributed application \cite{Boncz2002-yj}. Second, if results and queries are cached, it is beneficial that all requests are handled by the same server. \qlikview~reports that scaling up is up to twice as fast as scaling out for a large application with many users due to the effects of caching \cite{Qlik2012-ku}.
 
-We conclude this section by saying that if the dataset is small enough to fit on a single server, scaling up should be considered over scaling up, due to simpler implementation and better cache utilization. It is also likely that the datasets are small enough to fit on a single server. 80\% of Facebooks tasks are less than 10GB \cite{Mukherjee2015-ul}, and all of Amazon's transactions for a year takes 54 GB \cite{Kemper2011-ap}.
+We conclude this section by saying that if the dataset is small enough to fit on a single server, scaling up should be considered over scaling up, due to simpler implementation and better cache utilization. It is indeed likely that the datasets actually are small enough to fit on a single server. 80\% of Facebooks tasks are less than 10GB \cite{Mukherjee2015-ul}, and all of Amazon's transactions for a year takes up roughly 50 GB \cite{Kemper2011-ap}.
 
 \section{Chapter Conclusion}
 \label{sec:Chapter Conclusion}
-We have in this chapter seen that.
+We conclude this chapter by saying that parallelization is an important measure to improve a \bd~application's performance and that it might be required to handle large data sizes and multiple users. Many systems studied in this research use parallelization, including \exasol, \tableau, and \qlikview.
 
-We recommend scaling up over scaling out because it is easier to implement and is better at utilizing caches. If scaling out is to be considered, we recommend a system like \qlikview which distributes applications to different servers.
+We recommend utilizing thread-level parallelism, where queries should be split into smaller tasks and executed by threads in a thread pool. It is important for the scheduler to distribute work evenly to get linear speedup.
 
+Instruction level parallelism and SIMD instructions are both promising techniques to improve database performance. We see that SIMD instructions are particularly effective on bitpacked columns, a storage format we have suggested earlier in this report. The database software should also be designed to improve ILP. We will study ILP in detail in the chapter about implementation details, Chapter \ref{chap:Implementation Details}.
 
-We do not reccomend looking at scale-out yet, as this is harder to implement and degrades database cache performance. Instead, we recommend two scaling techniques:
-\begin{itemize}
-  \item Scale-out through spreading \bd~applications and data extracts across different servers.
-  \item Scale-up by provisioning powerful, multicore CPUs and plenty of RAM.
-\end{itemize}
+For now, we do not recommend a distributed architecture, because of three reasons. First, a distributed architecture is harder to program than an application that runs on a single server. Second, distributed queries might hurt query cache performance, as reported by \qlikview. Last, we anticipate that most workloads fit in the main memory of a single server. For the same three reasons, we encourage a \textit{scale up} approach to scaling instead of \textit{scale out}.

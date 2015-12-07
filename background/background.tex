@@ -10,14 +10,17 @@ In this chapter, we study background information that is relevant to this report
 
 \subsection{History}
 \label{sub:History}
-There is a need for analysis in business trends, and normally business consists of legacy systems using a large number of different OLTP databases.
+At the beginning of the era of information systems, businesses were busy developing applications that fulfil their everyday needs \cite{Pavlic2002-nm}. However, it soon became apparent that management needed to study business trends within the company to make strategic decisions, something the current applications were unable to provide. Legacy systems commonly used OLTP databases to persist their data, however doing this had two disadvantages regarding reporting needs: (i) The databases lack support for summarizing data, and (ii) it was tough to combine data from different databases.
 
-Later came the decision support systems, which naturally led to a data warehouse. A data warehouse is a system specifically designed for OLAP workloads, where data is stored in nightly batch jobs, and aggregated such that the data can be analysed the next day. Later, the notion of data marts was introduced, where a data mart is a portion of a data warehouse that is relevant for a specific department.
+Then, to improve business efficiency, a separation between operational systems and decision support systems (DSS) was made. DSS started out with \textit{multiway data analysis}, which is a method of analyzing data as dimensions in a multidimensional array \cite{Wikipedia_contributors2015-zu}, but very soon after the \textit{business data warehouse} emerged \cite{Devlin1988-yu}. Data warehouses were designed to satisfy companies' need for reporting by collecting data from multiple legacy systems into one large data vault. A data warehouse is no more than a collection of data from different sources in a company, and it is used by the management to make strategic decisions and solve business problems \cite{Pavlic2002-nm}. A data warehouse can contain several data marts; smaller slices of the data warehouse that are usually department-specific.
 
-On the way toward the \bd~products we know today, came the Operational Data Store (ODS)~\cite{Pavlic2002-nm}. This is another architectural construct that comes in addition to the OLTP legacy systems and the OLAP data warehouses. An ODS is created for efficient data extraction without affecting OLTP. This can be seen as a first step toward analytics on live data. \todo{Fill in three paragraphs from the pavlic thesis}.
+\subsubsection{\bi~on Real-Time Data}
+Data warehouses help management in making \textit{long-term} decisions by storing historical data for the purpose of studying trends within a business. The \textit{Operational Data Store} (ODS) was developed to serve the needs to make \textit{short-term} operational and tactical decisions \cite{Pavlic2002-nm}. An ODS stores an up to the minute view of the data within an organization to make operational decisions, for instance helping a bank clerk to decide whether a client may cash out a check or not. One of the main differences between a data warehouse and an ODS is that a data warehouse is based on snapshots while the ODS is based on updates. The Operational Data Store can be seen as an important step towards \bi~on real-time data.
 
-Today, we see the emergence of two different system categories that relate to \bi. In the first category, we find systems that try to unite OLAP and OLTP systems into DBMSes that handle both workloads equally well. Such mixed-workload (OLXP) systems reduce application complexity and data redundancy and enable real-time reporting on transactional data \cite{Plattner2014-fr}. Examples of OLXP systems are \hyper~and \hyrise~\cite{Kemper2011-ap, Schwalb2014-hn}. In the other category, we find \bd~products, which we study in Section \ref{sec:Business Discovery}.
+Today, we find systems that try to unite OLAP and OLTP systems into DBMSes that handle both workloads equally well. Such mixed-workload (OLXP) systems reduce application complexity and data redundancy and enable real-time reporting on transactional data \cite{Plattner2014-fr}. Examples of OLXP systems are \hyper~and \hyrise~\cite{Kemper2011-ap, Schwalb2014-hn}.
 
+\subsubsection{Self-Service \bi}
+The data warehouses expose data marts to the departments in a business, however creating reports were still a job for the IT department. It soon became apparent that non-technical professionals needed to be able to create their own reports without assistance from the IT staff \cite{noauthor_undated-fi}. The most recent within self-service \bi~are the \bd~applications we study in this thesis, which we explain in greater detail in Section \ref{sec:Business Discovery}.
 
 \subsection{Star and Snowflake Schema}
 \label{sub:Star and Snowflake Schema}
@@ -111,25 +114,24 @@ As mentioned earlier, we expect \bd~applications to include summaries of data, a
 
 \section{Testing}
 \label{sec:Testing}
-The TPC-H benchmark is commonly used to test analytical workloads. The benchmark is made for decision support workloads, and consists of a suite of business oriented ad-hoc queries \cite{Transaction_Processing_Performance_Council_TPC2014-ux}. The benchmark has 22 complex queries and 2 queries for data refresh process. In the TPC-H specification says the benchmark illustrated a decision support system that:
-\begin{enumerate}
+The TPC-H benchmark is commonly used to test analytical workloads. The benchmark is made for decision support workloads and consists of a suite of business oriented ad-hoc queries \cite{Transaction_Processing_Performance_Council_TPC2014-ux}. The benchmark has 22 complex read-only queries, which are both memory and CPU bound \cite{Boncz2005-wj}, and two update queries for data refresh. TPC-H specification says the benchmark illustrates a decision support system that:
+\begin{itemize}
   \item Examine large volumes of data.
   \item Execute queries with a high degree of complexity.
   \item Give answers to critical business questions.
-\end{enumerate}
-The benchmark contains queries that are both memory and CPU bound \cite{Boncz2005-wj}. 
+\end{itemize}
 
 \afigure{img/tpc-h.png}{The TPC-H schema. Courtesy of \cite{Transaction_Processing_Performance_Council_TPC2014-ux}.}{fig:tpc-h}{0.8}
-The components of the TPC-H benchmark are eight separate tables, where the relations between them are shown in Figure \ref{fig:tpc-h}. The tables are composed of a variety of different data types, including integers, floating points, variable and fixed width strings, identifiers, and booleans. 
+The schema for the TPC-H benchmark consists of eight separate tables, as seen in Figure \ref{fig:tpc-h}. The table columns have a variety of different data types, including integers, floating points, variable and fixed width strings, identifiers, and booleans. 
 
 \afigure{img/tpc-h-population.png}{TPC-H database size and cardinalities. Courtesy of \cite{Transaction_Processing_Performance_Council_TPC2014-ux}.}{fig:tpc-h-population}{0.8}
-Figure \ref{fig:tpc-h-population} shows the minimum population for the TPC-H benchmark. The minimum population contains 10,000 suppliers and 6 million lineitems. The TPC-H can also be used to test larger datasets by applying a scaling factor to proportionally increase the number of rows. Data is uniformely distributed.
+Figure \ref{fig:tpc-h-population} shows the minimum population for the TPC-H benchmark, which is based on a database with 10,000 suppliers and roughly 6 million line-items (items per order). Larger datasets may also be tested using the benchmark by applying a scaling factor to proportionally increase the number of rows of all tables. According to the specification, data in the tables should be uniformly distributed.
 
-The TPC-H benchmark tests data that is uniformly distributed, but in reality it is quite common that data is skewed. Forinstance, for a retailer, 99\% of the sales is done on weekdays, 40\% around christmas \cite{Raman2008-gi}. Tests on data with non-uniform distributions should be tested to see how well optimization techniques handle outliers. Data skew can be modelled with a \term{Zipfian} distribution \cite{Holloway2008-rr}. 
+The TPC-H benchmark tests uniformly distributed data, but in reality it is quite common that data is skewed. For instance, a retailer might expect that 99\% of the sales are performed on weekdays, and around 40\% of the total sales for a year is done around Christmas \cite{Raman2008-gi}. Tests on data with non-uniform distributions should be permed to see how well the algorithms and data structures in the database handle outliers. Data skew can be modelled with a \term{Zipfian} distribution \cite{Holloway2008-rr}. 
 
 \subsection{Tools}
 \label{sub:Tools}
-Our research has identified several tools used to test OLAP databases and \bd~applications:
+In addition to the TPC-H benchmark, our research has identified several tools used to test OLAP databases and \bd~applications:
 \begin{itemize}
   \item \pn{callgrind} can be used to observe branches and cache effects \cite{Neumann2011-uq}.
   \item \pn{Inter Performance Counter Monitor} measures processor cycles and execution time \cite{Willhalm2013-ri}.
