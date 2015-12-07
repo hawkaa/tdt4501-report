@@ -1,12 +1,10 @@
 \chapter{Implementation Details}
 \label{chap:Implementation Details}
-\ffigure{img/implementation.png}{Spatial joins using a simple grid structure. A simple spatial join algorithm that puts elements into buckets based on their position in a grid. By putting data pointers directly in the buckets instead of referring to a linked list, a layer of indirection is removed, and 3-fold improvement is observed. Courtesy of \cite{Sidlauskas2014-ef}.}{fig:implementation}
+\ffigure{img/implementation.png}{A simple spatial join algorithm that puts elements into buckets based on their position in a grid. By putting data pointers directly in the buckets instead of referring to a linked list, a layer of indirection is removed, and 3-fold improvement is observed. Courtesy of \cite{Sidlauskas2014-ef}.}{fig:implementation}
 
-As we move up the memory hierarchy, careful implementation becomes more important. Recent work by Sidlauskas \ea~claims there is a challenge in concluding about data structures and algorithms only for in-memory databases, as the implementation also plays a significant role in performance \cite{Sidlauskas2014-ef}. For instance, if an extra layer of indirection is removed for an algorithm, as seen in Figure \ref{fig:implementation}, we observe a 3-fold performance improvement. 
+As we move up the memory hierarchy, careful implementation becomes more important. Recent work by Sidlauskas \ea~claims that for in-memory databases, there is a challenge in concluding about data structures and algorithms only; the implementation also plays a significant role in performance \cite{Sidlauskas2014-ef}. For instance, if an extra layer of indirection is removed for an algorithm, as seen in Figure \ref{fig:implementation}, we observe a 3-fold performance improvement. 
 
-We have decided to dedicate an entire chapter to \textit{implementation details}, and explain how performance can be improved by reducing the number of branches, avoiding layers of indirection, and utilizing CPU caches.
-
-In this chapter, we will first cover basic theory about modern CPUs. We will then discuss techniques employed by systems studied in this research.
+We have decided to dedicate an entire chapter to \textit{implementation details}, and explain how performance can be improved by reducing the number of branches, avoiding layers of indirection, and utilizing CPU caches. We will first cover basic CPU theory, and then study related techniques employed by systems studied in this research.
 
 \newpage
 
@@ -24,7 +22,7 @@ In a pipeline, \textit{dependencies between instructions} impose a problem. If a
 
 Conditional branches are also affected by dependencies between instructions. When executing a conditional branch instruction, the decision whether to take a branch is usually dependent on the result of a preceding instruction \cite{Boncz2005-wj}. To avoid stalling the pipeline when waiting for the expression to evaluate, modern CPUs use a technique known as branch prediction where the processor immaturely starts executing the branch that is most likely to be taken. The performance penalty occurs if a branch is \textit{mispredicted}, where the instructions in the pipeline must be invalidated (pipeline flushing).
 
-We briefly discussed superscalar processors in Section \ref{sec:Instruction Level Parallelism}. A superscalar processor has multiple execution units to enable IPC $> 1$, and to fully utilize the processor; independent work is required.
+Another way that performance is increased in a processor is by having muliple execution units. We refer to such processors as \textit{superscalar}. As seen in Figure \ref{fig:superscalar}, a superscalar processor can have multiple instructions in the same stage of the pipeline, which allows for for IPC (instructions per cycle) $> 1$. However, for this functionality to be fully utilized, independent work is required.
 
 \begin{figure}
   \centering
@@ -52,7 +50,7 @@ The best way to tackle this challenge is to design algorithms and data structure
   \item \textit{Coordinate temporal and spatial locality}. Data processed together should be stored at consecutive memory addresses. Code locality is also important \cite{Neumann2011-uq}.
   \item \textit{Avoid false sharing of cache lines}. Multiple cores in a processor should not write to data belonging to the same cache entry at the same time to avoid unecessary invalidations.
 \end{itemize}
-\textit{Compression}, which is described in Chapter \ref{chap:Data Compression}, and \textit{vectorized execution}, which we discuss in Section \ref{sec:Loop Pipelining and Vectorized Execution}, are two techniques used to improve cache performance \cite{Larson2013-mc, Lemke2010-is}.
+\textit{Compression}, which we described in Chapter \ref{chap:Data Compression}, and \textit{vectorized execution}, which we discuss in Section \ref{sec:Loop Pipelining and Vectorized Execution}, are two techniques used to improve cache performance \cite{Larson2013-mc, Lemke2010-is}.
 
 \textit{Prefetching} is another method used to increase cache utilization. Prefetching proactively loads data into caches such that the data is available when an instruction needs it.
 
@@ -64,21 +62,21 @@ A \textit{call stack} is commonly used in a computer program to store informatio
 
 Trading off time with space is usually done to address the above challenge; adding more code to improve program efficiency. \textit{Function inlining} is a technique used by compilers where the subroutine code is copied into the callee's body. This way, no new stack frame is created for the subroutine, avoiding the overhead associated with a function invocation.
 
-\textit{Macro expansion} is another form of code generation. Macros are normally specified by the application programmer, and can be used for programmer-controlled inlining of functions or constant values. Macros can also be used to generate multiple versions of function or class definitions (templating), a technique commonly used to support different data types.
+\textit{Macro expansion} is another form of code generation. Macros are normally specified by the application programmer, and can be used for programmer-controlled inlining of functions or constant values. Macros can also be used to generate multiple versions of function or class definitions (templating), a technique commonly used to let a single implementation support different data types.
 
 \section{Branch Avoidance}
 \label{sec:Branch Avoidance}
 \ffigure{img/branch-selectivity.png}{Predicate evaluation performance for queries with different query selectivities. A \textit{branch version} and a \textit{predicated version} is tested. For the AthlonMP processor, the branch version are 2-3 times slower on queries with 40\%-60\% selectivity, while the Itanium2 processor has constant processing time. The predicated version offers constant processing time for both processors. Courtesy of \cite{Boncz2005-wj}.}{fig:branch-selectivity}
 
-We saw in the previous section that branches should be avoided due to the penalties of branch misprediction. Besides, branch avoidance might also increase instruction independence.
+We saw in the previous section that branches should be avoided due to the penalties of branch misprediction. Besides, branches also cause dependencies between instructions. 
 
 The consequences of inaccurate branch prediction are studied by Neumann \ea~\cite{Neumann2011-uq}. In this research, the performance of queries with various selectivities was tested. As we can see in Figure \ref{fig:branch-selectivity}, queries with 40\%-60\% selectivity executed on an AthlonMP processor are roughly 2-3 times slower than queries with selectivities close to 0\% or 100\%. Hence, selectivity can severely affect the query performance. The Itanium2 processor does not have the same characteristic, as the Itanium architecture allows for both \textit{not taken} and \textit{taken} branches to be executed simultaneously.
 
 Neumann \ea~also developed a branchless version (predicated version) to evaluate predicates in the queries. The branchless variant is denoted as \texttt{predicated version} in Figure \ref{fig:branch-selectivity}. For both AthlonMP and Itanium2 processors, this implementation offers constant performance for all selectivities, but is, in general, more expensive.
 
-Branch avoidance is also important in other parts of the system, like decompressing. Zukowski \ea~present a decompression algorithm that is free for \textit{if-then-else} statements \cite{Zukowski2006-oz}. By running the algorithm in two tight loops instead of one, branch misprediction is reduced, and the loops can be pipelined by a compiler.
+Branch avoidance is also important in other parts of the system, for instance when decompressing. Zukowski \ea~present a decompression algorithm that is free for \textit{if-then-else} statements \cite{Zukowski2006-oz}. By running the algorithm in two tight loops instead of one, branch misprediction is reduced, and the loops can be pipelined by a compiler.
 
-Branches can also be avoided by compiling queries to machine code \cite{Lamb2012-kg}. We study this technique in greater detail in Section \ref{sub:Compiling Queries to Machine Code}.
+Branches can also be avoided by compiling queries to machine code \cite{Lamb2012-kg}. We will elaborate on this technique in Section \ref{sub:Compiling Queries to Machine Code}.
 
 \subsection{Short-circuiting}
 \label{sub:Short-circuiting}
@@ -104,35 +102,36 @@ Since short-circuit boolean operators are control structures and not simple arit
 
 \section{Loop Pipelining and Vectorized Execution}
 \label{sec:Loop Pipelining and Vectorized Execution}
-The absence of loop pipelining can have dramatic effects on query performance \cite{Boncz2005-wj}. Boncz \ea~show that \mysql~uses 49 cycles per tuple due to the absence of loop pipelining. In \mysql, there are 1-2 funcion calls to extract the needed data from a tuple for each iteration \cite{Abadi2008-dd}. Evaluating a predicate is usually a small operation compared to the overhead associated with calling subroutines, which means most of the 49 instructions are spent managing the call stack.
+The absence of loop pipelining can have dramatic effects on query performance \cite{Boncz2005-wj}. Boncz \ea~show that \mysql~uses 49 cycles per tuple because loops are not unrolled. In this system, tuples are processed one at a time with 1-2 funcion calls to extract the needed data from from a tuple per iteration \cite{Abadi2008-dd}. Besides, evaluating a predicate is usually a small operation compared to the overhead associated with calling subroutines. In other words, most of the 49 instructions are spent managing the call stack or waiting for instruction dependencies.
 
-In order to ensure proper loop pipeline behavior, compilers must know that pointers do not overlap, such that loop unrolling can be used \cite{Boncz2005-wj}. In \monetx, this is made explicit by passing CPU primitives that expose to the compiler that processing a tuple is independent from the others.
+In order to ensure proper loop pipeline behavior, compilers must know that pointers do not overlap, such that loop unrolling can be used \cite{Boncz2005-wj}. Operations in \monetx~are compiled with compiler hints that tell the compiler that processing a tuple is independent from the others. In standard \textit{C} compilers, this can be done by using the \texttt{\_\_restrict\_\_} pointer type.
 
-To avoid unecessary subroutine invocation overhead and help the compiler identify which instructions are independent, \textit{vectorized execution} is normally used.
 
 \subsection{Vectorized Execution}
 \label{sub:Vectorized Execution}
-Vectorized execution, or block iteration, is the technique where multiple rows are processed at the same time to avoid the overhead associated with tuple-at-a-time processing \cite{Abadi2008-dd}. Vectorized execution enables loop unrolling, memory prefetching, and minimizing of cache misses \cite{Larson2013-mc}. Research executed by Abadi \ea~shows that vectorized execution in columns stores improves performance by 50\% on average.
+To avoid unecessary subroutine invocation overhead and help the compiler identify which instructions are independent, \textit{vectorized execution} is normally used. Vectorized execution, or block iteration, is the technique where multiple rows are processed at the same time to avoid the overhead associated with tuple-at-a-time processing \cite{Abadi2008-dd}. Vectorized execution enables loop unrolling, memory prefetching, and minimizing of cache misses \cite{Larson2013-mc}. Research performed by Abadi \ea~shows that vectorized execution in columns stores improves performance by 50\% on average.
 
 % explain who uses it
-Several systems studied in this report use vectorized execution. \ibm~and \mssql~work on batches of thousands of row at a time \cite{Larson2013-mc, Raman2013-em}. \monetdb~and \monetx~use vectors instead of single values as their main structure for storing data \cite{Boncz2002-yj, Boncz2005-wj}. Vectorized execution is also used by \cstore~and \blink \cite{Johnson2008-cp, Stonebraker2005-qz}.
+Several systems studied our research use vectorized execution. \ibm~and \mssql~work on batches of thousands of row at a time \cite{Larson2013-mc, Raman2013-em}. \monetdb~and \monetx~use vectors instead of single values as their main structure for storing data \cite{Boncz2005-wj, Boncz2002-yj}. Vectorized execution is also used by \cstore~and \blink~\cite{Johnson2008-cp, Stonebraker2005-qz}.
 
 % Explain how it works.
-\afigure{img/vectorized-execution.png}{\mssql~operates on row batches. Each row batch has a vector for each column and a bit vector indicating qualifying rows. Courtesy of \cite{Larson2013-mc}.}{fig:vectorized-execution}{0.4}
-In vectorized execution, blocks of values from the same column are sent to an operator for evaluation \cite{Zukowski2006-oz}. \mssql~works on batches of columns at the same time, which is seen in Figure \ref{fig:vectorized-execution}. Here, all columns are evaluated using tight loops. A bit vector indicating qualifying rows is where the results are stored. Regarding vector size, vectors should not be too small due to increased overhead and less parallelism, nor too big, as it should fit in CPU cache \cite{Boncz2005-wj}.
+\afigure{img/vectorized-execution.png}{\mssql~operators work on row batches. Each row batch contains thousands of rows stored as column vectors. Also, a bit vector indicates which rows that qualifies for a query. Courtesy of \cite{Larson2013-mc}.}{fig:vectorized-execution}{0.4}
+In vectorized execution, blocks of values from the same column are sent to an operator for evaluation \cite{Zukowski2006-oz}. Query operators in \mssql~work on row batches, batches that contain thousands of rows stored in a column format. In addition to the column vectors, an additional \textit{qualifying rows vector} is used to indicate which rows that have been logically purged from the batch when executing a query. Figure \ref{fig:vectorized-execution} shows this structure.
 
-Although vectorized execution for column stores normally outperform tuple-at-a-time query processing, there are some disadvantages using this model. Neumann \ea~claim that vectorized execution eliminates a major strength of the iterator model, namely \textit{pipelining} \cite{Neumann2011-uq}. In this context, pipelining means the ability for an operator to pass tuples to its parent operator without copying the value. When vectorized execution is used, intermediate results have to be stored somewhere (materialized), which consumes memory bandwidth.
+Regarding the size of the vectors in vectorized execution, we have found that vectors should not be too small due to increased overhead and less parallelism, nor too big, as it should fit in CPU cache \cite{Boncz2005-wj}.
+
+Although vectorized execution for column stores normally outperform tuple-at-a-time query processing, there are some disadvantages using this model. Neumann \ea~claim that vectorized execution eliminates a major strength of the iterator model, namely \textit{pipelining} \cite{Neumann2011-uq}. In this context, pipelining means the ability for an operator to pass tuples to its parent operator without copying the value. When vectorized execution is used, intermediate results have to be stored somewhere (materialized), which consumes memory bandwidth. Neumann \ea~address this issue by compiling queries into machine code, a technique we study in Section \ref{sub:Compiling Queries to Machine Code}.
 
 \section{Code Generation}
 \label{sec:Code Generation}
-In Section \ref{sub:Call Stack and Subroutine Invocations}, we briefly discussed how code generation can be used to avoid overhead related to function invocations. In this section, we study two techniques employed by systems studied in this research.
+In Section \ref{sub:Call Stack and Subroutine Invocations}, we briefly discussed how code generation can be used to avoid overhead related to function invocations. Besides, code generation can also reduce branches and improve cache performance. In this section, we study two code generation techniques employed by systems studied in this research.
 
 
 \subsection{Compiling Queries to Machine Code}
 \label{sub:Compiling Queries to Machine Code}
-Compiling queries to machine native code can be used to increase the performance of expression evaluation, to avoid branches, and reduce the number of function calls \cite{Lamb2012-kg, Neumann2011-uq}. It is particularly effective for ad-hoc queries \cite{Psaroudakis2014}. Systems compiling queries into machine code include \blink~\cite{Barber2012-xt}, \ibm~\cite{Raman2013-em}, \vertica~\cite{Lamb2012-kg}, \hyper~\cite{Psaroudakis2014-ma}, and \mssql~\cite{Delaney2014-ip}. This technique is also employed by \qlikview, and has been claimed that compilated code vs interpreted code gives up to 5X performance for this product \cite{noauthor_undated-js}.
+Compiling queries to machine native code can be used to increase the performance of expression evaluation, avoid branches, and reduce the number of function calls \cite{Lamb2012-kg, Neumann2011-uq}. It is particularly effective for ad-hoc queries \cite{Psaroudakis2014-ma}, which we know that \bd~queries are. Systems compiling queries into machine code include \blink~\cite{Barber2012-xt}, \ibm~\cite{Raman2013-em}, \vertica~\cite{Lamb2012-kg}, \hyper~\cite{Psaroudakis2014-ma}, and \mssql~\cite{Delaney2014-ip}. This technique is also employed by \qlikview, and it has been claimed that compiled code gives up to 5x performance compared to interperted code for this product \cite{noauthor_undated-js}.
 
-Before compiling queries from value to code space, \blink~looks up keys in the dictionary which are used to generate code \cite{Barber2012-xt}. Hence, scans can be performed directly on the compressed data without looking up values in the dictionary. Since different partitions have different dictionaries, a query must be compiled per partition. 
+\blink, one of the systems that compiles queries from value to code space, uses dictionary keys directly in the compiled code \cite{Barber2012-xt}. Before compilation, the dictionary keys are looked up and put directly into the generated code, such that scans are performed directly on the columns without using the dictionary at run-time. Besides, the code generated by \blink~operates directly on compressed data. Since each partition in this \blink~have a different dictionary and different amount of bits per value in the bitpacked columns, a query must be compiled per partition. 
 
 Data structures and functions for data access can also be compiled to machine code. \mssql~compiles memory-optimized tables and stored procedures that are used to access them \cite{Delaney2014-ip}. This allows for more efficient query execution than the traditional interpreted SQL. Using the Visual C compiler, a dynamic linked library (DLL) per table is created and linked into the \mssql~process.
 
