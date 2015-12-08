@@ -174,13 +174,8 @@ Prefetching is another way of improving cache performance. Prefetching is the te
 
 \section{Chapter Conclusion}
 \label{sec:Chapter Conclusion}
-\todo{Finish this section}
-We conclude this chapter by saying that careful implementation is needed for a high performance \bd~application. Since we operate under the in-memory assumption, this is especially important.
+In this chapter, we see that careful implementation is required for a high-performance, in-memory database. The implementation should utilize modern CPUs by reducing branches, function invocations, and dependencies between instructions. In addition to this, algorithms and data structures should be made \textit{cache-aware}. 
 
-We should avoid structures and algorithms that has a high number of branch mispredictions. we can do this by redisigning our algorithm and avoid short circuiting.
+We point at \textit{vectorized execution} as the most promising technique to improve database performance in a \bd~application, as it can drastically reduce the number of cycles per tuple by operating at multiple values at a time. \textit{Vectorized execution} enables loop unrolling and memory prefetching and minimizes cache misses. We consider this technique as relatively straight-forward to implement. \textit{Vectorized execution} should be implemented using macro expansions to avoid unnecessary layers of indirection.
 
-Most promising in this chapter is perhaps \textit{vectorized execution}. Working on multiple values in a vector at the same time increase instruction independence, reduce function invocation overhead, and reduce the number of branches.
-
-We also see that code generation can help us in reducing the number of branches and remove layers of indirection. Both \textit{uhou} and \textit{compilation of queries} are interesting techniques that should be considered.
-
-Lastly, cache should be kept in mind when designing the database system. 
+We see that many systems, including \bd~product \qlikview, compile queries into machine code. This technique increases the performance of expression evaluation, avoids branches, and reduces the number of function calls. Query compilation is indeed a promising technique with potentially significant performance benefits, but we believe implementing such system as non-trivial.
