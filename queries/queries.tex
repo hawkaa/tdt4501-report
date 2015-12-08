@@ -87,73 +87,75 @@ The entire algorithm is illustrated in Figure \ref{fig:invisible-join}.
 
 We gave the \textit{invisible join} as an example join algorithm, because we believe a similar method is needed in a \bd~application with multiple tables. We see that hash tables from the first phase and bitmaps from the second phase are candidates for caching, a technique we saw in Section \ref{sec:Caching and Dynamic Index Generation} commonly used to improve read performance.
 
-
-
 \section{Grouping and Aggregation}
 \label{sec:Grouping and Aggregation}
-Conceptually, grouping and aggregation is relatively straight forward: The record set is scanned and divided into groups based on one or more attributes, and for each group an accumulator is held \cite{Bratbergsengen2015-ed}. Accumulators can be of various types, which includes \term{count}, \term{min}, \term{max}, \term{average}, and \term{sum}. Some aggregates require just a single memory cell, like \term{count} and \term{sum}, others are more involved and require more memory to calculate, like \term{median} and \term{average}. Aggregated results are stored in a suitable structure, like a hash table or linear array. 
+The ability to group and aggregate data is perhaps one of the most important capabilities for \bi~and \bd~applications. In Section \ref{sub:Business Discovery, Queries, and SQL} we saw that users are interested in reports that can be analyzed quickly, which means the summarization and categorization of data.
 
-Multiple optimizations can be done to improve grouping and aggregation performance. First, the operations can be applied at the same time as for the scan \cite{Lemke2010-is}. This is done in \blink, where the core idea is a generalized scan that filters, groups, and aggregates on a single scan over the data \cite{Raman2008-gi}.
+Conceptually, grouping and aggregation are relatively straightforward: The record set is scanned and divided into groups based on one or more attributes, and for each cluster an accumulator is held \cite{Bratbergsengen2015-ed}. Accumulators can be of various types, which includes \term{count}, \term{min}, \term{max}, \term{average}, and \term{sum}. Some aggregates require just a single memory cell, like \term{count} and \term{sum}, others are more involved and require more memory to calculate. A suitable structure stores the aggregated results, as a hash table or linear array. 
 
-Dictionary encoding can simplify grouping and aggregation, since dictionary entries can be used directly for storing the aggregated results \cite{Boncz2005-wj, Lemke2010-is}. This is done in \monetx~and \blink. \blink~uses dictionary codes directly as group codes. Doing such results in a perfect hash \cite{Raman2008-gi}. Also, some aggregates, like minimum and maximum value in a column, can be evaluated scanning only  dictionary entries \cite{Lemke2010-is}.
+Our research has shown that multiple optimizations can be done to improve grouping and aggregation performance. For instance, grouping and aggregation can be performed at the same time as the data is scanned and filtered \cite{Lemke2010-is}. This is done in \blink, where the core idea is a generalized scan that filters, groups, and aggregates on a single scan over the data \cite{Raman2008-gi}.
+
+Dictionary encoding can simplify grouping and aggregation, since dictionary entries can be used as a perfect hash for directly storing the aggregated results \cite{Boncz2005-wj, Lemke2010-is}. Such optimization is done in \monetx~and \blink. Besides, some aggregation operations do not need to scan the entire column, as it is sufficient to use the values in the dictionary. For instance, the maximum value in a column's dictionary will also be the maximum value for that column.
+
 
 \ffigure{img/vector-group-by}{The \term{Vector Group By} technique used in \oracle. Courtesy of \cite{Oracle2015-fs}.}{fig:vector-group-by}
-On composite \texttt{GROUP BY} operations, a multidimensional structure may be used. \oracle~uses a technique which they call \term{Vector Group By}, which is a compact multipdimensional array for storing aggregate results. The operation is depicted in Figure~\ref{fig:vector-group-by}. \blink~calculates a minimal perfect hash in this case \cite{Raman2008-gi}.
 
-\ffigure{img/parallel-group-by}{Courtesy of \cite{Raman2013-em}.}{fig:parallel-group-by}
-If the columns are partitioned horizontally, grouping and aggregation must be performed in two phases: A scan phase per partition followed by a global merge phase \cite{Lemke2010-is}. In a distributed system, the grouping is even more involved. For \ibm, local grouping is performed per node in parallel \cite{Raman2013-em}\todo{elaborate}. In \exasol~and \oracle, an attribute in a table might specifiy table partitioning \cite{Exasol2014-xh, Lahiri2015-mz}. If a query is grouped by the same attribute, the work is already done.
+For composite \texttt{GROUP BY} operations, a multidimensional structure may be used. \oracle~uses a technique that they call \term{Vector Group By}, which is an algorithm that uses a compact multidimensional array for storing aggregate results \cite{Oracle2015-fs}. The \term{Vector Group By} algorithm works as following:
+\begin{enumerate}
+  \item The query scans the dimension tables.
+  \item A key vector is created per table based on the results in the previous step. The key vectors are used to filter the fact table when predicates are applied to the foreign tables. They work like Bloom filters, except they do not return false negatives.
+  \item An in-memory accumulator is created based on the key vectors which are used to store the accumulated results.
+  \item The fact table is scanned, and data is accumulated in the structure established in the previous step. If there is a key vector that does not contain the foreign key, the row is should not be a part of the aggregation.
+\end{enumerate}
 
-As mentioned in Section \ref{sub:Queries}, in \bd~workloads, the groups will be predefined in the panel. However, new aggregation results must be populated when filters are applied.
+Figure~\ref{fig:vector-group-by} illustrates the \term{Vector Group By} algorithm.
 
-\subsection{Parallel Grouping and Aggregation}
-\label{sub:Parallel Grouping and Aggregation}
-Vendors say their grouping operations scale linearly with the number of threads until the CPU is saturated \cite{Farber2012-vh}
+\ffigure{img/parallel-group-by}{Simple illustration of parallel grouping and aggregation in \ibm. Several threads perform the operations using a local hash table. In the second phase of the algorithms, threads are assigned a partition of the hash space and merge all local hash tables into a global partitioned hash table. Courtesy of \cite{Raman2013-em}.}{fig:parallel-group-by}
 
-In \ibm~, each thread performs a local grouping on a local hash tables and creates a linked list of overflow buckets \cite{Raman2013-em}. When they are full, they get published globally. Second phase, each thread reserves a partition to merge, and it merges all local hash tables to a global one.
+Grouping and aggregation should be done in parallel for ultimate performance. In \ibm, multiple threads perform local grouping on local hash tables on column partitions \cite{Raman2013-em}. In the second phase of this algorithm, each thread picks a partition of the local hash tables using a global counter and merges the local tables into a global partitioned hash table. The process is illustrated in Figure \ref{fig:parallel-group-by}.
+
 
 \section{Query Optimization}
 \label{sec:Query Optimization}
-Our study of query optimization will be brief, but we have found some sources relevant for OLAP workloads. Most of the database systems found in literature use some kind of query optimization. 
+Query optimization is a large field within computer science and databases and was initially thought to be left out of this research. However, several systems identified in our literature survey have included some sort of query optimization. We will, therefore, briefly discuss this topic in this section. 
 
-In general, query optimizers must seek to reduce the search space \cite{Boncz2002-yj, Stonebraker2005-qz}. \blink~makes query optimization much easier, since the only operation for evaluating predicates in a query is a scan operation \cite{Barber2012-xt}. In addition, joins and grouping is done in prespecified order. The core idea of this system is a generalized scan which performs scan, selection, groping, and aggregation \cite{Raman2008-gi}. 
+Query optimizers should try to reduce the search space \cite{Boncz2002-yj, Stonebraker2005-qz}. Search space is reduced in \blink, where the only operation to access a table is via scans, and joining and grouping is done in a prespecified order \cite{Barber2012-xt}. Besides, query performance is increased if data is filtered out as early as possible in the plan \cite{Lamb2012-kg}. For instance, the most selective tables in a join operation should be joined first \cite{Holloway2008-rr}.
 
-If compression is applied to the database, it is important that the optimizer is aware \cite{Westmann200-mz}. The query optimizer must be aware that columns might be compressed, and that these compressed columns can be worked on directly without decompression \cite{Stonebraker2005-qz}
+If compression is applied to the database, it is important that the query optimizer is aware of this \cite{Westmann2000-mz}. It must take into account that the compressed columns can be worked on directly without decompression \cite{Stonebraker2005-qz}.
 
-In addition, it is important to filter data as early as possible in the plan \cite{Lamb2012-kg}, and in join operation  most selective columns should be processed first \cite{Holloway2008-rr}. In a parallel settiong, the query optimizer should minimize the need for coordination \cite{Exasol2014-xh}.
+In a distributed environment, the query optimizer should minimize the need for coordination by assigning query operations that can run independently on each machine \cite{Exasol2014-xh}. 
 
-Long in-lists can be turned into a precomputed hash table \cite{Raman2013-em}.
+We conclude this section by saying that the query optimizer must utilize possible optimizations allowed by the design. This includes:
+\begin{itemize}
+  \item Database statistics (Section \ref{sec:Database Statistics}) can be used to skip blocks if columns are horizontally partitioned.
+  \item Dictionary keys for a partition can be checked before scanning a column. If a key is not present in the dictionary, the partition can be skipped.
+  \item Complicated predicates can be turned into \texttt{IN} predicates based on entries in the dictionary.
+\end{itemize}
 
-We conclude our discussion on query optimization that query execution must utilize available optimizations allowed by the design. Metadata indexes (Section ?) can be used to skip blocks. Dictionaries can be checked, and partitions can be skipped entirely if the key is not present in the dictionary (Section ?). \texttt{LIKE} predicates can be turned into \texttt{IN} predicates based on the entries in the dictionary.
+\section{Querying Directly on Compressed Data}
+\label{sec:Querying Directly on Compressed Data}
+We find one of the most important technique for good query performance to operate directly on compressed data, which we have studied in Section \ref{sub:Working Directly on Compressed Data}. As we have seen, this is especially important when using dictionary compression, such simple integer operations can evaluate most predicates \cite{Abadi2008-dd}. If the data is bitpacked, queries can be processed in a SIMD-like fashion, a technique we study in more detail in Section \ref{sec:SIMD}.
 
-%\section{Query structures}
-%\label{sec:Query structures}
-%\missingfigure{Selection vector illustration from \cite{Boncz2005-wj}}
-%If the queries work on vectors at a time (vectorized execution, section X), the auxiliary structure in \monetx~is a selection vector \cite{Boncz2005-wj}.
+Systems querying direcly on compressed data include \cstore~\cite{Stonebraker2005-qz}, \ibm~\cite{Raman2013-em}, \mssql~\cite{Larson2013-mc}, \blink~\cite{Johnson2008-cp}, \sapnw~\cite{Lemke2010-is}. All of these systems claim one of their main benefits in terms of performance is their ability to work directly on the compressed data.
 
-\section{Other Considerations}
-\label{sec:Other Considerations}
-We find one of the most important technique for good query performance to operate directly on compressed data, which we have studied in Section \ref{sub:Working Directly on Compressed Data}. As we have seen, this is especially important when using dictionary compression, such that most predicates can be performed by simple integer operations \cite{Abadi2008-dd}. If the data is bitpacked, queries can be processed in a SIMD-like fashion, a technique we study in more detail in Section \ref{sec:SIMD}. Systems querying direcly on compressed data include \cstore~\cite{Stonebraker-qz}, \ibm~\cite{Raman2013-em}, \mssql~\cite{Larson2013-mc}, \blink~\cite{Johnson2008-cp}, \sapnw~\cite{Lemke2010-is}. All of these systems claim one of their main benefits in terms of performance is their ability to work directly on the compressed data.
+\section{Measure and Dimension Attributes}
+\label{sec:Measure and Dimension Attributes}
+We see that some systems make a distinction between measure and dimension attributes \cite{Johnson2008-cp, Kamkolkar2015-iq}. A dimension attribute typically answers questions like "where", "what", and "when", whereas a measure attribute normally answers in terms of "how much" \cite{noauthor_undated-es}. 
 
+We have no specific evidence of what this classification can do to aid query processing, but we believe it can help determine which results that should be cached. For dimension attributes, join indexes and hash tables used for joining and grouping are candidates for caching. For measure attributes, aggregations and query results can be cached.
 
-We see that some systems make a distinction between measure and dimension attributes \cite{Kamkolkar2015-iq, Johnson2008-cp}. A dimension attribute is typically answers questions like "where", "what", and "when", whereas a measure attribute nomally answers in terms of "how much" \cite{noauthor_undated-es}. Although we have no specific evidence of what this classification can do to aid query processing, we believe it can help determine data placement and which results that are cached. For dimensions, join indexes and filtered results are obvious candidates for caching. In a banked layout, used in \blink, or in column projections, used in \cstore, dimension attributes should be put together in the same bank or projection to aid predicate evaluation. Measure attributes on the other hand are candidates for caching of query results
+We also believe the distinction between the two types of attributes can be used for data placement. In a banked layout, used in \blink, or in column projections, used in \cstore, dimension attributes will benefit from being in the same data bank or column projection to improve join performance.
 
-\subsection{Query Restrictions}
-\label{sub:Query Restrictions}
-Most DBMSes support normal SQL operations. However, to simplify some of the queries, one may put restrictions to the SQL. Earlier versions of \mssql~did not support outer joins and group-by on scalar attributes \cite{Larson2013-mc}. This was justified as none of this was common for "datawarehouse scenarios".
-
-Other work has suggested that standard SQL can be cumbersome and expensive \cite{Plattner2014-fr}, and want to investigate new ways of calculating and maintaining a database. \qlikview~is not in the \term{query-based paradigm}, and claims this is beneficial due to ... \todo{insert reasons here}
-
-\bd~applications do not need to support all SQL operations which a DBMS normally does. For instance, joins can be limited to equi-joins over foreign keys, and aggregations may be limited to groups of one or more dimensions in the schema.
-
-\section{Late materialization}
-\label{sec:Late materialization}
-Materialization is the word that is used when intermediate results are stored in memory. It can be used on many levels, where materialization can mean moving results from registers to memory \cite{Neumann2011-uq}, or can mean stiching tuples together for columns. Abadi \ea~\cite{Abadi2008-dd} have investigated the effects of late materialization, that is keeping the columns for as long as you can without materializing into rows. This optimization allows for 5\%-50\% performance boost depending on the query. \term{Late materialization} is used by several database systems, like \ibm~\cite{Raman2013-em} and \monetdb~\cite{Boncz2002-yj}. The latter has later been critiziced by materializing too much \cite{Boncz2005-wj}
-
-Holloway \ea~\cite{Holloway2008-rr} has investigated the materialization size, and concluded that vectors of 100 was a good size. The reasoning behind this is that the buffer fits in the first level of cache, while still reducing overhead
 \section{Chapter Conclusion}
 \label{sec:Chapter Conclusion}
-We conclude this chapter that join should be executed using a \term{nested loop} algorithm. This type of algorithm is suited for joins where tables fit in memory, which we assume. We also recommend adding Bloom filters to the structures to limit the number of keys entering the join. We recommend using a technique similar to Abadi \ea's \algmet{Invisible Join} for joining.
+In this chapter, we have seen that \bd~applications require joins to associate several tables in an application. We reccomend a \textit{nested loop} algorithm for this, because this is the most popular joining algorithm for in-memory and parallel databases. The join could be inspired by Abadi \ea's \textit{invisible join}. In addition, partitioning the inner relation and using Bloom filters should be considered.
 
-We also encourage investigating the benefits of caching temporary structures used in both cache and aggregation. In the case of \algmet{Invisible Join}, the predicate bitmaps can be cached.
+We have seen that grouping and aggregation is perhaps the most important capabilities for a \bd~application. Suitable structures should be used.
 
-Queries must also work directly on compressed data, as concluded in Chapter \ref{chp:Compression}.
+\todo{Finish this conclusion}
+
+%We conclude this chapter that join should be executed using a \term{nested loop} algorithm. This type of algorithm is suited for joins where tables fit in memory, which we assume. We also recommend adding Bloom filters to the structures to limit the number of keys entering the join. We recommend using a technique similar to Abadi \ea's \algmet{Invisible Join} for joining.
+
+%We also encourage investigating the benefits of caching temporary structures used in both cache and aggregation. In the case of \algmet{Invisible Join}, the predicate bitmaps can be cached.
+
+%Queries must also work directly on compressed data, as concluded in Chapter \ref{chp:Compression}.
