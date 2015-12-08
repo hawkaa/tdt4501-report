@@ -5,15 +5,15 @@ In this chapter, we present other considerations that we have stumbled upon when
 
 \section{Application Design}
 \label{sec:Application Design}
-The main selling point for the \bd~products is that they perform well, but several factors contribute to the system overall performance. When considering performance, it is done from an end-user perspective \cite{Qlik2011-yc}.
+In this report, we have looked into techniques of how to improve raw performance for an in-memory, read-only database. However, for a \bd~product, performance is considered from an end-user perspective \cite{Qlik2011-yc}. \qlikview~outlines four aspects of application performance: Size of data, number of users, number of applications, and application design. The latter aspect means you should avoid too many listboxes, too many tables, too many formulas. In addition to this, columns should be split for better compression, and only pick the fields that are needed.
 
-\qlikview~outlines four aspects of application performance: Size of data, number of users, number of applications, and application design. The latter aspect means you should avoid too many listboxes, too many tables, too many formulas. In addition to this, columns should be split for better compression, and only pick the fields that are needed.
-
-In other words, not only designing a high performance in-memory backend is important for the user experience; \textbf{much can be done in the application design}. Data can be filtered or summarized during import. An example of this is a business discovery panel for a retail store company, where the highest granularity is per day. Here, transactions should be summarized in the import script in order to reduce data size.
+In other words, not only designing a high performance in-memory backend is important for the user experience; \textbf{much can be done in the application design}. The reporting panels should not be too complex, and data can be filtered or summarized during import. An example is of the latter is to summarize transactions for a retail company in the data import script. By summing up the transaction amounts per store per day (or hour), data sizes are reduced and the \bd~application performs better.
 
 \section{Denormalization}
 \label{sec:Denormalization}
-The technique where you add redundant data and grouping attempting to optimize performance is known as \term{Denormalization} \cite{Wikipedia_contributors2015-az}. It has been studied extensively before \cite{Raman2008-gi}. Among the read-optimized databases, denormalization is not used due to a variety of reasons. First of all, denormalizing offsets the compression \cite{Barber2012-xt}. Second, applying a predicate on a foreign key is easier than applying it on a denormalized fact table \cite{Abadi2008-dd}. \blink was initially denormalizing the data \cite{Johnson2008-cp}, but after checking on customer data, they figured it did not help performance \cite{Barber2012-xt}.
+The technique where you add redundant data attempting to optimize performance is known as \term{Denormalization} \cite{Raman2008-gi, Wikipedia_contributors2015-az}. Among the read-optimized databases we have identified in this research, denormalization is not very common. First of all, denormalizing offsets the compression \cite{Barber2012-xt}. Second, applying a predicate on a foreign key is easier than applying it on a denormalized fact table \cite{Abadi2008-dd}. 
+
+\blink~was originally deigned to operate on one, large denormalized table \cite{Johnson2008-cp}. However, after testing the database on real customer data, they figured out it did not help on performance \cite{Barber2012-xt}, and implemented a \textit{nested loop} based join instead. The authors never elaborated on why joining gave better performance than denormalization.
 
 In the case of the reference producs, \qlikview~does not denormalize data internally. However, the data extract script allows users to enter SQL statements such that data can be fetched from other systems, and in this step, denormalization can be applied \cite{Qlik2011-yc}. Both \qlikview~and \tableau~uses star and snowflake schemas, which can be seen as a form of denormalization. Using these schemas boost performance \cite{Kamkolkar2015-iq}.
 
@@ -45,7 +45,6 @@ The most common construct for supporting writes is using a delta store, also kno
 
 Delta stores is periodically moved into the main storage format, or read-optimized store. Such operation can either be triggered when the delta store exceeds a certain threshold, or through a trickle operation \cite{Lahiri2015-mz, Farber2012-vh}.
 
-\missingfigure{Figure about the delta store in SAP HANA Psaroudakis2014-ma}
 A common way to use a delta store is to disallow updates, and use a delete statement followed by an insert statement instead. Deletes are normally implemented as invalidation bit vectors \cite{Raman2013-em, Lamb2012-kg}, and updates are appended to a suitable structure, like an unsorted B+-tree \cite{Psaroudakis2014-ma}, or non-bitpacked columns with unsorted dictionary compression \cite{Farber2012-vh}. This delete-insert way of updating allows for time-travel queries \cite{Scwalb2014-hn, Plattner2014-fr}
 
 In certain conditions, using the delta store can be omited completely on insertion. \mssql~cite allows bulk inserts to create columns directly without going via the delta store \cite{Larson2013-mc}.
@@ -53,12 +52,6 @@ In certain conditions, using the delta store can be omited completely on inserti
 \subsection{Transactions}
 \label{sub:Transactions}
 Transactions can be supported using standard locking and latching used in traditional OLTP databases \cite{Lamb2012-kg}. However, to simplify the design , \hyper~process the transactions serially with a single thread \cite{Psaroudakis2014-ma}. This avoids expensive locking and latching. The analytical queries gets a memory snapshot of the current state of the database by forking the processor, such that hardware facilities for paging can be used.
-
-\subsection{Testing mixed workloads}
-\label{sub:Testing mixed workloads}
-\ffigure{img/chbench.png}{Schema of the \chbench. Courtesy of \cite{Psaroudakis2014-ma}.}{fig:chbench}
-Mixed workloads can be tested using the \chbench, as seen in Figure \ref{fig:chbench}.
-
 
 \section{Chapter Conclusion}
 \label{sec:Chapter Conclusion}

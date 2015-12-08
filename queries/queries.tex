@@ -1,81 +1,93 @@
 \chapter{Query Processing}
 \label{chap:Query Processing}
-A high performance \bd~application does not only rely on storing the data in the correct format, using light-weight compression algorithms, and index and other structures to aid performance. We show that algorithms and optimizations done when processing queries are also important.
+So far, we have studied base techniques that improve OLAP performance for in-memory, read-only databases. However, a high-performance \bd~application does not only rely on using the correct data format, compression, indexes, parallelization, and implementation. In this chapter we elaborate query processing techniques.
 
-Grouping and Aggregation are the single most important functionality for a \bi~applications, as people require data summary and not data details. Joining is key for these applications, and perhaps even more for \bd~systems, since a filter in one table must quickly propagate to the other tables.
+In Section \ref{sub:Business Discovery, Queries, and SQL}, we explained how \bd~applications relate to traditional queries. We saw that a \bd~application must support listing of rows, filtering, joining, and grouping/aggregation. In this chapter, we focus on query processing, mainly joining, grouping and aggregation, and query optimization.
 
-As mentioned in the background section lthough a \bd~system does not need to support SQL, we still need traditional query techniques, like joining, grouping and aggregation.
+
+%storing the data in the correct format, using light-weight compression algorithms, and index and other structures to aid performance. We show that algorithms and optimizations done when processing queries are also important.
+
+%Grouping and Aggregation are the single most important functionality for a \bi~applications, as people require data summary and not data details. Joining is key for these applications, and perhaps even more for \bd~systems, since a filter in one table must quickly propagate to the other tables.
+
+%As mentioned in the background section lthough a \bd~system does not need to support SQL, we still need traditional query techniques, like joining, grouping and aggregation.
 
 \newpage
 
-
 \section{Joining}
 \label{sec:Joining}
+Joining is a common database operation that combines records from two or more tables. In our research, we have studied several DBMSes, and seen how their join algorithms work. As we saw in Section \ref{sub:Business Discovery, Queries, and SQL}, joining is also needed for a \bd~application such that interaction with one table can affect the selection, filters, or aggregations in other tables.
+
 For joining two tables, three main methods exist \cite{Bratbergsengen2015-ed}: 
 \begin{itemize}
-  \item \textit{Partition-based approach}, where records of both relations are divided into groups based on the hash value of the keys. It is most effective when data volumes are so large they must be spilled to disk.
+  \item \textit{Partition-based approach}, where records of both relations are split into groups based on the hash value of the keys. This technique is most effective on data volumes are too large to fit in main memory.
   \item \textit{Sort-merge approach}, where both tables are sorted and then merge results by concatenating records with equal key values. This approach is most effective when one or both operands are sorted in advance.
   \item \textit{Nested loop approach}, which compares all rows in both tables.
 \end{itemize}
 
-We study algorithms that use \textit{nested loop} methods, because it is the most popular joining algorithm for in-memory and parallel \cite{Boncz2002-yj}.
+We find the \textit{nested loop} approach to be the most popular joining algorithm for in-memory and parallel databases \cite{Boncz2002-yj}. The rest of Section \ref{sec:Joining} will therefore only discuss this method.
 
 \subsection{Nested Loop Algorithms}
 \label{sub:Nested Loop Algorithms}
-\ffigure{img/nested-loop.png}{An example nested loop join structure. Records are first tested against a Bloom filter. If hit in filter, the join key are searched in the join structure. Records are first hashed, and then each entry in the hash table is the root of a binary tree. Courtesy of \cite{Bratbergsengen2015-ed}.}{fig:nested-loop}
-In its simplest form, the \textit{nested loop} methods compare all rows in both tables directly, such that the runtime is $O(n*m)$ where $n$ and $m$ is the size of tables A and B respectively. However, the data structure for lookup can be optimized for fast lookup when a key is given \cite{Bratbergsengen2015-ed}. Here, a combination of hash tables and binary trees are used. A bloom filter can also be used to quickly determine if the key is in the working set or not, a technique we investigate in Section \ref{sub:Bloom Filter Based Joins}. See Figure \ref{fig:nested-loop}.
 
-In the nested loop approach, one of the operands might be partitioned \cite{Bratbergsengen2015-ed}. Historically, this has been done such that the entire hash structure fits in RAM. We conclude that similar concept can be applied to CPU caches, and that the inner relation might be partitioned such that it fits in the CPU cache. If the entire relation is not in the working set, it is beneficial to use a bloom filter to reduce the number of keys entering the join.  
+% Basic nested join functionality
+In its simplest form, the \textit{nested loop} method compares all the join keys in all rows directly using a double loop. This simple algorithm has a runtime of $O(n*m)$ where $n$ and $m$ is the size of tables A and B respectively. However, to improve performance in a \textit{nested loop} algorithm, hashmaps are commonly used. Usually, the join is performed by hashing the smaller (inner) relation first, then probe the hashmap by scanning the larger (outer) relation. 
 
-Nested loop join is performed by hashing the smaller (inner) relation first, then scan the outer relation where the hash table is probed. This is especially easy in a star or snowflake schema, where the dimensions are hashed, and the fact table is probed \cite{Barber2012-xt, Raman2013-em}
+In a star or snowflake schema, dimension tables are usually considered as the inner relations \cite{Barber2012-xt, Raman2013-em}. In other words, the keys of these tables will be used to create the hashmaps in the join. In the second phase of the algorithm, the fact table will probe the generated hashmaps to complete the join. 
 
-A design goal is to keep the hash tables collision free \cite{Raman2013-em, Raman2008-gi}. Linear hashing is preferred over open-chain hashing due to better cache utilization \cite{Raman2008-gi}. Depending on the number of groups, perfect hashing should be used for lagre groups, and a method known as IDX for small.
+\ffigure{img/nested-loop.png}{An example nested loop join structure. Records are first tested against a Bloom filter. If found in the filter, the join key is searched in the join structure. Records are first hashed, and then each entry in the hash table is the root of a binary tree. Courtesy of \cite{Bratbergsengen2015-ed}.}{fig:nested-loop}
 
-The most detailed research we find on hash join, is the work by Barber \ea~\cite{Barber2014-ey}. They explain how data independent ranmod access (DIRA) can build hash tables without contention, utilizing prefetching. Through the use of overflow hash tables, they reduce the amount of collisions and get 100\% occupancy. Hash tables are built in parallel.
+Bratbergsengen \ea~show how a combination of hash tables, bloom filters, and binary trees can be used in a \textit{nested join} algorithm. In the probe phase, keys are first checked towards a Bloom filter (Section \ref{sub:Bloom Filter}). Bloom filters never return false negatives and is an efficient way of reducing the numbers of keys entering the join. If the key is found in the Bloom filter lookup, it is hashed and checked up against a hybrid hashmap/binary-tree structure. In this structure, each entry in the hashmap is the root node of a binary tree which are used to efficiently look up values. The join algorithm is illustrated in Figure \ref{fig:nested-loop}.
 
-There are ways of improving performance in the caching algorithms in terms of implementation details and cache awareness (Section ?). \monetdb~utilizies a radix cluster algorithms, where multiple passes are used to maximize cache locality \cite{Boncz2002-yj}. They find a performance improvement of 90\% using this technique. \mssql~implementation of the hash join still keeps good performance if some pages are allowed to be spilled to disk \cite{Larson2013-mc}. We choose not to study these algorithms in detail, but we are aware such algorithms exist.
+% Modifications
+In the nested loop approach, one of the operands might be partitioned \cite{Bratbergsengen2015-ed}. For example, a join might be partitioned by only hashing a subset of the inner relation at a time. The entire join algorithm will then include several probe passes over the outer relation, one for each subset. Historically, this technique has been applied to ensure the whole hash structure fits in RAM. We conclude that a similar concept can be applied to CPU caches and that the join algorithm might benefit from partitioning the inner relation such that each subset fits in the CPU cache.
+
+We see that several DBMSes in this research use a \textit{nested loop} join variant with Bloom filters, including \oracle~\cite{Lahiri2015-mz}, \ibm~\cite{Raman2013-em} and \blink~\cite{Raman2008-gi}. Barber \ea~explains how Bloom filters are effective in eliminating non-matching join outers before they enter the join \cite{Barber2014-ey}.
+
+Our research has shown that one of the key design goals for efficient joining using the \textit{nested loop} approach with hashmaps, is to keep the hash tables collision free \cite{Raman2008-gi, Raman2013-em}. One way to ensure this is to use the dictionary keys in \de~as a perfect hashing function. If a table is joined on several keys, a minimal perfect hash can be calculated.
+
+Regarding implementation, it is important that the algorithm and the hash table are \textit{cache-aware}. One way to improve cache performance in a \textit{nested loop} join, is to use linear probing instead of open-chain addressing for the hashmap \cite{Raman2008-gi}. Open-chain addressing should only be used for overflow buckets.
+
+Joining should be done in parallel for ultimate performance. For instance, the hash tables can be built using multiple threads \cite{Barber2014-ey}. We see that some \textit{nested loop} based algorithms partition the input to improve cache performance. However, this decision might as well be a parallelization decision \cite{Neumann2011-uq}. A system studied in our research that employs high-performance parallel joining is \ibm \cite{Raman2013-em}.
 
 \subsection{Invisible Join}
 \label{sub:Invisible Join}
+
 \begin{figure}
   \centering
-  \begin{subfigure}{0.45\textwidth}
+  \begin{subfigure}{0.48\textwidth}
     \includegraphics[width=\textwidth]{img/invisible-join-1.png}
-    \caption{The first phase of the invisible join. Predicates are evaluated on every dimension table, and put into a hash map.}
+    \caption{The first phase of the \textit{invisible join}. Predicates are evaluated on every dimension table, and matching rows are put into a hash table.}
     \label{fig:invisible-join-1} 
   \end{subfigure}
-  \begin{subfigure}{0.45\textwidth}
+  \begin{subfigure}{0.48\textwidth}
     \includegraphics[width=\textwidth]{img/invisible-join-2.png}
-    \caption{The second phase of the invisible join. Bitmaps are created per dimension table predicate, and bitwise \texttt{AND} is applied.}
+    \caption{The second phase of the \textit{invisible join}. The fact table is scanned and probed towards the hash tables generated in in the previous step. Each relation generates a bitmap which is combined using a bitwise \texttt{AND} operation.}
     \label{fig:invisible-join-2} 
   \end{subfigure}
-  \begin{subfigure}{0.45\textwidth}
+  \begin{subfigure}{0.48\textwidth}
     \includegraphics[width=\textwidth]{img/invisible-join-3.png}
-    \caption{The third phase of the invisible join. The bitmap calculated in the previous step is uned to extract values from the fact table.}
+    \caption{The third phase of the \textit{invisible join}. The foreign keys for the join columns are extracted from the fact table. The extracted values use the  hash tables from the firt phase to complete the join.}
     \label{fig:invisible-join-3} 
   \end{subfigure}
-  \caption{The invisible join. Courtesy of \cite{Abadi2008-dd}.}
+  \caption{The \textit{invisible join} algorithm from Abadi \ea~Courtesy of \cite{Abadi2008-dd}.}
   \label{fig:invisible-join} 
 \end{figure}
-We chose to focus on a single algorithm for joining. We have no evidence that this algorithm is "the best", but it exemplifies how a join can be performed in a column store. In addition, it use some temporary bitmaps that can be cached. Introduced by Abadi \ea~in \term{invisible join} \cite{Abadi2008-dd}. Here, the set of tuples in the larger relation is reduced using selection predicates in one or many relation tables. For each predicate, a bitmap is produced. This is ANDed/ORed at the end of the query. Projected values are not fetched until the end. The whole join is depicted in Figure~\ref{fig:invisible-join}.
 
-In this algorithm, bitmap filters based on foreign tables are created, which are similar to the join indexes discussed in section \ref{sec:Join Indexes}. We believe the intermediate result in this algorithm can be cached, as explained in Section \ref{sec:Caching and Dynamic Index Generation}.
+Our research has identified several different join implementations that are suited for OLAP workloads and in-memory processing. In this section, we will focus on one such implementation, namely Abadi \ea's \textit{invisible join} \cite{Abadi2008-dd}. The reason we have chosen to elaborate on this algorithm is two-fold. First, the algorithm is well explained by Abadi \ea, and the paper contains detailed figures that help the understanding of how the algorithm works. Secondly, the algorithm uses some temporary data structures (bitmaps and hash tables) which we believe might be relevant structures for indexing or caching.
 
-\subsection{Bloom Filter Based Joins}
-\label{sub:Bloom Filter Based Joins}
-Although not directly compression, another way of reducing a bitmaps footprint and increasing query performance, is through the use of bloom filters \cite{Bloom1970-nr}. A bloom filter may return false positives, but never false negatives.The bloom filters can be used in common database operations, for instance joins \cite{x} \todo{Consider moving this somewhere else}. Several database systems report to use bloom filter based joins. Bloom filters, invented by Bloom in 1970, is a probabilistic structure and will only return false positives, not false negatives \cite{Bloom1970-nr}. This includes \oracle~\cite{Lahiri2015-mz}, \ibm~\cite{Raman2013-em}. Barber \ea~explain how bloom filters can be applied to eliminate non-matching join outers before they enter the join.
+The \textit{invisible join} algorithm assumes a star schema style table, and works by rewriting joins into predicates on the foreign keys in the fact table. To improve cache performance, the algorithm minimizes the values that need to be extracted out of order, and to reduce memory traffic, it avoids unnecessary materialization steps. 
 
-Since the inner table might be splitted, there is a large chance the key is not present in the relation when probed. Here, bloom filters can be used to determine if the matching key is not in the working space \cite{Bratbergsengen2015}. The use of bloom filters is encouraged if the inner relation is partitioned, to avoid going into the hash structure.
+The \textit{invisible join} algorithm works in three phases:
+\begin{enumerate}
+  \item The smaller relations (dimension tables) are hashed, but if the tables are filtered with predicates, only matching keys are inserted into the hash table.
+  \item Per hashmap generated in the first phase of the algorithm, the larger relation is probed, and a bitmap indicating qualifying is created. The resulting bitmap for each dimension table is combined using bitwise operations, like \texttt{AND} or \texttt{OR}. Creating these bitmaps might also happen in parallel. 
+  \item To complete the join, keys in the foreign columns in the fact table are extracted using the bitmap from the previous step. In this step, either positional lookup (for sorted values) or the hash tables from the first step can be used to get the projected values.
+\end{enumerate}
+The entire algorithm is illustrated in Figure \ref{fig:invisible-join}.
 
-\subsection{Parallel Joining}
-\label{sub:Parallel Joining}
-Joining becomes a challenge when done in parallel.
+We gave the \textit{invisible join} as an example join algorithm, because we believe a similar method is needed in a \bd~application with multiple tables. We see that hash tables from the first phase and bitmaps from the second phase are candidates for caching, a technique we saw in Section \ref{sec:Caching and Dynamic Index Generation} commonly used to improve read performance.
 
-In \ibm, each thread performs a local grouping on a local hash tables and creates a linked list of overflow buckets \cite{Raman2013-em}. When they are full, they get published globally. Second phase, each thread reserves a partition to merge, and it merges all local hash tables to a global one.
 
-The hash tables can be built in parallel \cite{Barber2014-ey}. Hyperthreading will speed up the probe phase \todo{Because the memory gap is hidden?}.
-
-Several join algorithms discussed in Section X partitions the input in order to improve cache locality. This decision might as well be a parallelization decision \cite{Neumann1011-uq}.
 
 \section{Grouping and Aggregation}
 \label{sec:Grouping and Aggregation}
@@ -132,18 +144,6 @@ Most DBMSes support normal SQL operations. However, to simplify some of the quer
 Other work has suggested that standard SQL can be cumbersome and expensive \cite{Plattner2014-fr}, and want to investigate new ways of calculating and maintaining a database. \qlikview~is not in the \term{query-based paradigm}, and claims this is beneficial due to ... \todo{insert reasons here}
 
 \bd~applications do not need to support all SQL operations which a DBMS normally does. For instance, joins can be limited to equi-joins over foreign keys, and aggregations may be limited to groups of one or more dimensions in the schema.
-
-\section{Predicate Evaluation}
-\label{sec:Predicate Evaluation}
-We see various techniques that improves the predicate evaluation.
-
-It is common to use bitmaps in predicate evaluation \cite{Raman2008-gi, Raman2013-em}. In \blink, bitmaps are calculated and operations are performed directly on the bitmaps.
-
-Predicates are also evaluated in a Single Input Multipe Data (SIMD) fashion, which is a technique described by Johnson \ea~\cite{Johnson2008-cp}. Extensive use of processor SIMD instructions is explained by Willhalm \ea~\cite{Willhalm2009-hu, Willhalm2013-ri}. Evaluating predicates in a SIMD like fashion is done in \blink~\cite{Raman2008-gi}.  This system reports a performance increase when three or more predicates are evaluated at the same time.
-
-\subsection{Predicate Evaluation in Parallel}
-\label{sub:Predicate Evaluation in Parallel}
-\blink~runs all predicates in parallel, with no pipelining \cite{Raman2008-gi}.
 
 \section{Late materialization}
 \label{sec:Late materialization}
