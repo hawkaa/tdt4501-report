@@ -107,12 +107,14 @@ For \oracle, the column store is made up of multiple extents, called In-Memory C
 
 \section{Alternative Storage Layouts}
 \label{sec:Alternative Storage Layouts}
-Although column storage is normally seen as superior to row storage on analytical workloads, some related work have questioned this.
+We started this chapter by explaining how row storage normally is used in OLTP databases, and that column storage is used in OLAP databases. In this section, we discuss alternative ways of storing data. 
 
-\ffigure{img/oracle-dual.png}{The \oracle~dual format. Courtesy of \cite{Oracle2015-fs}.}{fig:oracle-dual}
-\oracle offers a dual format, where data is stored as both columns and rows \cite{Lahiri2015-mz}. As we see in Figure~\ref{fig:oracle-dual}, the rows are used for transactional workloads, while the columns are used for analycits. Since analytical indexes can be dropped when using a column layout, and that the columns are heavily compressed, this does not take more space than usual. \ibm~does not save the data in both ways, but columns and rows might co-exist in the same table \cite{Raman2013-em}.
 
-Another way of considering a column storage is through to consider the columns storages as index structures on the row store. \mssql~does not directly support column storage, that is the data is still persisted on disk in a row-wise fashion, but columns are built on top in-memory as an index structure \cite{noauthor_undated-vq}. Different from ordinary index structures, the columns are not used for value lookups, but for efficent OLAP processing, like batch and vectorized execution. \todo{Elaborate, add from other sources}
+\ffigure{img/oracle-dual.png}{The \oracle~dual format. Data is stored both in rows and columns. Courtesy of \cite{Oracle2015-fs}.}{fig:oracle-dual}
+\oracle~uses a dual format, where data is stored as both columns and rows \cite{Lahiri2015-mz}. As we see in Figure~\ref{fig:oracle-dual}, the rows are used for transactional workloads, while the columns are used for analytics. Since analytical indexes can be dropped when using a column layout, and the fact that the columns are heavily compressed, the dual format does not take more space than usual. \ibm~does not offer a dual format but columns and rows might co-exist in the same table \cite{Raman2013-em}.
+
+\mssql~does not consider column storage as a "real" storage format, but rather as an index structure that can be put on top of a table stored in a row-wise fashion \cite{noauthor_undated-vq}. In other words, in this system, only traditional row-organized data is persisted to disk. The column storage is loaded into memory as a performance layer when \mssql~starts. This type of index is different from ordinary index structures, as it is not used for value lookups, but rather efficient OLAP processing.
+
 
 \ffigure{img/banked-layout.png}{Banked layout. Courtesy of \cite{Johnson2008-cp}.}{fig:banked-layout}
 The work of Barber \ea \cite{Barber2012-xt} claims that both row and column store is suboptimal, and claim that columns are ineffective because they must be padded to word boundaries for efficient access. Their database system, \pn{Blink} therefore implement a hybrid structure, where a subset of the rows are densely packed in word banks, typcially 128-256 bits each. \pn{Blink} puts data into banks, and each column has fixed bits within that bank. A bank is normally a machine word length \cite{Johnson2008-cp} A later paper on \pn{Blink} \cite{Raman2013-em} however contradicts this format, and says everything is stored column-wise.
