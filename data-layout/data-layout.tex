@@ -1,6 +1,6 @@
 \chapter{Data Layout}
 \label{chap:Data Layout}
-One of the most prevalent ways of achieving good performance for OLAP workloads, is to consider how the data is laid out in all levels of the memory hierarchy. Most of the discussion relates to column stores against row stores, but we see alternate ways of storing the data. In addition to the overall storage format, one should also consider if and how to partition the data, and how to sort it.
+One of the most prevalent ways of achieving good performance for analytical workloads, is to consider how the data is laid out in all levels of the memory hierarchy. Most of the discussion relates to column stores against row stores, but we see alternate ways of storing the data. In addition to the overall storage format, one should also consider if and how to partition the data, and how to sort it.
 \newpage
 
 %\ffigure{img/row-store.png}{Row-oriented layout for example tuples. Courtesy of \cite{Bjorklund2011-wh}.}{fig:row-store}
@@ -24,7 +24,7 @@ One of the most prevalent ways of achieving good performance for OLAP workloads,
 \label{sec:Column Storage}
 
 
-The most common storage format for OLTP systems is row storage, as we briefly mentioned in Section \ref{sec:Definitions}. Row storage enables easy fetching of related data and is suited for updates, inserts, and deletes. However for OLAP workloads, columnar storage has turned out advantageous, mainly because of two reasons: First, aggregations are easier, since calculations are performed on data consecutive in memory. Second, column storage does not fetch more data than is needed for the query.
+The most common storage format for OLTP systems is row storage, as we briefly mentioned in Section \ref{sec:Definitions}. Row storage enables easy fetching of related data \todo{related data, rows storage} and is suited for updates, inserts, and deletes. However for OLAP workloads, columnar storage has turned out advantageous, mainly because of two reasons: First, aggregations are easier, since calculations are performed on data consecutive in memory. Second, column storage does not fetch more data than is needed for the query.
 
 Our research have identified several systems using columnar storage. These include \monetdb~\cite{Boncz2002-yj, Boncz2005-wj}, \cstore~\cite{Stonebraker2005-qz}, \saph~\cite{Farber2012-vh}, and \mssql~\cite{noauthor_undated-vq, Larson2013-mc}, as well as the \bd~product Tableau \cite{Kamkolkar2015-iq}.
 
@@ -55,7 +55,7 @@ Although most systems do not sort values in the columns, that is values are inse
 
 \subsection{Row Stores vs Column Stores}
 \label{sub:Row Stores vs Column Stores}
-Most research agrees that row stores are most suitable for OLTP workloads, and column stores are most suitable for OLAP workloads. Abadi \ea~set out to investigate whether there was a fundamental differenece between row and column stores \cite{Abadi2008-dd}. In their research, they used a row store with a vertically partitioned schema to mimic a colum store. They also tried applying indexes to each column such that each column could be accessed independently. Their conclusion was that there \textit{is something fundamental about column} stores that makes them perform so well, and that changes must be made to both storage layer and query executor to obtain the benefits of a column-oriented approach. The main reasons why column storage is better suited for OLAP workloads are:
+Most research agree that row stores are most suitable for OLTP workloads, and column stores are most suitable for OLAP workloads. Abadi \ea~set out to investigate whether there was a fundamental differenece between row and column stores \cite{Abadi2008-dd}. In their research, they used a row store with a vertically partitioned schema to mimic a colum store. They also tried applying indexes to each column such that each column could be accessed independently. Their conclusion was that there \textit{is something fundamental about column} stores that makes them perform so well, and that changes must be made to both storage layer and query executor to obtain the benefits of a column-oriented approach. The main reasons why column storage is better suited for OLAP workloads are:
 \begin{itemize}
   \item \textit{Compression}, which we discuss in Chapter \ref{chap:Data Compression}.
   \item \textit{Vectorized execution}, which we discuss in Section \ref{sec:Loop Pipelining and Vectorized Execution}.
@@ -68,7 +68,7 @@ There are situations for OLAP databases where a row store performs better than a
 
 We have also identified papers that claim OLTP databases also benefit from a columnar storage. The work of Farber \ea~argues that columnar storage is suited for transactional workloads as well, mainly due to the compression \cite{Farber2012-vh}. Also, storing data in columns allows for dropping indexes, which is normally costly to maintain. Last, there are normally a lot more read operations than inserts, updates, and deletes in an OLTP database.
 
-Plattner \ea~claims that most OLTP queries request aggregates instead of single rows \cite{Plattner2014-fr}. In addition, updates to the database normally triggers a chain reaction of updates to indexes and materialized views, as seen in Figure \ref{fig:chain-reaction}. Their conclusion is that column storage is suited for OLTP databases due to efficient aggregation and abscence of indexes. The absence of indexes also makes application development easier, since they do not have to be specified by the application programmer.
+Plattner \ea~claim that most OLTP queries request aggregates instead of single rows \cite{Plattner2014-fr}. In addition, updates to the database normally triggers a chain reaction of updates to indexes and materialized views, as seen in Figure \ref{fig:chain-reaction}. Their conclusion is that column storage is suited for OLTP databases due to efficient aggregation and abscence of indexes. The absence of indexes also makes application development easier, since they do not have to be specified by the application programmer.
 
 \subsection{Row Identifiers and Tuple Materialization}
 \label{sub:Row Identifiers and Tuple Materialization}
@@ -115,12 +115,18 @@ We started this chapter by explaining how row storage normally is used in OLTP d
 
 \mssql~does not consider column storage as a "real" storage format, but rather as an index structure that can be put on top of a table stored in a row-wise fashion \cite{noauthor_undated-vq}. In other words, in this system, only traditional row-organized data is persisted to disk. The column storage is loaded into memory as a performance layer when \mssql~starts. This type of index is different from ordinary index structures, as it is not used for value lookups, but rather efficient OLAP processing.
 
+\ffigure{img/pax.png}{PAX layout for example tuples. Compared to row and column storage depicted in Figure \ref{fig:row-column-store}, PAX is a hybrid layout where data is stored as columns, but partitioned such that all values associated with a tuple is stored within the same page. Courtesy of \cite{Bjorklund2011-wh}.}{fig:pax}
+
+Another popular format is the PAX (Partition Attributes Across) data layout \cite{Bjorklund2011-wh, Holloway2008-rr} which can be seen in Figure \ref{fig:pax}. This format stores data in a column-wise fashion, but the rows are partitioned such that all data belonging to a single tuple fits within a page. In Figure \ref{fig:row-column-store}, we see a table with two columns (I and P) and page size of four, which means two and two values from each column are stored alternatively. This format increases cache behaviour, but does not reduce IO.
 
 \ffigure{img/banked-layout.png}{Banked layout. Courtesy of \cite{Johnson2008-cp}.}{fig:banked-layout}
-The work of Barber \ea \cite{Barber2012-xt} claims that both row and column store is suboptimal, and claim that columns are ineffective because they must be padded to word boundaries for efficient access. Their database system, \pn{Blink} therefore implement a hybrid structure, where a subset of the rows are densely packed in word banks, typcially 128-256 bits each. \pn{Blink} puts data into banks, and each column has fixed bits within that bank. A bank is normally a machine word length \cite{Johnson2008-cp} A later paper on \pn{Blink} \cite{Raman2013-em} however contradicts this format, and says everything is stored column-wise.
+The work of Barber \ea~claims that both row and column store are suboptimal. Columns are ineffective because they must be padded to word boundaries for efficient access \cite{Barber2012-xt}. Their database system, \blink~therefore implements a hybrid structure, where a subset of the rows are densely packed in word banks. Each word bank is typically 128-256 bits wide each, and each column has a fixed amount of bits within that bank. See Figure \ref{fig:banked-layout}. We will see later in this report that this format enables predicate evaluation on several values at a time. However, later versions of \blink~(and \ibm, which builds on \blink) stopped using this format, and started 
 
-\ffigure{img/pax.png}{PAX layout for example tuples. Courtesy of \cite{Bjorklund2011-wh}.}{fig:pax}
-Another popular format is the PAX (Partition Attributes Across) data layout \cite{Holloway2008-rr, Bjorklund2011-wh} which can be seen in Figure \ref{fig:pax}. This format allows for column-wise storage of tuples per page, and increases cache behavior. However, this does not reduce IO. Tuples are stored together in pages, but within each page, the data is stored in columns.
+
+typcially 128-256 bits each
+
+mainly because columns are ineffective because they must be padded to word boundaries for efficient access \cite{Barber2012-xt}. Their database system, \pn{Blink} therefore implement a hybrid structure, where a subset of the rows are densely packed in word banks, typcially 128-256 bits each. \pn{Blink} puts data into banks, and each column has fixed bits within that bank. A bank is normally a machine word length \cite{Johnson2008-cp} A later paper on \pn{Blink} \cite{Raman2013-em} however contradicts this format, and says everything is stored column-wise.
+
 
 \section{Chapter Conclusion}
 \label{sec:Chapter Conclusion}
