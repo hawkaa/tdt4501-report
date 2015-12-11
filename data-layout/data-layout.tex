@@ -3,66 +3,107 @@
 One of the most prevalent ways of achieving good performance for OLAP workloads, is to consider how the data is laid out in all levels of the memory hierarchy. Most of the discussion relates to column stores against row stores, but we see alternate ways of storing the data. In addition to the overall storage format, one should also consider if and how to partition the data, and how to sort it.
 \newpage
 
-\ffigure{img/row-store.png}{Row-oriented layout for example tuples. Courtesy of \cite{Bjorklund2011-wh}.}{fig:row-store}
-\ffigure{img/column-store.png}{Column-oriented layout for example tuples. Courtesy of \cite{Bjorklund2011-wh}.}{fig:column-store}
+%\ffigure{img/row-store.png}{Row-oriented layout for example tuples. Courtesy of \cite{Bjorklund2011-wh}.}{fig:row-store}
+%\ffigure{img/column-store.png}{Column-oriented layout for example tuples. Courtesy of \cite{Bjorklund2011-wh}.}{fig:column-store}
+\begin{figure}
+  \centering
+  \begin{subfigure}{\textwidth}
+    \includegraphics[width=\textwidth]{img/row-store.png}
+    \caption{Row store layout.}
+    \label{fig:row-column-store-1} 
+  \end{subfigure}
+  \begin{subfigure}{\textwidth}
+    \includegraphics[width=\textwidth]{img/column-store.png}
+    \caption{Column store layout.}
+    \label{fig:row-column-store-2} 
+  \end{subfigure}
+  \caption{Row and column oriented layouts for a table with two columns, I and P. In the row-oriented layout (a), records (I and P tuples) are stored next to each other within the pages. In the column-oriented layout (b), values from the I column and P column are stored separately on different pages. Courtesy of \cite{Bjorklund2011-wh}.}
+  \label{fig:row-column-store} 
+\end{figure}
 \section{Column Storage}
 \label{sec:Column Storage}
-Briefly mentioned in Section \ref{sub:History}, the most common storage format for transactional workloads (OLTP systems) has been to store the data in rows. Row storage enables easy fetching of related data, as well as being suited for updates, inserts, and deletes. However, for OLAP workloads, columnar storage has turned out advantageous since data is more easily aggregated and only the attributes required for the query are fetched. Systems supporting column store include, but are not limited to, MonetDB \cite{Boncz2002-yj, Boncz2005-wj}, C-Store \cite{Stonebraker2005-qz}, SAP HANA \cite{Farber2012-vh}, and Microsoft SQL Server \cite{Larson2013-mc, noauthor_undated-vq}, as well as the Business Discovery product Tableau \cite{Kamkolkar2015-iq}. 
 
-In a column store, each column in a table is stored separately in a continous segment (unless data is horizontally partitioned, see Section \ref{sub:Horizontal partitioning of columns}), as opposed to row stores where attributes from a single row is stored together \cite{Bjorklund2011-wh}. Row and column layout are depicted in Figure \ref{fig:row-store} and Figure \ref{fig:column-store} respectively \todo{SEB 30/11: Explain figure, I and P}. When executing a query on a column store, only the columns needed for the query is fetched and processed. However, the results of most queries in a DBMS is returned as rows, so columns must be stiched together before the result is returned, which implies an overhead. In addition, since the different columns are stored on different locations, inserting new values is slightly more involved than in a row store. 
 
-We find that the main argument is that you do not need to access more columns than strictly necessary. In addition, the columns are inherently more compressible. Hence, these arguments relates to memory footprint, and in disk-based databases, RAM is better utilized. This is explicitly mentioned by the authors of \mssql; High compression rates, and better performance due to memory utilization \cite{noauthor_undated-vq}. We also know from the introduction that reduction in memory footprint is directly correlated to CPU cache pressure. \todo{Find more arguments, more citations, c-store, monetdb \cite{Boncz2002-yj}}
+The most common storage format for OLTP systems is row storage, as we briefly mentioned in Section \ref{sec:Definitions}. Row storage enables easy fetching of related data and is suited for updates, inserts, and deletes. However for OLAP workloads, columnar storage has turned out advantageous, mainly because of two reasons: First, aggregations are easier, since calculations are performed on data consecutive in memory. Second, column storage does not fetch more data than is needed for the query.
 
-\textit{Could we insert another paragraph about the advantages of columnr storage here?}
+Our research have identified several systems using columnar storage. These include \monetdb~\cite{Boncz2002-yj, Boncz2005-wj}, \cstore~\cite{Stonebraker2005-qz}, \saph~\cite{Farber2012-vh}, and \mssql~\cite{noauthor_undated-vq, Larson2013-mc}, as well as the \bd~product Tableau \cite{Kamkolkar2015-iq}.
 
-Relevant for both disk-based and memory-based database systems is that columns have low degree of freedom, they only need to know about the local memory offset and not the global table layout \cite{Boncz2005-wj}. More specifically, this means that in terms of implementation, layers of indirection is avoided, because you know where to find each column value based on the base location when iterating a column. \todo{Elaborate, SEB 30/11: Thought it was "high" istead of "low"}
+In a column store, each column in a table is stored separately in a continuous segment (unless data is horizontally partitioned, see Section \ref{sec:Horizontal Partitioning}), as opposed to row stores where attributes from a single row are stored together \cite{Bjorklund2011-wh}. Figure \ref{fig:row-column-store} depicts both row and column oriented layouts for a table with two columns (I and P). The row storage alternates between I and P to store records next to each other on the pages while the column storage keeps I and P values separate. 
 
-One of the major disadvantages with column store is that it is not as easily updateable \cite{Bjorklund2011-wh}, especially if the columns are compressed or sorted. This challenge is normally overcome using a separate structure for writes and updates called a delta store. The main part of the database is stored column wise in a static structure optimized for reads, while the rest is accumulated in a smaller and more dynamic structure. We investigate delta stores further in Section \ref{sub:Delta Store}.
+The advantages of using column storage are many, where the primary advantage is that no more data is accessed than strictly necessary. In addition to this, columns are inherently more compressible \cite{noauthor_undated-vq}. Compression leads to higher performance due to better cache and memory utilization, and this effect is one of the reasons why \mssql~use column storage. We elaborate on the effects of compression in Chapter \ref{chap:Data Compression}.
+
+Column storage also comes with a more subtle advantage that is that columns have a \textit{low degree of freedom} \cite{Boncz2005-wj}. When operating on column values, only the local memory offset is required, not the global table layout. This removes some layers of indirection and query processing can be made more efficient. Boncz \ea~claim that this is the main reason why column storage is advantageous.
+
+
+One of the major disadvantages with column store is that it is not as easily updateable \cite{Bjorklund2011-wh}, especially if the columns are compressed or sorted. This challenge is normally overcome using a separate structure for writes and updates called a \textit{delta store}. Using such structure, the main part of the database is stored column-wise in a static structure optimized for reads while the updates and inserts are accumulated in a smaller and more dynamic structure. We investigate delta stores further in Section \ref{sub:Delta Store}.
+
+Another disadvantage with column storage is tuple materialization costs. Since the result of most DBMS queries should be returned as rows, columns must be stitched back together before returned to the client, an operation that can be expensive.
 
 
 \subsection{Sorting}
 \label{sub:Sorting}
-We see that few systems sort the data values before storing them inside columns. An exception to this is \cstore, and later \vertica \cite{Stonebraker2005-qz, Lamb2012-kg}. Here, different projections (subsets of the colums) may be defined, and each projection has its own sort order. We look further into column projectins in Section \ref{sub:Column projections}. Sorting the values in the columns enables binary search for single values in columns, which normally would be done by inverted indexes. In addition, sorted values improves compression and query performance through the use of Run-Length Encoding. We look into Run-Length encoding in Section \ref{sec:Run-Length Encoding}.
+We see that few systems sort the data values before storing them to columns. An exception to this is \cstore, and later \vertica~\cite{Lamb2012-kg, Stonebraker2005-qz}. In these systems, \textit{column projections} can be defined, which is a subset of the columns in a table. Each column projection is sorted based on one column in the subset, which means a column is either sorted by own values or simply sorted by values from another column in the projection. Projections are specified by the database administrator. A column can have multiple projections, hence multiple sort orders, which results in data duplication. The extra storage needed for multiple column sort orders is justified by the compression that column storage enables.
 
-There are  benefits in sorting the values in the column store. First of all, single value lookups are easily performed by a binary search (however, this limitation can be overcome by keeping inverted indexes \cite{Lemke2010-is, Schwalb2014-hn}) Second, and perhaps most important, is that sorted columns can be compressed aggressively by applying run-length encoding (read more about this in the Compression chapter). This is the reason why C-store \cite{Stonebraker2005-qz} lets the DBA define projections of various sort orders.
 
-Except from \cstore~and \vertica, there is little indication in the literature that it is common to sort the values in the columns. Of the research we have covered in this thesis, we find that \mssql~\cite{Larson2013-mc}, \blink~\cite{Raman2013-em} and \oracle~\cite{Lahiri2015-mz} accept values in the order they appear. However, there has been cases where research have sorted columns prior to testing, such that Run-Length encoding is maximized \cite{Holloway2008-rr}. \blink~has also reported a performance increase if the columns are sorted \cite{Johnson2008-cp}.
+Sorting values in a column store comes with some advantages. First, single value lookups are easily performed by a binary search (however, this limitation can be overcome by keeping inverted indexes \cite{Lemke2010-is, Schwalb2014-hn}, which we study in Section \ref{sec:Inverted Indexes}) Second, and perhaps most important, is that sorted columns can be compressed aggressively by applying \rle. \rle~is the main reason \cstore~stores sorted data \cite{Stonebraker2005-qz}. We study this type of compression in Section \ref{sec:Run-Length Encoding}.
 
-Although most systems do not sort the columns, that is values are insert in the same order as they arrive, many systems have a sorted dictionary when dictionary encoding is used. Systems here include \blink~\cite{Johnson2008-cp} and \saph~\cite{Farber2012-vh}. A sorted dictionary has many advantages, like easy lookup for single values, transformation of range predicates to \texttt{IN}-list predicates, and partition pruning. However, keeping the dictionary structure sorted in a dynamic environment implies a large overhead, so sorted dictionaries are better suited for read-only columns. We look into dictionary encoding in Section \ref{sec:Dictionary Encoding}.
+Column sorting also comes with a performance benefit. Holloway \ea~show how sorted columns perform better due to \rle~\cite{Holloway2008-rr}. \blink~has also reported a performance increase if the columns are sorted prior to testing \cite{Johnson2008-cp}, even if this system does not use \rle.
 
-\subsection{Row Stores vs. Column Stores}
-\label{sub:Row Stores vs. Column Stores}
-However, the most important piece of literature Abadi \ea~investigated wheter there was a fundamental difference between row and column stores, and tried to mimic columnar behavior in a commercial row store \cite{Abadi2008-dd} . The conclusion was that there is something fundamental about column stores that make them perform so well, and this includes compression (Chapter x), vectorized execution (Section x) and late materialization (Section y). \todo{Make this article a big deal}
+Except from \cstore~and \vertica, our research has shown little indication that sorting values in columns are common. For instance, \mssql~\cite{Larson2013-mc}, \blink~\cite{Raman2013-em} and \oracle~\cite{Lahiri2015-mz} accept values in the order they appear.
 
-Although much points at a column or hybrid layout is the most beneficial for analytical workloads, Holloway \ea \cite{Holloway2008-rr} investigated in which occurences a row store actually could be beneficial. In low selectivities, bla bla, and if the columns are bla bla... One of the major findings from this paper is that row stores are just as compressible as column stores if done right. This \textcolor{red}{contradicts} other research, most research say column stores are more compressible than row storage. \todo{Fill in the paragraph about this. SEB 30/11: Dues not buy that rows are as compressible.}
+Although most systems do not sort values in the columns, that is values are insert in the same order as they arrive, many systems have a sorted dictionary when dictionary encoding is used. Systems here include \blink~\cite{Johnson2008-cp} and \saph~\cite{Farber2012-vh}. A sorted dictionary has many advantages, like easy lookup for single values, transformation of range predicates to \texttt{IN}-list predicates, and partition pruning. A sorted dictionary structure is better suited for a read-only environment, since updating a sorted dictionary requires some work. We look into dictionary encoding in Section \ref{sec:Dictionary Encoding}.
 
-\ffigure{img/chain-reaction.png}{OLTP workloads will affect more than a couple of rows. Index structures must be maintained, and preaggregations and matrealized views must be updated. In the figure, an update that triggers a chain reaction is depicted. Courtesy of \cite{Plattner2014-fr}.}{fig:chain-reaction}
-There are papers claiming OLTP also benefits from a columnar storage. The work of Farber \ea~\cite{Farber2012-vh} argues that columnar storage is suited for OLTP as well, due to the compression. In addition, there are more read operations in an OLTP than one originally thinks. Lastly, indexes can be dropped. The work of Plattner \ea~\cite{Plattner2014-fr} claim that most OLTP queries ask for aggregates, not only one row. It triggers a series of aggregate, as seen in Figure \ref{fig:chain-reaction}. Lastly, data footprint and application development gets easier.
+\subsection{Row Stores vs Column Stores}
+\label{sub:Row Stores vs Column Stores}
+Most research agrees that row stores are most suitable for OLTP workloads, and column stores are most suitable for OLAP workloads. Abadi \ea~set out to investigate whether there was a fundamental differenece between row and column stores \cite{Abadi2008-dd}. In their research, they used a row store with a vertically partitioned schema to mimic a colum store. They also tried applying indexes to each column such that each column could be accessed independently. Their conclusion was that there \textit{is something fundamental about column} stores that makes them perform so well, and that changes must be made to both storage layer and query executor to obtain the benefits of a column-oriented approach. The main reasons why column storage is better suited for OLAP workloads are:
+\begin{itemize}
+  \item \textit{Compression}, which we discuss in Chapter \ref{chap:Data Compression}.
+  \item \textit{Vectorized execution}, which we discuss in Section \ref{sec:Loop Pipelining and Vectorized Execution}.
+  \item \textit{Late materialization}, which we discuss in Section \ref{sec:Late Materialization}
+\end{itemize}
 
-\subsection{Row Identifiers}
-\label{sub:Row Identifiers}
-In order to stitch together the rows after a query has been executed, each row needs a unique identifier. Many of the systems store these implicitly \cite{Boncz2002-yj, Raman2013-em, Stonebraker2005-qz, Lamb2012-kg} as a virtual object ID (void). If horizontal partitioning is used, this must also be addressed in the identification of rows. Microsoft SQL Server identifies a row by a combination of row group ID and tuple ID \cite{Larson2013-mc}. \todo{SEB 30/11: Elaborate, explain how to stitch together rows}.
+There are situations for OLAP databases where a row store performs better than a column store. A research executed by Holloway \ea~shows that a row store can outperform a column store when processing time is the dominating contraint \cite{Holloway2008-rr}. This is typically the case for low selectivity queries and queries with many predicates. To further improve row storage performance, tuples can be compressed. However, row storage will most likely never beat column stores for OLAP workloads, since bandwidth requirement for processing rows is higher than for columns.
+
+\ffigure{img/chain-reaction.png}{OLTP workloads will affect more than a couple of rows. Index structures must be maintained, and aggregations and materialized views must be updated. In the figure, an update that triggers a chain reaction is depicted. Courtesy of \cite{Plattner2014-fr}.}{fig:chain-reaction}
+
+We have also identified papers that claim OLTP databases also benefit from a columnar storage. The work of Farber \ea~argues that columnar storage is suited for transactional workloads as well, mainly due to the compression \cite{Farber2012-vh}. Also, storing data in columns allows for dropping indexes, which is normally costly to maintain. Last, there are normally a lot more read operations than inserts, updates, and deletes in an OLTP database.
+
+Plattner \ea~claims that most OLTP queries request aggregates instead of single rows \cite{Plattner2014-fr}. In addition, updates to the database normally triggers a chain reaction of updates to indexes and materialized views, as seen in Figure \ref{fig:chain-reaction}. Their conclusion is that column storage is suited for OLTP databases due to efficient aggregation and abscence of indexes. The absence of indexes also makes application development easier, since they do not have to be specified by the application programmer.
+
+\subsection{Row Identifiers and Tuple Materialization}
+\label{sub:Row Identifiers and Tuple Materialization}
+A row in a column store is identified by a unique identifier that is common to every value belonging to the same row in a table. Many systems store these IDs implicitly as virtual object IDs (\texttt{void}). A \texttt{void} for an object is calculated using a base ID and the offset from the first value in the column. For instance, the fourth value of a column with base ID 100 has an implicit ID of 103. \texttt{void} type identifiers are used in \monetdb~\cite{Boncz2002-yj}, \cstore~\cite{Stonebraker2005-qz}, \vertica~\cite{Lamb2012-kg}, and \ibm~\cite{Raman2013-em}.
+
+If horizontal partitioning is used, a technique we discuss in the next section, the partition number must also be accounted for in row identification. For instance, \mssql~identifies a row by a combination of row group ID and tuple ID \cite{Larson2013-mc}.
+
+For systems that do not keep columns sorted, stitching together rows is pretty straight forward. All columns selected in a query can be iterated in order and tuples can be materialized before sent back to the client. Needless to say, the operation of stitching together rows comes at a higher cost in a column store than for a row store.
+
+Stitching together columns with different sort orders is a very expensive operation. This is the reason \cstore~and \vertica~only allows a query to access columns belonging to the same projection. In other words, a query must use a projection that contains all the columns needed for the query, and first then choose which projection sort order is best suited to process that particular query.
 
 \section{Horizontal Partitioning}
 \label{sec:Horizontal Partitioning}
-Several systems split data horizontally. Partitioning data horizontally can be beneficial due to the following reasons \todo{Add citations to these points}:
+Several systems split columns horizontally. Partitioning data horizontally can be beneficial due to the following reasons:
 \begin{itemize}
-  \item Storing metadata values, like minimum and maximum per block allows for cluster exploitation and easy pruning of data. We look further into how database statistics can be utilized in Section \ref{sec:Table Statistics}.
-  \item Horizontal partitions can be spread out across different nodes in a distributed environment. We look into scaling out horizontally in Section \ref{sec:Scaling Out}.
-  \item Horizontal partitions can be created one at a time, such that new insertions will not affect already existing partitions.
-  \item Smart partitioning of data based on the value frequencies handles data skew, and allows for improved compression rates.
-  \item Enables parallelization and balance \cite{Exasol2014-xh}
+  \item Storing metadata, like minimum and maximum values per block, exploits clustering in the data. A partition block can be skipped entirely if a predictae is outside the value range of a block. We look closer into how database statistics can be utilized in Section \ref{sec:Database Statistics}. 
+  \item If each partition has its own dictionary, the dictionary can be scanned for the presence of a key. If the key is not there, the partition can be skipped.
+  \item Horizontal partitions can be spread out across different nodes in a distributed environment. We look into distributed architectures in Section \ref{sec:Distributed Architecture}.
+  \item Smart partitioning of data based on the value frequencies handles data skew, and allows for improved compression rates \cite{Raman2008-gi}. We discuss \term{frequency partitioning} later in this section.
+  \item Partitions provide a logical division of data that can be processed simultaneously. This enables parallelization and balance \cite{Exasol2014-xh}.
+  \item Horizontal partitions can be created one at a time, such that new insertions will not affect already existing partitions. New data can be accumulated in temporary structures, and when there is enough rows in these structures, read-only column partitions can be created and inserted into the database.
+  \item The operating system might not be able to provide memory chunks large enough to contain an entire column. Horizontally partitioning the data will help overcome this limitiation.
 \end{itemize}
 
-\ffigure{img/mssql-row-group.png}{Illustrating how a column store index in \mssql~is created and stored. The set of rows is divided into row groups that are converted to column segments and dictionaries. Courtesy of \cite{Larson2013-mc}.}{fig:mssql-row-group}
-Microsoft SQL server operate on \textit{row groups} which are groups of rows compressed into a columnar format. The number of rows in a row group must me small enough to benefit from in-memory operations and large enough to achive high compression rates. Data within these are not sorted, and they are encoded and compressed independently. Each row group has their own dictionary, as seen in Figure~\ref{fig:mssql-row-group}.
 
-For Oracle Database in-memory option, the column store is made up of multiple extents, called In-Memory Compression Units (IMCUs). Data is loaded into these units without sorting, they are put in the same way as it appears in the row format. Each chunk constists of approximately half a million rows, and each block is assigned max and minimum values per column such that data can easily be pruned.
 
-\afigure{img/frequency-partitioning.png}{Frequency partitioning in \blink. Courtesy of \cite{Raman2008-gi}.}{fig:frequency-partitioning}{0.6}
-The \pn{Blink} database and IBM DB2 with BLU acceleration  \cite{Barber2012-xt, Raman2013-em, Raman2008-gi} uses frequency partitioning and horizontally partitions the rows based on the frequency which values incur in a column at load time, and has a positive effect on data skew. Rows are partitioned into pages, and each page is indexed using a B+ tree. See Figure \ref{fig:frequency-partitioning}.
+\ffigure{img/mssql-row-group.png}{This figure illustrates how a column store index in \mssql~is created and stored. The set of rows is divided into row groups that are converted to column segments and dictionaries. Courtesy of \cite{Larson2013-mc}.}{fig:mssql-row-group}
 
-We see that it is common that each partition has its own dictionary. This is not only the case for \mssql, \oracle, and \blink, but also ... By storing each dictionary in a partition, we see that \blink~benefits from increased compression rates. In addition, horizontal partitions can be skipped if the current predicate is not present in the dictionary, which we will read more about in Section \ref{sec:Dictionary Compression}.
+Instead of operating on entire columns at a time, \mssql~divides the data into \textit{row groups} that are groups of rows compressed into a columnar format \cite{Larson2013-mc}. Within the columns, data is not sorted. Each row group is encoded and compressed independently, and as we see in Figure~\ref{fig:mssql-row-group}, each partition has its own dictionary. We were unable to find out how many rows are contained by each row group, but the Larson \ea~say that the number of rows in a row group must be small enough to benefit from in-memory operations and large enough to achieve high compression rates. 
+
+For \oracle, the column store is made up of multiple extents, called In-Memory Compression Units (IMCUs) \cite{Lahiri2015-mz}. Much like \mssql, data is loaded into the IMCUs without a sort order; they are stored the same way as they appear in the row format. Each partition consists of approximately half a million rows, and each IMCU contains maximum and minimum values per column such that data can be pruned easily.
+
+\afigure{img/frequency-partitioning.png}{Frequency partitioning in \blink. For each column, a histogram is calculated to find the most frequent values. Values occurring more frequently are put in the same partitions. Frequency partitioning has the benefit of increased compression rates and has a positive effect on data skew. Courtesy of \cite{Raman2008-gi}.}{fig:frequency-partitioning}{0.8}
+
+\blink~and \ibm~use a partition techique called \term{frequency partitioning} \cite{Barber2012-xt, Raman2008-gi, Raman2013-em}. This partitioning method is involved, so we keep our discussion brief. This method puts rows into different partitions based on the frequency of their values. Values that occur more frequently are put in the same partition. Partitioning data based on frequency has a positive effect on data skew, and it improves compression rates. Figure \ref{fig:frequency-partitioning} illustrates frequency partitioning.
 
 \section{Alternative Storage Layouts}
 \label{sec:Alternative Storage Layouts}

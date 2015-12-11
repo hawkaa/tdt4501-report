@@ -101,8 +101,8 @@ An algorithm that combines \dele~with \bp~is \pfdelta, which is a bitpacked delt
 \ffigure{img/timestamp-compression.png}{Compression of timestamps in \gorilla. By \texttt{XOR}ing consecutive values, meaningful bits are extracted. Courtesy of \cite{Pelkonen2015-ko}.}{fig:timestamp-compression}
 If the deltas are similar, like for instance if timestamp data where each data entry inserted into the database at a constant rate, another form of compression can be used. If the data is saved as doubles, a technique explained by Ratanaworabhan \ea~\cite{Ratanaworabhan2006-jb} can be used. This technique predicts each value and XOR it with the true value. If the predicted value is close to the actual value, only a few bits in the XOR result will be significant, and only the significant bits are saved. A similar compression algorithm is depicted in Figure \ref{fig:timestamp-compression}, an algorithm which is used by \gorilla~\cite{Pelkonen2015-ko}\todo{Drop this paragraph?}.
 
-\section{Run-length encoding}
-\label{sec:Run-length encoding}
+\section{\rle}
+\label{sec:Run-Length Encoding}
 \ffigure{img/rle.png}{\rle~on a sorted value range. Courtesy of \cite{Stoimen_undated-js}.}{fig:rle}
 \rle~is a lossless data compression algorithm that replaces repeating data values with only one instance of the data and a number of how many times that value appear in the sequence \cite{Stoimen_undated-js}, like illustrated in Figure \ref{fig:rle}. Although it can be used for any sequence, \rle~works best on sorted data \cite{Bjorklund2011-wh, Holloway2008-rr}. In this case, each unique value in the sequence is represented exactly once, and this implies that \rle~works best for columns with low cardinality. \rle~is used in \cstore~\cite{Stonebraker2005-qz}, \vertica~\cite{Lamb2012-kg}, \oracle~\cite{Oracle2015-fs}, and \sapnw~\cite{Lemke2010-is}, but only if the values are sorted. \rle~can also be applied to compress sparse bitmaps \cite{Stonebraker2005-qz}.
 
