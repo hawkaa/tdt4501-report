@@ -1,5 +1,5 @@
-\chapter{Implementation Details}
-\label{chap:Implementation Details}
+\chapter{Hardware Utilization}
+\label{chap:Hardware Utilization}
 \ffigure{img/implementation.png}{A simple spatial join algorithm that puts elements into buckets based on their position in a grid. By putting data pointers directly in the buckets instead of referring to a linked list, a layer of indirection is removed, and 3-fold improvement is observed. Courtesy of \cite{Sidlauskas2014-ef}.}{fig:implementation}
 
 As we move up the memory hierarchy, careful implementation becomes more important. Recent work by Sidlauskas \ea~claims that for in-memory databases, there is a challenge in concluding about data structures and algorithms only; the implementation also plays a significant role in performance \cite{Sidlauskas2014-ef}. For instance, if an extra layer of indirection is removed for an algorithm, as seen in Figure \ref{fig:implementation}, we observe a 3-fold performance improvement. 
@@ -60,7 +60,7 @@ The best way to tackle this challenge is to design algorithms and data structure
 
 A \textit{call stack} is commonly used in a computer program to store information and state about active subroutines \cite{Wikipedia_contributors2015-od}. Each time a subroutine is called, a \textit{stack frame} is added to the call stack that stores the input arguments, return address, and variables local to the subroutine. See Figure \ref{fig:call-stack}. The call stack can be implemented in both hardware and software, and the implementation varies between different systems. This stack-based technique implies that calling a subroutine comes at a cost; registers must be stored on the stack, and a new stack frame must be added.
 
-Trading off time with space is usually done to address the above challenge; adding more code to improve program efficiency. \textit{Function inlining} is a technique used by compilers where the subroutine code is copied into the callee's body. This way, no new stack frame is created for the subroutine, avoiding the overhead associated with a function invocation.
+Trading off time with space is usually done to address the above challenge; adding more code to improve program efficiency. \textit{Function inlining} is a technique used by compilers where the subroutine code is copied into the caller's body. This way, no new stack frame is created for the subroutine, avoiding the overhead associated with a function invocation.
 
 \textit{Macro expansion} is another form of code generation. Macros are normally specified by the application programmer, and can be used for programmer-controlled inlining of functions or constant values. Macros can also be used to generate multiple versions of function or class definitions (templating), a technique commonly used to let a single implementation support different data types.
 
@@ -78,8 +78,8 @@ Branch avoidance is also important in other parts of the system, for instance wh
 
 Branches can also be avoided by compiling queries to machine code \cite{Lamb2012-kg}. We will elaborate on this technique in Section \ref{sub:Compiling Queries to Machine Code}.
 
-\subsection{Short-circuiting}
-\label{sub:Short-circuiting}
+\subsection{Short-Circuiting}
+\label{sub:Short-Circuiting}
 \begin{figure}
   \centering
   \begin{subfigure}{0.45\textwidth}
@@ -173,8 +173,8 @@ radix-cluster bla bla \todo{Input here about radix cluster algorithm if time}.
 Prefetching is another way of improving cache performance. Prefetching is the technique where data is proacively loaded into the CPU caches such that it is available when an instruction needs it. Prefetching can be done automatically by a processor or a compiler, but explicit prefetching CPU instructions exist. Explicit prefetching is used by several systems studied in this research, including \ibm~\cite{Raman2013-em}, \monetx~\cite{Boncz2005-wj}, and \exasol~\cite{Exasol2014-xh}.
 
 {\color{gray} 
-\section{Late materialization}
-\label{sec:Late materialization}
+\section{Late Materialization}
+\label{sec:Late Materialization}
 Materialization is the word that is used when intermediate results are stored in memory. It can be used on many levels, where materialization can mean moving results from registers to memory \cite{Neumann2011-uq}, or can mean stiching tuples together for columns. Abadi \ea~\cite{Abadi2008-dd} have investigated the effects of late materialization, that is keeping the columns for as long as you can without materializing into rows. This optimization allows for 5\%-50\% performance boost depending on the query. \term{Late materialization} is used by several database systems, like \ibm~\cite{Raman2013-em} and \monetdb~\cite{Boncz2002-yj}. The latter has later been critiziced by materializing too much \cite{Boncz2005-wj}
 
 Holloway \ea~\cite{Holloway2008-rr} has investigated the materialization size, and concluded that vectors of 100 was a good size. The reasoning behind this is that the buffer fits in the first level of cache, while still reducing overhead

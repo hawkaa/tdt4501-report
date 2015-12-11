@@ -1,6 +1,8 @@
 \chapter{Data Layout}
 \label{chap:Data Layout}
-One of the most prevalent ways of achieving good performance for analytical workloads, is to consider how the data is laid out in all levels of the memory hierarchy. Most of the discussion relates to column stores against row stores, but we see alternate ways of storing the data. In addition to the overall storage format, one should also consider if and how to partition the data, and how to sort it.
+One of the most prevalent ways of achieving good performance for analytical workloads is to use a data layout that allows for fast and easy retrieval and aggregation of data.
+
+In this chapter, we discuss how transactional and analytical workloads relate to data layout, and how column storage can be used to improve performance in an OLAP database. We also discuss data ordering, partitioning, and alternative storage layouts.
 \newpage
 
 %\ffigure{img/row-store.png}{Row-oriented layout for example tuples. Courtesy of \cite{Bjorklund2011-wh}.}{fig:row-store}
@@ -24,7 +26,7 @@ One of the most prevalent ways of achieving good performance for analytical work
 \label{sec:Column Storage}
 
 
-The most common storage format for OLTP systems is row storage, as we briefly mentioned in Section \ref{sec:Definitions}. Row storage enables easy fetching of related data \todo{related data, rows storage} and is suited for updates, inserts, and deletes. However for OLAP workloads, columnar storage has turned out advantageous, mainly because of two reasons: First, aggregations are easier, since calculations are performed on data consecutive in memory. Second, column storage does not fetch more data than is needed for the query.
+The most common storage format for OLTP systems is row storage, as we briefly mentioned in Section \ref{sec:Definitions}. Row storage enables easy fetching of values from the same tuple, and is suited for updates, inserts, and deletes. However for OLAP workloads, columnar storage has turned out advantageous, mainly because of two reasons: First, aggregations are easier, since calculations are performed on data consecutive in memory. Second, column storage does not fetch more data than is needed for the query.
 
 Our research have identified several systems using columnar storage. These include \monetdb~\cite{Boncz2002-yj, Boncz2005-wj}, \cstore~\cite{Stonebraker2005-qz}, \saph~\cite{Farber2012-vh}, and \mssql~\cite{noauthor_undated-vq, Larson2013-mc}, as well as the \bd~product Tableau \cite{Kamkolkar2015-iq}.
 
@@ -111,27 +113,24 @@ We started this chapter by explaining how row storage normally is used in OLTP d
 
 
 \ffigure{img/oracle-dual.png}{The \oracle~dual format. Data is stored both in rows and columns. Courtesy of \cite{Oracle2015-fs}.}{fig:oracle-dual}
-\oracle~uses a dual format, where data is stored as both columns and rows \cite{Lahiri2015-mz}. As we see in Figure~\ref{fig:oracle-dual}, the rows are used for transactional workloads, while the columns are used for analytics. Since analytical indexes can be dropped when using a column layout, and the fact that the columns are heavily compressed, the dual format does not take more space than usual. \ibm~does not offer a dual format but columns and rows might co-exist in the same table \cite{Raman2013-em}.
+\oracle~uses a dual format, where data is stored as both columns and rows \cite{Lahiri2015-mz}. As we see in Figure~\ref{fig:oracle-dual}, the rows are used for transactional workloads, while analytical queries use the columns. Since analytical indexes can be dropped when using a column layout, and the fact that the columns are heavily compressed, the dual format does not take more space than usual. \ibm~does not offer a dual format but columns and rows might co-exist in the same table \cite{Raman2013-em}.
 
-\mssql~does not consider column storage as a "real" storage format, but rather as an index structure that can be put on top of a table stored in a row-wise fashion \cite{noauthor_undated-vq}. In other words, in this system, only traditional row-organized data is persisted to disk. The column storage is loaded into memory as a performance layer when \mssql~starts. This type of index is different from ordinary index structures, as it is not used for value lookups, but rather efficient OLAP processing.
+\mssql~does not consider column storage as a "real" storage format, but rather as an index structure that can be put on top of a table stored in a row-wise fashion \cite{noauthor_undated-vq}. In other words, in this system, only traditional row-organized data is persisted to disk. The column storage is loaded into memory as a performance layer when \mssql~starts. This type of index is different from conventional index structures, as it is not used for value lookups, but rather efficient OLAP processing.
 
-\ffigure{img/pax.png}{PAX layout for example tuples. Compared to row and column storage depicted in Figure \ref{fig:row-column-store}, PAX is a hybrid layout where data is stored as columns, but partitioned such that all values associated with a tuple is stored within the same page. Courtesy of \cite{Bjorklund2011-wh}.}{fig:pax}
+\ffigure{img/pax.png}{PAX layout for example tuples. Compared to row and column storage depicted in Figure \ref{fig:row-column-store}, PAX is a hybrid layout where data is stored as columns but partitioned such that all values associated with a tuple are stored within the same page. Courtesy of \cite{Bjorklund2011-wh}.}{fig:pax}
 
-Another popular format is the PAX (Partition Attributes Across) data layout \cite{Bjorklund2011-wh, Holloway2008-rr} which can be seen in Figure \ref{fig:pax}. This format stores data in a column-wise fashion, but the rows are partitioned such that all data belonging to a single tuple fits within a page. In Figure \ref{fig:row-column-store}, we see a table with two columns (I and P) and page size of four, which means two and two values from each column are stored alternatively. This format increases cache behaviour, but does not reduce IO.
+Another popular format is the PAX (Partition Attributes Across) data layout \cite{Bjorklund2011-wh, Holloway2008-rr} which can be seen in Figure \ref{fig:pax}. This format stores data in a column-wise fashion but the rows are partitioned such that all data belonging to a single tuple fits on a page. In Figure \ref{fig:row-column-store}, we see a table with two columns (I and P) and page size of four, which means two and two values from each column are stored alternatively. This format increases cache behaviour but does not reduce IO.
 
 \ffigure{img/banked-layout.png}{Banked layout. Courtesy of \cite{Johnson2008-cp}.}{fig:banked-layout}
-The work of Barber \ea~claims that both row and column store are suboptimal. Columns are ineffective because they must be padded to word boundaries for efficient access \cite{Barber2012-xt}. Their database system, \blink~therefore implements a hybrid structure, where a subset of the rows are densely packed in word banks. Each word bank is typically 128-256 bits wide each, and each column has a fixed amount of bits within that bank. See Figure \ref{fig:banked-layout}. We will see later in this report that this format enables predicate evaluation on several values at a time. However, later versions of \blink~(and \ibm, which builds on \blink) stopped using this format, and started 
-
-
-typcially 128-256 bits each
-
-mainly because columns are ineffective because they must be padded to word boundaries for efficient access \cite{Barber2012-xt}. Their database system, \pn{Blink} therefore implement a hybrid structure, where a subset of the rows are densely packed in word banks, typcially 128-256 bits each. \pn{Blink} puts data into banks, and each column has fixed bits within that bank. A bank is normally a machine word length \cite{Johnson2008-cp} A later paper on \pn{Blink} \cite{Raman2013-em} however contradicts this format, and says everything is stored column-wise.
-
+The work of Barber \ea~claims that both row and column store are suboptimal. Columns are ineffective because they must be padded to word boundaries for efficient access \cite{Barber2012-xt}. Their database system, \blink~therefore implements a hybrid structure, where a subset of the rows is densely packed in word banks. Each word bank is typically 128-256 bits wide each, and each column has a fixed amount of bits within that bank. See Figure \ref{fig:banked-layout}. We will see later in this report that this format enables predicate evaluation on several values at a time. However, later versions of \blink~(and \ibm, which builds on \blink) stopped using this layout and started storing values in a pure columnar format instead \cite{Raman2013-em}.
 
 \section{Chapter Conclusion}
 \label{sec:Chapter Conclusion}
-We conclude that columnar storage looks promising for a \bd~application. Columnar storage reduces memory footprint by enabling compression, and relieves CPU cache pressure due since most data put into the cache is used. We find that most disadvantages with columnar storage is related to writes and updates, but since we focus on read-only performance, this does not apply. \todo{SEB 30/11: But the DB needs to be created and updated?}
+We conclude that columnar storage looks promising for a \bd~application. Columnar storage is beneficial since it does not access more data than necessary. In addition to this, it enables compression and has a low degree of freedom. Most of the disadvantages with column store relate to writes and updates, but since we focus on read-only performance and update based write-support (Section \ref{sub:Read-Only}), they do not apply.
 
-We also suggest dividing columns horizontally. First, this enables data pruning if partition metadata, like min and max values are stored in each partition. Second, horizontal partitioning enables parallelization. Third, if updates is to be supported in the future, horizontal partitions can be added one by one.
+We also suggest dividing columns horizontally for several reasons. First, it enables data pruning by using partition metadata, like minimum and maximum values, as well as dictionary keys. Second, horizontal partitioning enables parallelization. Third, an update based write-support might benefit from the ability to add one partition at a time.
 
-Sorting of values and frequency partitioning can also be considered. Keeping columns sorted enables easy value lookup, and sorted columns compress better than unsorted columns with the use of \rle. Frequency partition allows better compression when there is data skew.
+Sorting of values and frequency partitioning can also be considered. Keeping columns sorted enables easy value lookup, and sorted columns compress better than unsorted columns with the use of \rle. Frequency partitioning allows better compression when there is data skew.
+
+We are reluctant to recommend any of the other storage formats discussed in this chapter. A dual format is suited for a DBMS that supports both transactional and analytical queries, while we focus on read-only workloads. The PAX layout is based on disk pages, a construct that we do not need to take into account in an in-memory database. Last, the banked layout that was used in \blink~is likely to have been deprecated for a reason.
+

@@ -26,14 +26,17 @@ In Section \ref{sec:Horizontal Partitioning}, we saw that \oracle~horizontally p
 
 The blocks in \oracle~are distributed using a two-phase strategy \cite{Mukherjee2015-ul}. First, a centralized coordination phase is performed such that servers can reach a minimal consensus. Second, IMCUs are distributed over the network in a decentralized manner. \oracle~in a distributed environment can be configured to be both \term{1-safe} and \textit{(N-1)-safe}.
 
-\qlikview, one of the studied reference products, also supports a distributed architecture \cite{Qlik2012-ku}. We saw in Section \ref{sec:Business Discovery} that \qlikview~uses the definition of \textit{an application}, where an application is one or more \bd~panels connected to a specific data extract. An application is also the minimum distribution unit in \qlikview, which in practise means that a request belonging to an application will be handled by a single server.  In other words, \qlikview~in a distributed environment does not need a central coordination unit to merge results before sent back to the client.
+\qlikview, one of the studied reference products, also supports a distributed architecture \cite{Qlik2012-ku}. We saw in Section \ref{sec:Business Discovery} that \qlikview~uses the definition of \textit{an application}, where an application is one or more \bd~panels connected to a specific data extract. An application is also the minimum distribution unit in \qlikview, which in practice means that a request belonging to an application will be handled by a single server.  In other words, \qlikview~in a distributed environment does not need a central coordination unit to merge results before sent back to the client.
 
 In \qlikview, a single application might still be served by multiple machines \cite{Qlik2012-ku}. A load balancer will assign a user session to one of the servers in the cluster, such that all requests from that session are directed to the same server. Hence, two users running the same application might have different servers processing the requests.
 
 \subsection{Column Distribution}
 \label{sub:Column Distribution}
 \ffigure{img/dictionary-scale-out}{Different data placements of a dictionary encoded column with an inverted index. Each color represents a node in the cluster. Courtesy of \cite{Psaroudakis2015-lc}.}{fig:dictionary-scale-out}
-We have previously pointed out the potential of dictionary encoded column storage for OLAP workloads. Psaroudakis \ea~have studied three techniques of how such layout with inverted indexes can be distributed in a shared-nothing architecture \cite{Psaroudakis2015-lc}. These techniques are \textit{round-robin}, \textit{index vector partitioning}, and \textit{physically partitioning}, all which are illustrated in Figure \ref{fig:dictionary-scale-out}. The techniques comes with different benefits and disadvantages which we enumerate below.
+
+\todo{Explain the IX, IV, dict etc}
+
+We have previously pointed out the potential of dictionary encoded column storage for analytical workloads. Psaroudakis \ea~have studied three techniques of how such layout with inverted indexes can be distributed in a shared-nothing architecture \cite{Psaroudakis2015-lc}. These techniques are \textit{round-robin}, \textit{index vector partitioning}, and \textit{physically partitioning}, all which are illustrated in Figure \ref{fig:dictionary-scale-out}. The techniques comes with different benefits and disadvantages which we enumerate below.
 
 \subsubsection{Round-robin (RR)}
 \label{ssub:Round-robin (RR)}
@@ -51,9 +54,9 @@ However, this method suffers from high overhead when stitching column results ba
 \label{par:Physically Partitioned (PP)}
 Challenges with IVP can be overcome by partitioning the columns in the database and assign column partitions to machines in the cluster. This technique distributes work evenly across nodes in the cluster, and allows for data pruning based on minimum and maximum values, a technique we discussed in Section \ref{sec:Database Statistics}. Database systems using PP include \oracle~and \saph.
 
-There are two main disadvantages with PP. First, it is time and resource consuming to perform or repartition. Second, since dictionaries across partitions are expected to contain common values, PP potentially consumes more memory.
+There are two main disadvantages with PP. First, it is time and resource consuming to perform or repartition \todo{hang litt i løse lufta}. Second, since dictionaries across partitions are expected to contain common values, PP potentially consumes more memory.
 
-\section{Thread-level Parallelism}
+\section{Thread-Level Parallelism}
 \label{sec:Thread-lever Parallelism}
 % paragraph introducing the "problem"
 Within a single multiprocessor, where all processing units share memory, parallelization can be performed by using threads. Ideally, queries should use all available cores, and the ultimate goal is that query performance increases linearly with the number of processing units available. Conceptually, parallelization is simple: Partition the input onto the available processing units and merge the results after computation is done \cite{Neumann2011-uq}.
@@ -109,7 +112,7 @@ However, if a single thread manages to keep a processing core busy with computat
 
 Instruction-level parallelism (ILP) can be exploited if a processor can find operations that are independent \cite{Wikipedia_contributors2015-vg}, as it allows a processor to execute multiple instructions simultaneously. Techniques that allow multiple operations to be executed at the same time include \term{instruction pipelining} and \term{superscalar execution}. As most programming languages do not require application programmers to specify which instructions are independent, exploiting ILP is the job of the compilers and processors.
 
-It is still possible to implicitly design applications that are optimized for ILP. In general, the idea is that if a processor can find enough independent work, it can be a magnitude or two faster \cite{Boncz2005-wj}. Techniques used to reduce dependencies between instructions include \textit{branch avoidance} and \textit{loop pipelining}, which we study further in Chapter \ref{chap:Implementation Details}.
+It is still possible to implicitly design applications that are optimized for ILP. In general, the idea is that if a processor can find enough independent work, it can be one or two magnitudes faster \cite{Boncz2005-wj}. Techniques used to reduce dependencies between instructions include \textit{branch avoidance} and \textit{loop pipelining}, which we study further in Chapter \ref{chap:Implementation Details}.
 
 \section{SIMD}
 \label{sec:SIMD}
@@ -144,7 +147,7 @@ Most literature refers to SIMD parallelization as utilizing special processor an
 
 \section{Scaling}
 \label{sec:Scaling}
-\textit{Scaling} is referred to the action taken to accomodate more work in a computer system \cite{Wikipedia_contributors2015-lw}. Scaling can be used to support more users and handle larger datasets while keeping performance at an acceptable level. In a \bd~setting, scaling in necessary because data volumes are becoming increasingly larger \cite{Qlik2012-ku}.
+\textit{Scaling} is referred to the action taken to accomodate more work in a computer system \cite{Wikipedia_contributors2015-lw}. \todo{tung setning} Scaling can be used to support more users and handle larger datasets while keeping performance at an acceptable level. In a \bd~setting, scaling is necessary because data volumes are becoming increasingly larger \cite{Qlik2012-ku}.
 
 
 \afigure{img/scaling.png}{Scale-Up vs Scale-Out. When scaling up, more hardware is added to the single server. When scaling out, more servers are added. Courtesy of \cite{CloudBoost2015-gg}.}{fig:scaling}{0.8}
@@ -164,4 +167,4 @@ We recommend utilizing thread-level parallelism, where queries should be split i
 
 Instruction level parallelism and SIMD instructions are both promising techniques to improve database performance. We see that SIMD instructions are particularly effective on bitpacked columns, a storage format we have suggested earlier in this report. The database software should also be designed to improve ILP. We will study ILP in detail in the chapter about implementation details, Chapter \ref{chap:Implementation Details}.
 
-For now, we do not recommend a distributed architecture, because of three reasons. First, a distributed architecture is harder to program than an application that runs on a single server. Second, distributed queries might hurt query cache performance, as reported by \qlikview. Last, we anticipate that most workloads fit in the main memory of a single server. For the same three reasons, we encourage a \textit{scale up} approach to scaling instead of \textit{scale out}.
+For now, we do not recommend a distributed architecture, because of three reasons. First, a distributed architecture is harder to program than an application that runs on a single server. Second, distributed queries might hurt query cache performance, as reported by \qlikview. Last, we anticipate that most workloads fit in the main memory of a single server. For the same three reasons, we encourage a \textit{scale up} approach to scaling instead of \textit{scale out}. \todo{holder ikke i lengden}

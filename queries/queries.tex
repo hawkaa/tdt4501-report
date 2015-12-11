@@ -1,6 +1,6 @@
 \chapter{Query Processing}
 \label{chap:Query Processing}
-So far, we have studied base techniques that improve OLAP performance for in-memory, read-only databases. However, a high-performance \bd~application does not only rely on using the correct data format, compression, indexes, parallelization, and implementation. In this chapter we elaborate query processing techniques.
+So far, we have studied base techniques that improve OLAP\todo{rephares} performance for in-memory, read-only databases. However, a high-performance \bd~application does not only rely on using the correct data format, compression, indexes, parallelization, and implementation. In this chapter we elaborate query processing techniques.
 
 In Section \ref{sub:Business Discovery, Queries, and SQL}, we explained how \bd~applications relate to traditional queries. We saw that a \bd~application must support listing of rows, filtering, joining, and grouping/aggregation. In this chapter, we focus on query processing, mainly joining, grouping and aggregation, and query optimization.
 
@@ -19,7 +19,7 @@ Joining is a common database operation that combines records from two or more ta
 
 For joining two tables, three main methods exist \cite{Bratbergsengen2015-ed}: 
 \begin{itemize}
-  \item \textit{Partition-based approach}, where records of both relations are split into groups based on the hash value of the keys. This technique is most effective on data volumes are too large to fit in main memory.
+  \item \textit{Partition-based approach}, where records of both tables are split into groups based on the hash value of the keys. This technique is most effective on data volumes that are too large to fit in main memory.
   \item \textit{Sort-merge approach}, where both tables are sorted and then merge results by concatenating records with equal key values. This approach is most effective when one or both operands are sorted in advance.
   \item \textit{Nested loop approach}, which compares all rows in both tables.
 \end{itemize}
@@ -30,7 +30,7 @@ We find the \textit{nested loop} approach to be the most popular joining algorit
 \label{sub:Nested Loop Algorithms}
 
 % Basic nested join functionality
-In its simplest form, the \textit{nested loop} method compares all the join keys in all rows directly using a double loop. This simple algorithm has a runtime of $O(n*m)$ where $n$ and $m$ is the size of tables A and B respectively. However, to improve performance in a \textit{nested loop} algorithm, hashmaps are commonly used. Usually, the join is performed by hashing the smaller (inner) relation first, then probe the hashmap by scanning the larger (outer) relation. 
+In its simplest form, the \textit{nested loop} method compares all the join keys \todo{all?} in all rows directly using a double loop. This simple algorithm has a runtime of $O(n*m)$ where $n$ and $m$ is the size of tables A and B respectively. However, to improve performance in a \textit{nested loop} algorithm, hashmaps are commonly used. Usually, the join is performed by hashing the smaller (inner) relation first, then probe the hashmap by scanning the larger (outer) relation. 
 
 In a star or snowflake schema, dimension tables are usually considered as the inner relations \cite{Barber2012-xt, Raman2013-em}. In other words, the keys of these tables will be used to create the hashmaps in the join. In the second phase of the algorithm, the fact table will probe the generated hashmaps to complete the join. 
 
