@@ -138,6 +138,24 @@ We find one of the most important technique for good query performance to operat
 
 Systems querying direcly on compressed data include \cstore~\cite{Stonebraker2005-qz}, \ibm~\cite{Raman2013-em}, \mssql~\cite{Larson2013-mc}, \blink~\cite{Johnson2008-cp}, \sapnw~\cite{Lemke2010-is}. All of these systems claim one of their main benefits in terms of performance is their ability to work directly on the compressed data.
 
+\section{Late Materialization}
+\label{sec:Late Materialization}
+In the previous chapter, we used the word \textit{materialization} mainly for when intermediate results were stored to memory. However, in Section \ref{sub:Row Identifiers and Tuple Materialization} we also saw that the word can be used to describe the operation of stitching together columns in a column store back to tuples. 
+
+The technique where tuples are not stitched together before it is really needed is known as \textit{late materialization} \cite{Abadi2008-dd}. In a system using this concept, the query processing operate on columns only as long as possible. For instance, if a predicate is applied to two columns in a query, in a column store that uses late materialization, the predicates  are applied to each column separately, and combined at the end using AND operations. The invisible join which we discussed in Section \ref{sub:Invisible Join} is an example of a technique that does not materialize results before necessary.
+
+Late matreialization is advantegous because \cite{Abadi2008-dd}:
+\begin{itemize}
+  \item Early materialization might contsruct tuples that are discarded later in the query execution.
+  \item Compressed columns must be decompressed before materialization, which eliminate the benefits of querying directly on compressed data, discussed in Section \ref{sec:Querying Directly on Compressed Data}.
+  \item Cache performance is better using a column storage, which we discussed in Chapter \ref{chap:Data Layout}.
+  \item Vectorized Execution can be used on columns only.
+\end{itemize}
+
+This optimization allows for 5\%-50\% performance boost depending on the query. \term{Late materialization} is used by several database systems, like \ibm~\cite{Raman2013-em} and \monetdb~\cite{Boncz2002-yj}. The latter has later been critiziced by materializing too much \cite{Boncz2005-wj}
+
+Holloway \ea~\cite{Holloway2008-rr} has investigated the materialization size, and concluded that vectors of 100 was a good size. The reasoning behind this is that the buffer fits in the first level of cache, while still reducing overhead
+
 \section{Measure and Dimension Attributes}
 \label{sec:Measure and Dimension Attributes}
 We see that some systems make a distinction between measure and dimension attributes \cite{Johnson2008-cp, Kamkolkar2015-iq}. A dimension attribute typically answers questions like "where", "what", and "when", whereas a measure attribute normally answers in terms of "how much" \cite{noauthor_undated-es}. 

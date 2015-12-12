@@ -61,7 +61,7 @@ Most research agree that row stores are most suitable for OLTP workloads, and co
 \begin{itemize}
   \item \textit{Compression}, which we discuss in Chapter \ref{chap:Data Compression}.
   \item \textit{Vectorized execution}, which we discuss in Section \ref{sec:Loop Pipelining and Vectorized Execution}.
-  \item \textit{Late materialization}, which we discuss in Section \ref{sec:Late Materialization}
+  \item \textit{Late materialization}, which we discuss in Section \ref{sec:Late Materialization}.
 \end{itemize}
 
 There are situations for OLAP databases where a row store performs better than a column store. A research executed by Holloway \ea~shows that a row store can outperform a column store when processing time is the dominating contraint \cite{Holloway2008-rr}. This is typically the case for low selectivity queries and queries with many predicates. To further improve row storage performance, tuples can be compressed. However, row storage will most likely never beat column stores for OLAP workloads, since bandwidth requirement for processing rows is higher than for columns.
@@ -71,6 +71,8 @@ There are situations for OLAP databases where a row store performs better than a
 We have also identified papers that claim OLTP databases also benefit from a columnar storage. The work of Farber \ea~argues that columnar storage is suited for transactional workloads as well, mainly due to the compression \cite{Farber2012-vh}. Also, storing data in columns allows for dropping indexes, which is normally costly to maintain. Last, there are normally a lot more read operations than inserts, updates, and deletes in an OLTP database.
 
 Plattner \ea~claim that most OLTP queries request aggregates instead of single rows \cite{Plattner2014-fr}. In addition, updates to the database normally triggers a chain reaction of updates to indexes and materialized views, as seen in Figure \ref{fig:chain-reaction}. Their conclusion is that column storage is suited for OLTP databases due to efficient aggregation and abscence of indexes. The absence of indexes also makes application development easier, since they do not have to be specified by the application programmer.
+
+We have earlier in this chapter said that columns are more easily compressible than rows stores. However, the work of Holloway \ea~contradicts this and claims that row stores can be compressed just as much if done correctly \cite{Holloway2008-rr}. We believe that even though row storage is as compressible as column store, compression of columns is simpler and more practical.
 
 \subsection{Row Identifiers and Tuple Materialization}
 \label{sub:Row Identifiers and Tuple Materialization}
@@ -121,7 +123,7 @@ We started this chapter by explaining how row storage normally is used in OLTP d
 
 Another popular format is the PAX (Partition Attributes Across) data layout \cite{Bjorklund2011-wh, Holloway2008-rr} which can be seen in Figure \ref{fig:pax}. This format stores data in a column-wise fashion but the rows are partitioned such that all data belonging to a single tuple fits on a page. In Figure \ref{fig:row-column-store}, we see a table with two columns (I and P) and page size of four, which means two and two values from each column are stored alternatively. This format increases cache behaviour but does not reduce IO.
 
-\ffigure{img/banked-layout.png}{Banked layout. Courtesy of \cite{Johnson2008-cp}.}{fig:banked-layout}
+\afigure{img/banked-layout.png}{Banked layout used in \blink. In this layout, a subset of the values in a tuple are densely packed within a word bank. Courtesy of \cite{Johnson2008-cp}.}{fig:banked-layout}{0.8}
 The work of Barber \ea~claims that both row and column store are suboptimal. Columns are ineffective because they must be padded to word boundaries for efficient access \cite{Barber2012-xt}. Their database system, \blink~therefore implements a hybrid structure, where a subset of the rows is densely packed in word banks. Each word bank is typically 128-256 bits wide each, and each column has a fixed amount of bits within that bank. See Figure \ref{fig:banked-layout}. We will see later in this report that this format enables predicate evaluation on several values at a time. However, later versions of \blink~(and \ibm, which builds on \blink) stopped using this layout and started storing values in a pure columnar format instead \cite{Raman2013-em}.
 
 \section{Chapter Conclusion}
