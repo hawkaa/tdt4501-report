@@ -119,31 +119,34 @@ An algorithm that combines \dele~with \bp~is \pfdelta \cite{Bjorklund2011-wh}. T
 
 \ffigure{img/timestamp-compression.png}{Compression of data stream (a) with timestamps and float values in \gorilla. Timestamps are stored as delta of deltas (b). The float values are \texttt{XOR}ed with the previous value  to extract meaningful bits (c). Courtesy of \cite{Pelkonen2015-ko}.}{fig:timestamp-compression}
 
-If the differences between values are large, but the deltas are similar to each other, compression can be increased by storing the difference between the deltas (delta of deltas) instead. This is seen in Figure \ref{fig:timestamp-compression}b. \gorilla~uses this technique to store timestamps for data that arrive roughly at a fixed interval \cite{Pelkonen2015-ko}. Floating point numbers can be compressed by extracting and storing the different bits with an \texttt{XOR} operation of two consecutive numbers, as seen in Figure \ref{fig:timestamp-compression}c.
+If the differences between values are large, but similar to each other, compression can be increased by storing the deltas between the differences (delta of deltas) instead. This is seen in Figure \ref{fig:timestamp-compression}b. \gorilla~uses this technique to store timestamps for data that arrive roughly at a fixed interval \cite{Pelkonen2015-ko}. Floating point numbers can be compressed by extracting and storing the different bits with an \texttt{XOR} operation of two consecutive numbers, as seen in Figure \ref{fig:timestamp-compression}c.
 
 \section{Run-Length Encoding}
 \label{sec:Run-Length Encoding}
-\ffigure{img/rle.png}{\rle~on a sorted value range. Courtesy of \cite{Stoimen_undated-js}.}{fig:rle}
-\rle~is a lossless data compression algorithm that replaces repeating data values with only one instance of the data and a number of how many times that value appear in the sequence \cite{Stoimen_undated-js}, like illustrated in Figure \ref{fig:rle}. Although it can be used for any sequence, \rle~works best on sorted data \cite{Bjorklund2011-wh, Holloway2008-rr}. In this case, each unique value in the sequence is represented exactly once, and this implies that \rle~works best for columns with low cardinality. \rle~is used in \cstore~\cite{Stonebraker2005-qz}, \vertica~\cite{Lamb2012-kg}, \oracle~\cite{Oracle2015-fs}, and \sapnw~\cite{Lemke2010-is}, but only if the values are sorted. \rle~can also be applied to compress sparse bitmaps \cite{Stonebraker2005-qz}.
 
-Queries may benefit from \rle~on sorted columns when performing grouping and aggregation, since values are already put in groups. By keeping a prefix sum over all values, row ranges can easily be extracted for equality and range predicates. This is a form of letting the system work directly on the compressed data. \todo{Find source, rephrase}
+\ffigure{img/rle.png}{\rle~on a sorted value range. Repeated values are replaced with one instance of the value and an integer indicating how many times that value occur in the sequence. Courtesy of \cite{Stoimen_undated-js}.}{fig:rle}
 
-%For sorted values, Run-length encoding can be used \cite{Bjorklund2011-wh}. A typical bla bla. The work by Holloway \ea~\cite{Holloway2008-rr} writes that run-length encoding works best on sorted data.
+\rle~is a lossless data compression algorithm that replaces repeating data values with only one instance of the data and a number of how many times that value appear in the sequence \cite{Stoimen_undated-js}, like illustrated in Figure \ref{fig:rle}. Although it can be used for any sequence, \rle~works best on sorted data \cite{Bjorklund2011-wh, Holloway2008-rr}. In this case, each unique value in the sequence is represented exactly once. \rle~performs best for low-cardinality columns. The method can also be applied to compress sparse bitmaps \cite{Stonebraker2005-qz}.
 
-%Run-length encoding is used extensively in \cstore~and \vertica~\cite{Barber2012-xt} (which is the commercialization of \cstore). These databases allows for projections that are sorted, and will apply run-length encoding on columns with low cardinality that are sorted.
+\rle~is used in \cstore~\cite{Stonebraker2005-qz}, \vertica~\cite{Lamb2012-kg}, \oracle~\cite{Oracle2015-fs}, and \sapnw~\cite{Lemke2010-is}, but only if the values are sorted. 
 
-\section{Other Compression Techniques}
-\label{sec:Other Compression Techniques}
-One way of compressing a column is to use bitmaps \cite{Stonebraker2005-qz} \todo{index?}. By representing each column value as a bitmap, where the 1s in the map indicate which rows the value is present, compression can be achieved. Compression is best on unsorted columns with few distinct values. Since these bitmaps are typically sparse, they can be compressed further with techniques like \rle, which we study in Section \ref{sub:Compression of Bitmaps}.
+\rle~enables the query operators to work directly on the compressed data. For instance, queries can exploit \rle~on sorted columns when performing grouping and aggregation, since the values are already stored as groups. 
 
-QlikView uses a hash table to compress the data \cite{Qlik2014-vd}, and it yields a compression rate of 20\%-90\% dependent on the data.
+\section{Compression Using Bitmaps}
+\label{sec:Compression Using Bitmaps}
+We saw in Section \ref{sub:Compression Types and Light-Weight Compression} that \cstore~and \vertica~compress foreign-order, low cardinality columns using bitmaps. This technique represents each column value as a bitmap, where the 1s in the map indicate which rows that have that value. If there are few distinct values in a column, the size of the bitmaps will be smaller than storing the actual values, and compression will be achieved. Since these bitmaps are typically sparse, they can be compressed further with techniques like \rle, which we study in Section \ref{sub:Compression of Bitmaps}.
+
+Queries can work directly on the compressed data by combining values using bitwise operations. For instance, all people from Norway, Sweden and Denmark can be found by \texttt{OR}ing together the three bitmaps corresponding to these three contries. This storage format is also known as a \textit{bitmap index}, which we study in Section \ref{sec:Bitmap Indexes}.
 
 \section{Chapter Conclusion}
 \label{sec:Chapter Conclusion}
-We have in this chapter concluded that compression is required in a \bd~application. Not only does it reduce memory footprint, but it increases performance by reducing the number of CPU cycles\todo{SEB 30/11: ?}, improve cache performance, and helps overcome the memory wall \todo{define this word}. Several database vendors claim compression is key for performance, including the top performing database in the \tpch, \exasol. To fully leverage the performance benefits of compression, compression must be light-weight and the queries must be processed directly on the compressed data. \todo{Introduce new stuff}
+We conclude that data compression is important for a \bd~application. First and foremost, it improves performance by reducing memory traffic and improving cache locality. Second, it reduces memory usage. Compression must be light-weight, and the system must be able to work on the compressed data directly.
 
-With this is mind, we conclude that \de~in combination with \bp~is the most versatile and promising compression algorithm, and it does not require the columns to be sorted. We do however suggest using a sorted dictionary. One of the disadvantages with this approach is that it does not handle inserts and updates very well, but since we focus on a read-only system, this does not apply. If the values are sorted, and the column have low cardinality, \rle~should be considered, since this scheme also allows for executing queries directly on the compressed data. Applying \dele~can also be considered if the values are sorted, but only if reducing the memory footprint is more important than performance.
+We conclude that \de~with bitpacked columns is the most promising compression technique. Many systems use this technique, including our reference product \qlikview. \de~allows the query operators to work directly on the compressed data using integer operations, and \bp~can be processed in an SIMD-like fashion while still allowing values to be looked up in constant time. A sorted dictionary will further improve performance for single value lookups and range predicates. The disadvantages of this compression technique are related to inserts, updates, and deletes, but since we focus on read-only and update based write support (Section \ref{sub:Read-Only}), they have limited impact.
 
-
-
-%\oracle~utilizes a compression format on their in-memory storage layout \cite{Oracle2015-fs}. Compression is normally considered as a space-saving mechanism, but compression will also improve query performance. All scanning and filtering operations operate directly on the compressed columns which decreases query execution time. Data is decompressed before it is required for the result set. \oracle uses Dictionary Encoding, Run Length Encoding and Bit-Packing is used \cite{Oracle2015-fs}. 
+Other compression techniques could also be considered:
+\begin{itemize}
+  \item \rle~for sorted low-cardinality columns.
+  \item Bitmaps for unsorted low-cardinality columns.
+  \item \de~for sorted high-cardinality columns, but since this technique renders the system unable to work directly on compressed data, this compression should only be applied if reducing memory footprint is more important than performance.
+\end{itemize}

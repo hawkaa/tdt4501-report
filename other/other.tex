@@ -49,7 +49,7 @@ The most common construct for supporting writes is using a delta store, also kno
 
 Delta stores are periodically moved into the main storage format, or read-optimized store. Such operation can either be triggered when the delta store exceeds a certain threshold, or through a trickle operation \cite{Lahiri2015-mz, Farber2012-vh}.
 
-A common way to use a delta store is to disallow updates, and use a delete statement followed by an insert statement instead. Deletes are normally implemented as invalidation bit vectors \cite{Raman2013-em, Lamb2012-kg}, and updates are appended to a suitable structure, like an unsorted B+-tree \cite{Psaroudakis2014-ma}, or non-bitpacked columns with unsorted dictionary compression \cite{Farber2012-vh}. This delete-insert way of updating allows for time-travel queries \cite{Scwalb2014-hn, Plattner2014-fr}
+A common way to use a delta store is to disallow updates, and use a delete statement followed by an insert statement instead. Deletes are normally implemented as invalidation bit vectors \cite{Raman2013-em, Lamb2012-kg}, and updates are appended to a suitable structure, like an unsorted B+-tree \cite{Psaroudakis2014-ma}, or non-bitpacked columns with unsorted dictionary compression \cite{Farber2012-vh}. This delete-insert way of updating allows for time-travel queries \cite{Schwalb2014-hn, Plattner2014-fr}
 
 In certain conditions, using the delta store can be omitted completely on insertion. \mssql~allows bulk inserts to create columns directly without going via the delta store \cite{Larson2013-mc}.
 

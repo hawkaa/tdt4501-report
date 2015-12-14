@@ -2,19 +2,19 @@
 \label{chap:Hardware Utilization}
 \ffigure{img/implementation.png}{A simple spatial join algorithm that puts elements into buckets based on their position in a grid. By putting data pointers directly in the buckets instead of referring to a linked list, a layer of indirection is removed, and 3-fold improvement is observed. Courtesy of \cite{Sidlauskas2014-ef}.}{fig:implementation}
 
-As we move up the memory hierarchy, careful implementation becomes more important. Recent work by Sidlauskas \ea~claims that for in-memory databases, there is a challenge in concluding about data structures and algorithms only; the implementation also plays a significant role in performance \cite{Sidlauskas2014-ef}. For instance, if an extra layer of indirection is removed for an algorithm, as seen in Figure \ref{fig:implementation}, we observe a 3-fold performance improvement. 
+As we move up the memory hierarchy, careful implementation becomes more important such that available hardware is utilized to its full potential. Recent work by Sidlauskas \ea~claims that for in-memory databases, there is a challenge in concluding about data structures and algorithms only; the implementation also plays a significant role in performance \cite{Sidlauskas2014-ef}. For instance, if an extra layer of indirection is removed for an algorithm, as seen in Figure \ref{fig:implementation}, we observe a 3-fold performance improvement. 
 
-We have decided to dedicate an entire chapter to \textit{implementation details}, and explain how performance can be improved by reducing the number of branches, avoiding layers of indirection, and utilizing CPU caches. We will first cover basic CPU theory, and then study related techniques employed by systems studied in this research.
+We have decided to dedicate an entire chapter to \textit{hardware utilization} and implementation details, and explain how performance can be improved by reducing the number of branches, avoiding layers of indirection, and utilizing CPU caches. We will first cover basic CPU theory, and then study related techniques employed by systems studied in this research.
 
 \newpage
 
 \section{Background Information on Modern CPUs and Compilers}
 \label{sec:Background Information on Modern CPUs and Compilers}
-Modern processors are capable of performing an enormous amount of calculations per second, but that depends on the amount of available and independent work. The instructions-per-second (IPC) difference between minimal and maximal CPU utilization can easily be an order of magnitude \cite{Boncz2005-wj}. Hence, database software must be implemented such that it fully exploits the processing power made available by the CPU.
+Modern processors are capable of performing an enormous amount of calculations per second, but that depends on the amount of available and independent work. The instructions-per-second (IPC) difference between minimal and maximal CPU utilization can easily be one order of magnitude \cite{Boncz2005-wj}. Hence, database software must be implemented such that it fully exploits the processing power made available by the CPU.
 
 \subsection{Pipelining, Superscalar Processing, and Independent Instructions}
 \label{sub:Pipelining, Superscalar Processing, and Independent Instructions}
-\afigure{img/superscalar.png}{A simple superscalar pipeline. Multiple execution units allows for processing multiple instructions in parallel. Courtesy of \cite{Wikipedia_contributors2015-kp}.}{fig:superscalar}{0.6} 
+\afigure{img/superscalar.png}{A simple superscalar pipeline. Multiple execution units allow for processing multiple instructions in parallel. Courtesy of \cite{Wikipedia_contributors2015-kp}.}{fig:superscalar}{0.6} 
 
 Modern processors improve clock rate and IPC by using a technique known as \textit{pipelining} \cite{Boncz2005-wj}. By dividing an instruction execution into multiple steps, there is less work per stage, and the CPU frequency can be increased. Figure \ref{fig:superscalar} depicts an example pipeline with five stages. However, pipelining also introduce two dangers; \textit{instruction dependencies} and \textit{branch misprediction}.
 
@@ -166,9 +166,7 @@ The vector data structure in \ibm~is implemented using C++ templates to support 
 \section{Cache Awareness and Prefetching}
 \label{sec:Cache Awareness and Prefetching}
 
-We saw in Section \ref{sub:CPU Caches} that efficient utilization of caches is important for database performance, so data structures and algorithms should be designed such that they are cache-aware. Our research has identified several systems that are designed to be cache-aware, including \monetdb~\cite{Boncz2002-yq}, \mssql~\cite{Lahiri2015-mz}, and \ibm~\cite{Raman2013-em}. The developers of \exasol, the top performing database system in the TPC-H benchmark, claim that high level of data locality is one of the key factors to performance.
-
-radix-cluster bla bla \todo{Input here about radix cluster algorithm if time}.
+We saw in Section \ref{sub:CPU Caches} that efficient utilization of caches is important for database performance, so data structures and algorithms should be designed such that they are cache-aware. Our research has identified several systems that are designed to be cache-aware, including \monetdb~\cite{Boncz2002-yj}, \mssql~\cite{Lahiri2015-mz}, and \ibm~\cite{Raman2013-em}. The developers of \exasol, the top performing database system in the TPC-H benchmark, claim that high level of data locality is one of the key factors to performance.
 
 Prefetching is another way of improving cache performance. Prefetching is the technique where data is proacively loaded into the CPU caches such that it is available when an instruction needs it. Prefetching can be done automatically by a processor or a compiler, but explicit prefetching CPU instructions exist. Explicit prefetching is used by several systems studied in this research, including \ibm~\cite{Raman2013-em}, \monetx~\cite{Boncz2005-wj}, and \exasol~\cite{Exasol2014-xh}.
 
@@ -179,4 +177,4 @@ In this chapter, we see that careful implementation is required for a high-perfo
 
 We point at \textit{vectorized execution} as the most promising technique to improve database performance in a \bd~application, as it can drastically reduce the number of cycles per tuple by operating at multiple values at a time. \textit{Vectorized execution} enables loop unrolling and memory prefetching and minimizes cache misses. We consider this technique as relatively straight-forward to implement. \textit{Vectorized execution} should be implemented using macro expansions to avoid unnecessary layers of indirection.
 
-We see that many systems, including \bd~product \qlikview, compile queries into machine code. This technique increases the performance of expression evaluation, avoids branches, and reduces the number of function calls. Query compilation is indeed a promising technique with potentially significant performance benefits, but we believe implementing such system as non-trivial.
+We see that many systems, including \bd~product \qlikview, compile queries into machine code. This technique increases the performance of expression evaluation, avoids branches, and reduces the number of function calls. Query compilation is indeed a promising technique with potentially significant performance benefits, but we believe implementing such system is non-trivial.
