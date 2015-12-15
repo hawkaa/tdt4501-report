@@ -1,32 +1,51 @@
-\chapter{Future Work and Conclusion}
-\label{chap:Future Work and Conclusion}
-
-\section{Looking ahead}
-\label{sub:Looking ahead}
-\todo{use same word for everything}
-We propose using this thesis as a guideline for improving \bd~performance in \genusSoftware. We suggest using techniques outlined in this thesis and implement one or more of these techniques. For every technique implemented, a test suite is run to assess the performance impact. In addition, the improvements are tested together to see if performance can be improved by combining various aspects
-
-\subsection{Testing}
-\label{sub:Testing}
-We propose testing using the TPC-H benchmark. As we have seen in this thesis, this is widely used to test OLAP workloads on database systems. The benchmark is built up systematically, tests a variety of distributions and selectivities.
-
-Second, we propose using \genus' customer data to test \bd~performance from an end user perspective. In this phase, data is loaded into memory and accessed via the panel. Response times for a predifined steps are measured and compared. The main focus here will be the specific cases \genus' customers have pointed out as inadequate performance.
-
-\section{Future work}
-Although this thesis has discussed the key challenges on implementing Business Intelligence in a model-driven framework, there are still challenges that has not been discussed broadly.
-
-The thesis has assumed that data traverse the network at low cost, such that all the data for a specified query is available on the client. However, with large amounts of data, as well as slower network with restrictions, this might not be the case. To get high performance, values should be fetched "on demand". In addition, the client should be able to handle delta updates, such that the whole data set is not refreshed on every update.
-
-The thesis is based on a model where the data is recycled every night. This means that the most recent data will be left out of the analysis. Here it would be interesting to find out which alterations that needs to be done to avoid this problem. One could look at bla bla.
-
-There is also a lack of discussion of which component should do what. As explanied, \genusSoftware is comprised of a server and a client. Moving functionality between these components will affect the latency and performance.
-
+\chapter{Conclusion and Future Work}
+\label{chap:Conclusion and Future Work}
 
 \section{Conclusion}
 \label{sec:Conclusion}
-We have seen that database systems for OLAP workloads use light-weight compression, parallelism on all levels, and careful implementation to achieve good performance.
+In this report, we set out to answer the following research question:
 
-We point at dictionary compression with bit-packing as an obvious candidate for compression algorithm. We also propose splitting up the data horizontally, such that clustering can be utilized.
+\textbf{RQ1: How to design a high-performance database software that is capable of supporting \bd~workloads on large datasets?} 
 
-We point at the next step, which is implementation and testing of these techniques in \genusSoftware.
+Our literature review has been successful in identifying several techniques, design concepts, algorithms, and other considerations needed for a high-performance \bd~aplication. Our findings are presented by category in a structured and clear way, and we have used several examples, figures, and specific algorithms to explain and increase the understanding of each topic. This way, we believe we have given an overview of the big picture of read-optimized databases and inspired further research and development.
 
+We also set out to introduce new evidence for performance optimizations related specifically to \bd~products, because current products do not reveal how they work internally. For each topic presented in the report, we have tried to discuss our reference products, \qlikview~and \tableau, and how they relate to that particular subject. This way, we believe our report provides insight into how these applications work under the hood.
+
+Below, we summarize the conclusions of each chapter:
+\begin{itemize}
+  \item In Chapter \ref{chap:Background Information}, we looked into \bi~and \bd~products. We saw that \bd~applications do not use a traditional query-based interface, but still need most of the functionality provided by SQL. We also saw that OLAP databases should be tested using both \textit{real-world data} and the standardized \textit{TPC-H benchmark}.
+
+  \item In Chapter \ref{chap:Data Layout}, we saw how data layout can affect database performance, and we discussed row storage, column storage, partitioning, and alternative storage layouts. We pointed at \textit{column store with horizontal partitioning} as the most promising alternative for several reasons; columns require less memory traffic and are more compressible, and horizontal partitions enable parallelization and easy data pruning.
+
+  \item In Chapter \ref{chap:Data Compression}, we saw how analytical queries benefit from compression due to a reduction in memory traffic and improved cache performance. We concluded that \textit{dictionary encoding with bitpacked columns and a sorted dictionary} is the most promising and versatile compression method. This method allows query operators to work directly with the compressed data, ideally in an SIMD-like fashion, and the sorted dictionary allows for efficient single value lookups and range predicate evaluation.
+    
+  \item In Chapter \ref{chap:Indexes and Auxiliary Structures}, we looked at how indexes and other data structures can increase performance in a read-optimized database. We concluded that \textit{bitmap indexes} and the usage of \textit{database statistics} are the most promising techniques in this chapter. We also saw how several systems increase performance by \textit{caching} and \textit{dynamic index generation}.
+
+  \item In Chapter \ref{chap:Parallelization and Scaling}, we saw how parallelism should be applied on all levels for ultimate performance. We recommended looking into \textit{thread- and instruction-level parallelism}, as well as \textit{SIMD instructions}. We also recommended a \textit{scale-up} over scale-out approach for simplicity and better cache performance.
+
+  \item In Chapter \ref{chap:Hardware Utilization}, we saw that careful implementation is necessary to utilize available hardware. The implementation should \textit{keep the number of branches, function invocations and instruction dependencies at a minimum}, and algorithms should be made \textit{cache-aware}. We pointed at \textit{vectorized execution} as the most promising technique in this chapter.
+
+  \item In Chapter \ref{chap:Query Processing}, we discussed basic query processing techniques like joins and grouping/aggregation. We concluded that \textit{nested based loop} join algorithms are suited for in-memory, parallel databases. For grouping on single keys, the \textit{dictionary should be used}, and for grouping on multiple keys, a \textit{two-pass solution} should be considered. Systems should also be faithful to the \textit{late materialization} principle.
+
+  \item In Chapter \ref{chap:Other Topics}, we discussed how to relax the read-only and the in-memory assumptions. We also concluded that table \textit{denormalization should be avoided}. Last, but not least, we emphasized the importance of \textit{proper application design}.
+\end{itemize}
+
+
+\section{Future Work}
+\label{sec:Future Work}
+As stated in the introduction, answering \textbf{RQ1} is seen as the first step towards a bigger goal:
+
+\textbf{G1: Implement \bd~capabilities in \genusSoftware~ that has high performance, handles large datasets, and utilizes the available hardware. The new product must be competitive to other \bd~products regarding performance and functionality.}
+
+It is, therefore, interesting to discuss how our newly aquired knowledge can be applied to to reach this goal.
+
+In this report, we have conveniently left \genusSoftware~out of the discussion to avoid bias and get a more general understanding of high-performance, read-optimized databases. However, future work will require a thorough analysis of \genusSoftware~and the existing \bd~implementation to identify opportunities, contraints, and limitations. In this step, we expect to identify promisining optimization techniques from this report that can be applied to \genusSoftware.
+
+Future work has two compelling research angles. First, one or several optimization techniques can be studied in detail and to see how they affect performance. Such study could include several implementation and tested on different workloads to gain further insight in how such optimization technique work. It would also be interesting to see which optimization techniques synergize, and which are not combined that easily. 
+
+An examlpe would be to study column storage with dicitionary encoding and horizontal partitioning.
+
+The other angle, it could be interesting to see study the optimization techniques with emphasis on \bd~workloads. Does the non query-based interface of \bd~applications enable other optimizations? 
+
+
+A research plan draft addressing both research angles can be found in Appendix A. This plan was submitted in \textit{TDT39 - Empirical Research Methodology} and can be used as an example of how to continue towards \textbf{G1}. However, it has been pointed out that this plan is overly ambitious for the scope of this research, and should be revised.

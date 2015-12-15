@@ -1,5 +1,5 @@
 \chapter{Background Information}
-\label{chap:background}
+\label{chap:Background Information}
 In this chapter, we study background information that is relevant to this report. First, we look into \bi~and \bi~history, relevant terminology, and challenges with traditional \bi~products. Then we look into \bd~products, explain how they work, and how they relate to traditional database queries and SQL. Lastly, we show how \bi~and \bd~products are tested by studying the TPC-H benchmark and other tools.
 
 \clearpage
@@ -139,3 +139,13 @@ In addition to the TPC-H benchmark, our research has identified several tools us
   \item \pn{Inter Performance Counter Monitor} measures processor cycles and execution time \cite{Willhalm2013-ri}.
   \item \pn{JMeter} is used by \qlikview~to test user interaction \cite{Qlik2012-ku}.
 \end{itemize}
+
+\section{Chapter Conclusion}
+\label{sec:Chapter Conclusion}
+In this chapter, we saw the definition of \bi, why it is important, the history of \bi, and how it evolved into \bd. The \bd~products we see are a result of the lack of flexibility in traditional reporting applications.
+
+\bd~applications are end-user intuitive solutions to analyse business data that allow users to follow their "information scent" or "train of thought". Data is typically loaded into a \bd~application using an import script and is accessed by the end user through a reporting dashboard. The dashboard contains various interactive GUI elements, like charts, sliders, and lists.
+
+\bd~applications do not use a traditional query-based interface. However, they still require most functionality provided by SQL: Listing of rows, filtering, joining, grouping and aggregation, and sorting.
+
+The TPC-H benchmark is commonly used for testing analytical workloads. However, this only tests data that is uniformly distributed, but in reality, data might be skewed. Therefore, performance should also be tested on real-world examples. A Zipfian distribution can also be used to model data skew.
