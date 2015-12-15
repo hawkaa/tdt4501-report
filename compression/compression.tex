@@ -8,32 +8,33 @@ In this chapter, we study compression in more detail. We first discuss compressi
 
 \section{Compression}
 \label{sec:Compression}
-Historically, compression has been thought of a measure for reducing disk usage and memory footprint. However, in our case, compression of data also comes with the benefit of increased performance. A study executed by Abadi \ea~\cite{Abadi2008-dd} looked into database compression for in-memory databases, and concluded compression increases performance by a factor of two on average.
+Historically, compression has been thought of a measure for reducing disk usage and memory footprint. However, in our case, compression of data also comes with the benefit of increased performance. A study conducted by Abadi \ea~looked into database compression for in-memory databases, and concluded compression increases performance by a factor of two on average \cite{Abadi2008-dd}.
 
-Among systems we have studied in this research, we have identified several that applies compression for performance reasons. Among these systems are \ibm~\cite{Raman2013-em}, \cstore~\cite{Stonebraker2005-qz}, \vertica~\cite{Lamb2012-kg}, \oracle~\cite{Oracle2015-fs}, and \gorilla~\cite{Pelkonen2015-ko}. In addition to this, our reference products \tableau~and \qlikview~have also use compression extensively to achieve good performance \cite{Kamkolkar2015-iq, Qlik2014-vd}. Finally, we see that the best performing DBMS in the TPC-H benchmark applies compression to its data, using structures that are designed for rapid retrieval.
+Among systems we have studied in this research, we have identified several that applies compression for performance reasons. Among these systems are \ibm~\cite{Raman2013-em}, \cstore~\cite{Stonebraker2005-qz}, \vertica~\cite{Lamb2012-kg}, \oracle~\cite{Oracle2015-fs}, and \gorilla~\cite{Pelkonen2015-ko}. In addition to this, our reference products \tableau~and \qlikview~also use compression extensively to achieve good performance \cite{Kamkolkar2015-iq, Qlik2014-vd}. Last, but not least, \exasol, the top performing DBMS in the TPC-H benchmark, applies compression to its data, and uses structures that are designed for rapid retrieval \cite{Exasol2014-xh}.
+
 
 Compression is beneficial for performance due to:
 \begin{itemize}
   \item Cache locality is improved \cite{Exasol2014-xh}. More values from a single column (or record) fit in the cache at the same time.
-  \item Memory traffic is reduced. Compression can help in turning a program from memory-bound to CPU bound \cite{Willhalm2009-hu}.
-  \item Compression can reduce CPU cycles \cite{Stonebraker2005-qz}. First of all, as stated above, it reduces memory latency and improves cache locality, such that more cycles can be used for calculations and not waiting for memory. However, compression also enables working on multiple data in parallel using SIMD instructions, as we see in Section \ref{sec:SIMD}.
+  \item Memory traffic is reduced. Compression can help turning a program from memory-bound to CPU bound \cite{Willhalm2009-hu}.
+  \item Compression can reduce CPU cycles \cite{Stonebraker2005-qz}. First of all, as stated above, it reduces memory latency and improves cache locality, such that more cycles can be used for calculations and not waiting for memory. Besides, compression enables working on multiple values in parallel using SIMD instructions, as we see in Section \ref{sec:SIMD}.
 \end{itemize}
 
-Still, even though compression is used to increase database performance, the fact that compression reduces memory usage is also important. Even though DRAM is cheap, it is still rarely over-provisioned and unused \cite{Barber2014-ey}. Also, compressed data frees up space for other things, like indexes and result caches. For instance, \oracle~justifies their dual format by using the space freed up by compressing the columns \cite{Lamb2012-kg, Lahiri2015-mz}.
+Still, even though compression is used to increase database performance, the fact that compression reduces memory usage is also important. Even though DRAM is cheap, it is rarely over-provisioned and unused \cite{Barber2014-ey}. Also, compressed data frees up space for other things, like indexes and result caches. For instance, \oracle~justifies their dual format by using the space freed up by compressing the columns \cite{Lahiri2015-mz, Lamb2012-kg}.
 
 \subsection{Compression Types and Light-Weight Compression}
 \label{sub:Compression Types and Light-Weight Compression}
-A study of compressed databases executed by Westmann \ea~investigates database compression, and concludes that that the compression must be light-weight \cite{Westmann2000-mz}. In other words, the real benefit of compression can only be leveraged if the decompression effort can be minimized \cite{Lemke2010-is}. Light-weight compression has been defined by Holloway \ea~as \bp, \de, \dele, and \rle~\cite{Holloway2008-rr}. Holloway \ea~also concludes that \de~and \rle~ar the best compression schemes for column stores. These compression techniques are fast and fine-grained, which is important for performance \cite{Lemke2010-is}.
+A study performed by Westmann \ea~investigates database compression, and concludes that that the compression must be \textit{light-weight} for maximum performance \cite{Westmann2000-mz}. In other words, the real benefit of compression can only be leveraged if the decompression effort can be minimized \cite{Lemke2010-is}. Light-weight compression has been defined by Holloway \ea~as \bp, \de, \dele, and \rle~\cite{Holloway2008-rr}. Holloway \ea~also conclude that \de~and \rle~are the best compression schemes for column stores. These compression techniques are fast and fine-grained, which is important for performance.
 
-Zukowski \ea~concludes that a compression algorithm should care about super-scalar processors. This implies that the algorithm should be able to pipeline loops, support out-of-order execution, and avoid if-then-else in inner loops \cite{Zukowski2006-oz}. We study these techniques in greater detail in the chapter about hardware utilization (Chapter \ref{chap:Hardware Utilization}). 
+Zukowski \ea~conclude that a compression algorithm should care about super-scalar processors. This implies that the algorithm should be able to pipeline loops, support out-of-order execution, and avoid if-then-else in inner loops \cite{Zukowski2006-oz}. We study these techniques in greater detail in the chapter about hardware utilization (Chapter \ref{chap:Hardware Utilization}). 
 
 A database can use multiple compression schemes. First, most of the light-weight compression techniques can be combined, where the most common combination is \de~and \bp. We study this idea in Section \ref{sec:Dictionary Encoding}. Second, different compression schemes can be used for different columns. In Section \ref{sub:Sorting}, we saw that \cstore~and \vertica~allow for multiple column projections (a subset of the columns), where each projection is sorted based on one of the columns in the subset. This results in each projection having one \textit{self-order} column and several \textit{foreign-order} columns.  \cstore~and \vertica~use the following guidelines when deciding which encoding to use \cite{Stonebraker2005-qz}: 
 
 \begin{itemize}
-  \item \textbf{Self-order, few distinct values:} \rle~is used for these columns, where each value is stored once together with how many times the value occurs.
-  \item \textbf{Foreign-order, few distinct values:} Each value in the column is stored in conjunction with a bitmap indicating the positions in which the value is stored. Since the bitmaps typically are sparse, \rle~can be applied to the bitmaps to save space.
-  \item \textbf{Self-order, many distinct values:} \dele~is used. The idea of this scheme is to save the values as a delta from the previous value in the column.
-  \item \textbf{Foreign-order, many distinct values:} Columns are left uncompressed
+  \item \textbf{Self-order, few distinct values:} \rle~are used for these columns, where each value is stored once together with how many times the value occurs. We study \rle~in Section \ref{sec:Run-Length Encoding}.
+  \item \textbf{Foreign-order, few distinct values:} For each distinct value in a column, a bitmap is stored indicating which rows that contain that value. We study this technique in Section \ref{sec:Compression Using Bitmaps}.
+  \item \textbf{Self-order, many distinct values:} \dele~is used. The idea of this scheme is to save the values as a delta from the previous value in the column. We study \dele~in Section \ref{sec:Delta Encoding}.
+  \item \textbf{Foreign-order, many distinct values:} Columns are left uncompressed.
 \end{itemize}
 
 Later in this chapter, we elaborate on the situations where the various compression schemes are beneficial.
