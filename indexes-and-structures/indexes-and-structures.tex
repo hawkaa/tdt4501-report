@@ -54,7 +54,7 @@ Since bitmaps in a \biti~are typically sparse, they can be compressed with \rle-
 Other bitmap compression techniques include parameterized ways, which is explored by Moffat \ea~\cite{Moffat1992-tz}. In parameterized compression, the total number of 1s in a bitmap is used to generate parameters for efficient bitmap compression. Another method is hierarchical compression, which is suggested by Witten \ea~\cite{Witten1999-qq}. With hierarchical compression, it is very effective to look up whether a row is present in the bitmap.
 
 
-\subsection{Bloom Filter}
+\subsection{Bloom Filters}
 \label{sub:Bloom Filter}
 Bitmaps can be made smaller at the expense of false matches \cite{Witten1999-qq}. Bloom filters, conceived by Bloom in 1970, is a probabilistic structure with a 100\% recall rate \cite{Bloom1970-nr, Wikipedia_contributors2015-lq}. According to Wikipedia contributors, a \bloom~returns either "possibly in the set" or "definitely not in the set" \cite{Wikipedia_contributors2015-lq}. A \bloom~efficiently looks up values, and will quickly reject values that are not present in the original bitmap. Bloom filters can be used in joins, which we study further in Section \ref{sec:Joining}.
 

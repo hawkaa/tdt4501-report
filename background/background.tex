@@ -10,9 +10,9 @@ In this chapter, we study background information that is relevant to this report
 
 \subsection{History}
 \label{sub:History}
-At the beginning of the era of information systems, businesses were busy developing applications that fulfil their everyday needs \cite{Pavlic2002-nm}. However, it soon became apparent that management needed to study business trends within the company to make strategic decisions, something the current applications were unable to provide. Legacy systems commonly used OLTP databases to persist their data, however doing this had two disadvantages regarding reporting needs: (i) The databases lack support for summarizing data, and (ii) it was tough to combine data from different databases.
+At the beginning of the era of information systems, businesses were busy developing applications that fulfil their everyday needs \cite{Pavlic2002-nm}. However, it soon became apparent that management needed to study business trends within the company to make strategic decisions, something the current applications were unable to provide. Legacy systems commonly used OLTP databases to persist their data, however, doing this had two disadvantages regarding reporting needs: (i) The databases lack support for summarizing data, and (ii) it was tough to combine data from different databases.
 
-Then, to improve business efficiency, a separation between operational systems and decision support systems (DSS) was made. DSS started out with \textit{multiway data analysis}, which is a method of analyzing data as dimensions in a multidimensional array \cite{Wikipedia_contributors2015-zu}, but very soon after the \textit{business data warehouse} emerged \cite{Devlin1988-yu}. Data warehouses were designed to satisfy companies' need for reporting by collecting data from multiple legacy systems into one large data vault. A data warehouse is no more than a collection of data from different sources in a company, and it is used by the management to make strategic decisions and solve business problems \cite{Pavlic2002-nm}. A data warehouse can contain several data marts; smaller slices of the data warehouse that are usually department-specific.
+Then, to improve business efficiency and to enable \bi, a separation between operational systems and decision support systems (DSS) was made. DSS started out with \textit{multiway data analysis}, which is a method of analyzing data as dimensions in a multidimensional array \cite{Wikipedia_contributors2015-zu}, but very soon after the \textit{business data warehouse} emerged \cite{Devlin1988-yu}. Data warehouses were designed to satisfy companies' need for reporting by collecting data from multiple legacy systems into one large data vault. A data warehouse is no more than a collection of data from different sources in a company, and it is used by the management to make strategic decisions and solve business problems \cite{Pavlic2002-nm}. A data warehouse can contain several data marts; smaller slices of the data warehouse that are usually department-specific.
 
 \subsubsection{Business Intelligence on Real-Time Data}
 Data warehouses help management in making \textit{long-term} decisions by storing historical data for the purpose of studying trends within a business. The \textit{Operational Data Store} (ODS) was developed to serve the needs to make \textit{short-term} operational and tactical decisions \cite{Pavlic2002-nm}. An ODS stores an up to the minute view of the data within an organization to make operational decisions, for instance helping a bank clerk to decide whether a client may cash out a check or not. One of the main differences between a data warehouse and an ODS is that a data warehouse is based on snapshots while the ODS is based on updates. The Operational Data Store can be seen as an important step towards \bi~on real-time data.
@@ -26,7 +26,7 @@ The data warehouses expose data marts to the departments in a business, however 
 \label{sub:Star and Snowflake Schema}
 Many \bi~applications and data warehouses usually access data that is organized in a \textit{star or snowflake schema} \cite{Barber2012-xt}. Distinct for such schemas is that they have a huge fact table, which can have millions or billions of rows, and smaller dimension tables, each representing some aspect of the fact rows (e.g. category, region, time). The fact table is connected to the dimension tables using foreign keys. A snowflake schema is an extension of the star schema, where one or more dimension tables can have relationships that further describe a dimension.
 
-Star and snowflake schemas are normally used in \bi~applications because they are easier to optimize \cite{Lamb2012-kg}. The query optimizer creates efficient query plans by filtering and applying joins on the most highly selective dimensions first. Secondly, star and snowflake schemas allow the database to anticipate queries, such that indexes, materialized views, and/or denormalization can be applied to improve query efficiency \cite{Barber2012-xt}.
+Star and snowflake schemas are normally used in \bi~applications because they are easier to optimize \cite{Lamb2012-kg}. The query optimizer creates efficient query plans by filtering and applying joins on the most highly selective dimensions first. Secondly, queries on star and snowflake schemas are easier to anticipate, such that indexes, materialized views, and/or denormalization can be applied to improve query efficiency \cite{Barber2012-xt}.
 
 The disadvantage of using star and snowflake schemas for \bi is the lack of flexibility. There are certain situations where there are more than one large fact table and situations where there is no clear distinction between fact and dimension tables.
 
@@ -34,20 +34,20 @@ The disadvantage of using star and snowflake schemas for \bi is the lack of flex
 \label{sub:Challenges in Business Intelligence and Traditional Business Intelligence Systems}
 A challenge in \bi~can be information overflow. To know which information is needed in a \bi~application, decision makers must be aware of which types of decisions they should make, and have a model for each \cite{Ackoff1999-wk}. Since managers rarely fulfil the latter requirement, they add a safety factor and asks the IT department to provide everything. The result is information overload, and the much of the data is irrelevant. 
 
-The challenges with data warehouses are many, among them, the lack of flexibility. Reports are usually preconfigured and implemented by the IT department, which can result in lengthy reporting backlogs. Besides, the \qlikview~developers have pointed some other drawbacks of traditional query-based \bi~tools \cite{Qlik2010-ya}:
+The challenges with data warehouses are many, among them, the lack of flexibility. Reports are usually preconfigured and implemented by the IT department, which can result in lengthy reporting backlogs. Besides, the \qlikview~developers have pointed out some other drawbacks of traditional query-based \bi~tools \cite{Qlik2010-ya}:
 \begin{itemize}
-  \item Only small subsets of the main dataset are extracted at a time. These subsets are divorced from the data not included in the query.
+  \item Only small subsets of the main dataset are extracted at a time. These subsets are divorced from the data that was not included in the query.
   \item Each query represents a single piece of information, and the information gathered from individual queries are hard to combine.
   \item Traditional systems do not maintain relationships between queries. A query can be hard to formulate, and it is not always easy to know what to look for. Traditional \bi~applications do not let the user build queries step by step.
 \end{itemize}
 
 \section{Business Discovery}
 \label{sec:Business Discovery}
-To overcome the challenges with traditional \bi~systems, a new type of products have emerged. We call these products \bd~products, a notion that was introduced by \textit{Qlik}~\cite{Qlik2014-vd}. \bd~products normally build on in-memory technologies and are fast, elegant, and end user intuitive solutions to analyse business data. Examples of such products include \powerpivot, \tableau, and \qlikview. We have only studied \qlikview~and \tableau~in this thesis (reference products). 
+To overcome the challenges with traditional \bi~systems, a new type of products have emerged. We call these for \bd~products, a notion that was introduced by \textit{Qlik}~\cite{Qlik2014-vd}. \bd~products normally build on in-memory technologies and are fast, elegant, and end user intuitive solutions to analyse business data. Examples of such products are \powerpivot, \tableau, and \qlikview. We have only studied \qlikview~and \tableau~in this thesis.
 
 \ffigure{img/qlik-hierarchy.png}{Comparison of a traditional reporting application and \qlikview. Traditional \bi~applications normally have predefined drill-down paths. \qlikview~allows the user decide where to start and end. Courtesy of \cite{Qlik2014-vd}.}{fig:qlik-hierarchy}
 
-\bd~products allow users to follow their "information scent" or "train of thought" when navigating through the data \cite{Kamkolkar2015-iq, Qlik2014-vd}. As seen in Figure \ref{fig:qlik-hierarchy}, there are no prespecified drill-down patterns, and users decide where to start and end. In these applicaitons, grouping, joining, and calculations are performed on-the-fly. High-performance, in-memory memory technologies are used to enable such functionality. 
+\bd~products allow users to follow their "information scent" or "train of thought" when navigating through the data \cite{Kamkolkar2015-iq, Qlik2014-vd}. As seen in Figure \ref{fig:qlik-hierarchy}, there are no prespecified drill-down patterns, and users decide where to start and end. In these applicaitons, grouping, joining, and calculations are performed on-the-fly. High-performance, in-memory technologies are used to enable such functionality. 
 
 In the next sections, we explain how a typical \bd~application works by using \qlikview~primarily as an example. \tableau~and \powerpivot~work similarly.
 
@@ -56,16 +56,16 @@ In the next sections, we explain how a typical \bd~application works by using \q
 
 \ffigure{img/qlikview-script.png}{The \textit{Edit Script} dialog in \qlikview. The import script specifies data sources and defines tables and associations for the data that should be analyzed. Courtesy of \cite{QlikTech_International_AB2011-ov}.}{fig:qlikview-script} 
 
-Data is loaded into a \qlikview~document using a data import script that connects the application with data sources like databases or files. The script uses an SQL-like syntax that lets the user specify names of fields and tables that are used in the data analysis, in addition to where to fetch the data.  Figure \ref{fig:qlikview-script} shows the dialog used in \qlikview~to configure a data import script.
+Data is loaded into a \qlikview~document using a data import script that connects the application with data sources like databases or files. The script uses an SQL-like syntax that lets the user specify names of fields and tables that are used in the data analysis. Also, database connection parameters or file paths are stored. Figure \ref{fig:qlikview-script} shows the dialog used in \qlikview~to configure a data import script.
 
-When the data import script is run, data is fetched from the sources and put into the \qlikview~in-memory engine such that data can be queried efficiently. In \qlikview, no queries are executed directly on the underlying data sources. \tableau, however, allows this. In addition to the built-in in-memory engine, the application can be connected directly to live database servers such that users can utilize investments in high-performance databases \cite{Kamkolkar2015-iq}.
+When the data import script is run, data is fetched from the sources and put into the \qlikview~in-memory engine such that data can be queried efficiently. In \qlikview, no queries are executed directly on the underlying data sources. \tableau, however, allows this. In addition to the built-in in-memory engine, the application can be connected directly to live database servers such that companies can utilize investments in high-performance databases \cite{Kamkolkar2015-iq}.
 
 
-\afigure{img/qlikview-association.png}{Four tables: A list of countries, a list of customers, a list of transactions, and a list of memberships. The fields \textit{Country} and \textit{CustomerID} associate the tables. Courtesy of \cite{QlikTech_International_AB2011-ov}.}{fig:qlikview-association}{0.6}
+\afigure{img/qlikview-association.png}{Four tables: Countries, customers, transactions, and memberships. The fields \textit{Country} and \textit{CustomerID} associate the tables. Courtesy of \cite{QlikTech_International_AB2011-ov}.}{fig:qlikview-association}{0.6}
 
-The data import step will regularly include more than one table. Multiple tables are \textit{associated} if they have fields with the same name, as seen in Figure \ref{fig:qlikview-association}. Internally, there can be only one data connector between a pair of tables, so if multiple tables refer to a single table, a mechanism (either \textit{synthetic keys} or \textit{loose coupling}) must be applied to logically duplicate the table. This restriction ensures that there exists no more than one possible join path between any pairs of tables \cite{noauthor_undated-js}.
+The data import script will regularly include more than one table. Multiple tables are \textit{associated} if they have fields with the same name, as seen in Figure \ref{fig:qlikview-association}. Internally, there can be only one data connector between a pair of tables, so if multiple tables refer to a single table, a mechanism (either \textit{synthetic keys} or \textit{loose coupling}) must be applied to logically duplicate the table. This restriction ensures that there exists no more than one possible join path between any pairs of tables \cite{noauthor_undated-js}.
 
-In the data import step, data might be preprocessed and transformed. First, data can be aggregated, for instance by summarizing or grouping, before being loaded into \qlikview. Second, data might be filtered. Both these techniques reduce data volumes. Lastly, data can be denormalized in the import script, i.e. pre-joining tables before import. Denormalizing can be done to lower the number of tables in the data extract and reduce application complexity. We discuss the performance impact of pre-aggregating and denormalization in Section \ref{sec:Application Design} and Section \ref{sec:Denormalization} respectively.
+In the data import step, data might be preprocessed and transformed. First, data can be aggregated, for instance by summarizing or grouping, before being loaded into \qlikview. Second, data might be filtered. Both these techniques reduce data volumes. Lastly, data can be denormalized in the import script, i.e. pre-joining tables before import. Denormalizing can be done to lower the number of tables in the data extract and, by doing so, reduce application complexity. We discuss the performance impact of pre-aggregating and denormalization in Section \ref{sec:Application Design} and Section \ref{sec:Denormalization} respectively.
 
 \subsection{User Interface}
 \label{sub:User Interface}
@@ -79,7 +79,7 @@ Users interact with the \bd~application through a reporting dashboard, as seen i
   \item Cycling through different chart types.
 \end{itemize}
 
-Users navigate through the data by making selections in the user interface. When a selection is made, the item is made green, as seen in Figure \ref{fig:qlik-panel}. The current selection is also known as the \term{application state}. Upon selection, the rest of the elements in the panel is updated based on the new application state; aggregations are recalculated, and graphs and lists are updated. \qlikview~colors matched elements white and unmatched elements gray.
+Users navigate through the data by making selections in the user interface. When a selection is made, the item is made green, as seen in Figure \ref{fig:qlik-panel}. The current selection is also known as the \term{application state}. Upon selection, the rest of the elements in the panel are updated based on the new application state; aggregations are recalculated, and graphs and lists are updated. \qlikview~colors matched elements white and unmatched elements gray.
 
 Both \qlikview~and \tableau~publish the reporting dashboards through a server \cite{Kamkolkar2015-iq, Qlik2011-ef}. This way, the dashboards are accessible for multiple users at the same time, and can be accessed from different devices, including desktop computers, tablets, and mobile phones.
 
@@ -95,10 +95,10 @@ We see that \bd~products interact with the data using selections and filters in 
 
 Queries, or requests, in a \bd~application have certain characteristics. First of all, they cannot be anticipated, more specifically, they are \textit{ad-hoc}. Secondly, there is a limit to the number of returned rows. Users are interested in queries that can be analyzed quickly, so we do not expect a \bd~application to return thousands of rows as a result from a single table \cite{Ferrari2012-hm}. Also, the user interface has limitations in how much data that can be displayed at the same time. 
 
-Even though \bd~applications do not support traditional queries, they still need most of the functionality provided by SQL. Below, we enumerate core SQL functionality and explain why it is necessary in order to create such an application.
+Even though \bd~applications do not support traditional queries, they still need most of the functionality provided by SQL. Below, we enumerate core SQL functionality and explain why it is necessary in order to create a \bd~application.
 
 \paragraph{Listing of rows}
-\bd~applications require rows in a table to be listed in the user interface. Although this seems like a trivial requirement, there are storage formats (Column Storage, Section \ref{sec:Column Storage}) where listing and "stitching together" tuples are complicated. 
+\bd~applications require rows in a table to be listed in the user interface. Although this seems like a trivial requirement, there are storage formats (Column Storage, Section \ref{sec:Column Storage}) where listing and "stitching together" tuples are non-trivial. 
 
 \paragraph{Filtering}
 We need data filtering in a \bd~application for several reasons. First and foremost, application state might be specified in terms of a predicate. For instance, the user might want to display transactions between two dates. Secondly, to support security, some data might need to be filtered before sent to the application.
@@ -116,7 +116,7 @@ Sorting is required in a \bd~application because there will be GUI elements that
 
 \section{Testing}
 \label{sec:Testing}
-The TPC-H benchmark is commonly used to test analytical workloads. The benchmark is made for decision support workloads and consists of a suite of business oriented ad-hoc queries \cite{Transaction_Processing_Performance_Council_TPC2014-ux}. The benchmark has 22 complex read-only queries, which are both memory and CPU bound \cite{Boncz2005-wj}, and two update queries for data refresh. TPC-H specification says the benchmark illustrates a decision support system that:
+The TPC-H benchmark is commonly used to test analytical workloads. The benchmark is made for decision support workloads and consists of a suite of business oriented ad-hoc queries \cite{Transaction_Processing_Performance_Council_TPC2014-ux}. The benchmark has 22 complex read-only queries, which are both memory and CPU bound \cite{Boncz2005-wj}, and two update queries for data refresh. The TPC-H specification says the benchmark illustrates a decision support system that:
 \begin{itemize}
   \item Examine large volumes of data.
   \item Execute queries with a high degree of complexity.
@@ -127,9 +127,9 @@ The TPC-H benchmark is commonly used to test analytical workloads. The benchmark
 The schema for the TPC-H benchmark consists of eight separate tables, as seen in Figure \ref{fig:tpc-h}. The table columns have a variety of different data types, including integers, floating points, variable and fixed width strings, identifiers, and booleans. 
 
 \afigure{img/tpc-h-population.png}{TPC-H database size and cardinalities. Courtesy of \cite{Transaction_Processing_Performance_Council_TPC2014-ux}.}{fig:tpc-h-population}{0.8}
-Figure \ref{fig:tpc-h-population} shows the minimum population for the TPC-H benchmark, which is a database of 10,000 suppliers and roughly 6 million line-items (items per order). The minimum population corresponds to roughly 1 GB. To test larger data sizes, a scaling factor is commonly applied to the rows in the table to increase the size of the data set. According to the specification, data in the tables should be uniformly distributed.
+Figure \ref{fig:tpc-h-population} shows the minimum population for the TPC-H benchmark, which is a database of 10,000 suppliers and roughly 6 million line-items (items per order). The minimum population corresponds to roughly 1 GB. To test larger data sizes, a scaling factor is commonly applied to increase the size of the dataset. According to the specification, data in the tables should be uniformly distributed.
 
-The TPC-H benchmark tests uniformly distributed data, but, in reality, it is quite common that data is skewed. For instance, a retailer might expect that 99\% of the sales are performed on weekdays, and around 40\% of the total sales for a year is done around Christmas \cite{Raman2008-gi}. Tests on data with non-uniform distributions should be permed to see how well the algorithms and data structures in the database handle outliers. Data skew can be modelled with a \term{Zipfian} distribution \cite{Holloway2008-rr}. 
+The TPC-H benchmark tests uniformly distributed data, but, in reality, it is quite common that data is skewed. For instance, a retailer might expect that 99\% of the sales are performed on weekdays, and around 40\% of the total sales for a year is done around Christmas \cite{Raman2008-gi}. Tests on data with non-uniform distributions should be performed to see how the algorithms and data structures in the database handle outliers. Data skew can be modelled with a \term{Zipfian} distribution \cite{Holloway2008-rr}. 
 
 \subsection{Tools}
 \label{sub:Tools}
@@ -142,7 +142,7 @@ In addition to the TPC-H benchmark, our research has identified several tools us
 
 \section{Chapter Conclusion}
 \label{sec:Chapter Conclusion}
-In this chapter, we saw the definition of \bi, why it is important, the history of \bi, and how it evolved into \bd. The \bd~products we see are a result of the lack of flexibility in traditional reporting applications.
+In this chapter, we saw the definition of \bi, why it is important, the history of \bi, and how it evolved into \bd. The \bd~applications we see today are the result of the lack of flexibility in traditional reporting products.
 
 \bd~applications are end-user intuitive solutions to analyse business data that allow users to follow their "information scent" or "train of thought". Data is typically loaded into a \bd~application using an import script and is accessed by the end user through a reporting dashboard. The dashboard contains various interactive GUI elements, like charts, sliders, and lists.
 
