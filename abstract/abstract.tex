@@ -1,3 +1,8 @@
 \begin{abstract}
-\lipsum[3-5]
+  \bi~transforms unstructured data into useful and meaningful information, and is important in businesses for insight and decision making. \bd~tools, a new breed of self-service \bi~products, are becoming increasingly more popular because they are intuitive for the end user and do not depend on pre-defined drill-down paths. These systems measure performance from an end-user perspective and minimize application response time by building on in-memory technologies. Due to the increasing interest in \bd, \genus~wants to implement \bd~capabilities in their development framework to meet their customers' needs for \bi.
+
+     In this report, we study techniques and performance optimizations used in read-only and in-memory databases to increase our understanding of the underlying technology in \bd~products. We categorize our findings into different topics and present them in a systematic way together with background theory, examples and figures. 
+     
+    We were able to identify several promising implementation and optimization techniques that can be used in a \bd~product. These include column storage with horizontal partitioning, dictionary compression with sorted dictionaries and bitpacked columns, bitmap indexes, table metadata indexes, parallelism with threads and SIMD instructions, hardware utilization through branch avoidance and cache awareness, nested loop joins, and careful application design. These techniques will be used in the continuation of this research project.
+
 \end{abstract}

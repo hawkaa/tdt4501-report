@@ -7,7 +7,7 @@ In this report, we set out to answer the following research question:
 
 \textbf{RQ1: How to design a high-performance database software that is capable of supporting \bd~workloads on large datasets?} 
 
-Our literature review has been successful in identifying several techniques, design concepts, algorithms, and other considerations needed for a high-performance \bd~aplication. Our findings are presented by category in a structured and clear way, and we have used several examples, figures, and specific algorithms to explain and increase the understanding of each topic. This way, we believe we have given an overview of the big picture of read-optimized databases and inspired further research and development.
+Our literature review has been successful in identifying several techniques, design concepts, algorithms, and other considerations needed for a high-performance \bd~aplication. Our findings are presented by category in a structured and clear way, and we have used several examples, figures, and specific algorithms to explain and increase the understanding of each topic. This way, we believe we have given an overview of the big picture of read-optimized in-memory databases and hopefully inspired further research.
 
 We also set out to introduce new evidence for performance optimizations related specifically to \bd~products, because current products do not reveal how they work internally. For each topic presented in the report, we have tried to discuss our reference products, \qlikview~and \tableau, and how they relate to that particular subject. This way, we believe our report provides insight into how these applications work under the hood.
 
@@ -21,7 +21,7 @@ Below, we summarize the conclusions of each chapter:
     
   \item In Chapter \ref{chap:Indexes and Auxiliary Structures}, we looked at how indexes and other data structures can increase performance in a read-optimized database. We concluded that \textit{bitmap indexes} and the usage of \textit{database statistics} are the most promising techniques in this chapter. We also saw how several systems increase performance by \textit{caching} and \textit{dynamic index generation}.
 
-  \item In Chapter \ref{chap:Parallelization and Scaling}, we saw how parallelism should be applied on all levels for ultimate performance. We recommended looking into \textit{thread- and instruction-level parallelism}, as well as \textit{SIMD instructions}. We also recommended a \textit{scale-up} over scale-out approach for simplicity and better cache performance.
+  \item In Chapter \ref{chap:Parallelization and Scaling}, we saw how parallelism should be applied on all levels for ultimate performance. We recommended looking into \textit{thread- and instruction-level parallelism}, as well as \textit{SIMD instructions}. We also recommended a \textit{scale-up} over a scale-out approach for simplicity and better cache performance.
 
   \item In Chapter \ref{chap:Hardware Utilization}, we saw that careful implementation is necessary to utilize available hardware. The implementation should \textit{keep the number of branches, function invocations and instruction dependencies at a minimum}, and algorithms should be made \textit{cache-aware}. We pointed at \textit{vectorized execution} as the most promising technique in this chapter.
 
@@ -30,22 +30,18 @@ Below, we summarize the conclusions of each chapter:
   \item In Chapter \ref{chap:Other Topics}, we discussed how to relax the read-only and the in-memory assumptions. We also concluded that table \textit{denormalization should be avoided}. Last, but not least, we emphasized the importance of \textit{proper application design}.
 \end{itemize}
 
-
 \section{Future Work}
 \label{sec:Future Work}
 As stated in the introduction, answering \textbf{RQ1} is seen as the first step towards a bigger goal:
 
 \textbf{G1: Implement \bd~capabilities in \genusSoftware~ that has high performance, handles large datasets, and utilizes the available hardware. The new product must be competitive to other \bd~products regarding performance and functionality.}
 
-It is, therefore, interesting to discuss how our newly aquired knowledge can be applied to to reach this goal.
+It is, therefore, interesting to discuss how our newly acquired knowledge can be applied to reach this goal.
 
-In this report, we have conveniently left \genusSoftware~out of the discussion to avoid bias and get a more general understanding of high-performance, read-optimized databases. However, future work will require a thorough analysis of \genusSoftware~and the existing \bd~implementation to identify opportunities, contraints, and limitations. In this step, we expect to identify promisining optimization techniques from this report that can be applied to \genusSoftware.
+In this report, we have conveniently left \genusSoftware~out of the discussion to avoid bias and get a more general understanding of high-performance, read-optimized databases. However, future work will require a thorough analysis of \genusSoftware~and the existing \bd~implementation to identify opportunities, constraints, and limitations. In this step, we expect to identify optimization techniques from this report that looks promising and can be applied to \genusSoftware.
 
-Future work has two compelling research angles. First, one or several optimization techniques can be studied in detail and to see how they affect performance. Such study could include several implementation and tested on different workloads to gain further insight in how such optimization technique work. It would also be interesting to see which optimization techniques synergize, and which are not combined that easily. 
+From an academic standpoint, future work has two compelling research angles. First, one or several optimization techniques can be studied in detail. Such research could include testing of different implementations on different workloads to gain a better understanding of the specific technique. It would also be interesting to see how different optimizations affect each other. An example of such work could be to study the effect of column storage with and without horizontal partitioning, or with and without data compression.
 
-An examlpe would be to study column storage with dicitionary encoding and horizontal partitioning.
+The other angle could be to dive into \bd~specific optimizations. In this report, we have seen that \bd~products are different from general-purpose DBMSes because they, for instance, hold an application state and do not use a query-based interface. Could these differences be exploited and affect which design concepts and optimizations that are most efficient and practical? An example of such research could be to investigate the effects of bitmap indexes from a \bd~perspective, and see if they have more use cases in a \bd~application than they have in a general purpose DBMS.
 
-The other angle, it could be interesting to see study the optimization techniques with emphasis on \bd~workloads. Does the non query-based interface of \bd~applications enable other optimizations? 
-
-
-A research plan draft addressing both research angles can be found in Appendix A. This plan was submitted in \textit{TDT39 - Empirical Research Methodology} and can be used as an example of how to continue towards \textbf{G1}. However, it has been pointed out that this plan is overly ambitious for the scope of this research, and should be revised.
+A draft of a research plan addressing both research angles can be found in Appendix A. This plan was submitted in \textit{TDT39 - Empirical Research Methodology} and can be used as an example of how to continue towards \textbf{G1}. However, it has been pointed out that this plan is overly ambitious for the scope of this research.
