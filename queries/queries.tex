@@ -41,7 +41,7 @@ Our research has shown that one of the key design goals for efficient joining us
 
 Regarding implementation, it is important that the algorithm and the hash table are \textit{cache-aware}. One way to improve cache performance in a \textit{nested loop} join, is to use linear probing instead of open-chain addressing for the hashmap \cite{Raman2008-gi}. Open-chain addressing should only be used for overflow buckets.
 
-Joining should be done in parallel for ultimate performance. For instance, the hash tables can be built using multiple threads \cite{Barber2014-ey}. We see that some \textit{nested loop} based algorithms partition the input to improve cache performance. However, this decision might as well be a parallelization decision \cite{Neumann2011-uq}. A system studied in our research that employs high-performance parallel joining is \ibm \cite{Raman2013-em}.
+Joining should be done in parallel for ultimate performance. For instance, the hash tables can be built using multiple threads \cite{Barber2014-ey}. We see that some \textit{nested loop} based algorithms partition the input to improve cache performance. However, this decision might as well be a parallelization decision \cite{Neumann2011-uq}. A system studied in our research that employs high-performance parallel joining is \ibm~\cite{Raman2013-em}.
 
 \subsection{Invisible Join}
 \label{sub:Invisible Join}
@@ -74,16 +74,16 @@ The \textit{invisible join} algorithm assumes a star schema style table, and wor
 The \textit{invisible join} algorithm works in three phases:
 \begin{enumerate}
   \item The smaller relations (dimension tables) are hashed, but if the tables are filtered with predicates, only matching keys are inserted into the hash table.
-  \item Per hashmap generated in the first phase of the algorithm, the larger relation is probed, and a bitmap indicating qualifying is created. The resulting bitmap for each dimension table is combined using bitwise operations, like \texttt{AND} or \texttt{OR}. Creating these bitmaps might also happen in parallel. 
+  \item Per hashmap generated in the first phase of the algorithm, the larger relation is probed, and a bitmap indicating qualifying rows is created. The resulting bitmaps from each dimension table are combined using bitwise operations, like \texttt{AND} or \texttt{OR}. Creating these bitmaps might also happen in parallel. 
   \item To complete the join, keys in the foreign columns in the fact table are extracted using the bitmap from the previous step. In this step, either positional lookup (for sorted values) or the hash tables from the first step can be used to get the projected values.
 \end{enumerate}
 The entire algorithm is illustrated in Figure \ref{fig:invisible-join}.
 
-We gave the \textit{invisible join} as an example join algorithm, because we believe a similar method is needed in a \bd~application with multiple tables. We see that hash tables from the first phase and bitmaps from the second phase are candidates for caching, a technique we saw in Section \ref{sec:Caching and Dynamic Index Generation} commonly used to improve read performance.
+We gave the \textit{invisible join} as an example join algorithm, because we believe a similar method is needed in a \bd~application with multiple tables. We see that hash tables from the first phase and bitmaps from the second phase are candidates for caching, a technique we saw in Section \ref{sec:Caching and Dynamic Index Generation} that is commonly used to improve read performance.
 
 \section{Grouping and Aggregation}
 \label{sec:Grouping and Aggregation}
-The ability to group and aggregate data is perhaps one of the most important capabilities for \bi~and \bd~applications. In Section \ref{sub:Business Discovery, Queries, and SQL} we saw that users are interested in reports that can be analyzed quickly, which means the summarization and categorization of data.
+The ability to group and aggregate data is perhaps one of the most important capabilities for \bi~and \bd~applications. In Section \ref{sub:Business Discovery, Queries, and SQL} we saw that users are interested in reports that can be analyzed quickly, which implies data summarization and categorization.
 
 Conceptually, grouping and aggregation are relatively straightforward: The record set is scanned and divided into groups based on one or more attributes, and for each cluster an accumulator is held \cite{Bratbergsengen2015-ed}. Accumulators can be of various types, which includes \term{count}, \term{min}, \term{max}, \term{average}, and \term{sum}. Some aggregates require just a single memory cell, like \term{count} and \term{sum}, others are more involved and require more memory to calculate. A suitable structure stores the aggregated results, as a hash table or linear array. 
 
@@ -111,7 +111,7 @@ Grouping and aggregation should be done in parallel for ultimate performance. In
 
 \section{Query Optimization}
 \label{sec:Query Optimization}
-Query optimization is a large field within computer science and databases and was initially thought to be left out of this research. However, several systems identified in our literature survey have included some sort of query optimization. We will, therefore, briefly discuss this topic in this section. 
+Query optimization is a large field within computer science and databases and was initially thought to be left out of this research. However, several systems identified in our literature survey have included some sort of query optimization. We will, therefore, briefly discuss this topic. 
 
 Query optimizers should try to reduce the search space \cite{Boncz2002-yj, Stonebraker2005-qz}. Search space is reduced in \blink, where the only operation to access a table is via scans, and joining and grouping is done in a prespecified order \cite{Barber2012-xt}. Besides, query performance is increased if data is filtered out as early as possible in the plan \cite{Lamb2012-kg}. For instance, the most selective tables in a join operation should be joined first \cite{Holloway2008-rr}.
 
@@ -128,9 +128,9 @@ We conclude this section by saying that the query optimizer must utilize possibl
 
 \section{Querying Directly on Compressed Data}
 \label{sec:Querying Directly on Compressed Data}
-We find one of the most important technique for good query performance to operate directly on compressed data, which we have studied in Section \ref{sub:Working Directly on Compressed Data}. As we have seen, this is especially important when using dictionary compression, such simple integer operations can evaluate most predicates \cite{Abadi2008-dd}. If the data is bitpacked, queries can be processed in a SIMD-like fashion, a technique we study in more detail in Section \ref{sec:SIMD}.
+We find one of the most important technique for good query performance to operate directly on compressed data, which we have studied in Section \ref{sub:Working Directly on Compressed Data}. As we have seen, this is especially important when using dictionary compression, such that simple integer operations can evaluate most predicates \cite{Abadi2008-dd}. If the data is bitpacked, queries can be processed in a SIMD-like fashion, a technique we studied in Section \ref{sec:SIMD}.
 
-Systems querying direcly on compressed data include \cstore~\cite{Stonebraker2005-qz}, \ibm~\cite{Raman2013-em}, \mssql~\cite{Larson2013-mc}, \blink~\cite{Johnson2008-cp}, \sapnw~\cite{Lemke2010-is}. All of these systems claim one of their main benefits in terms of performance is their ability to work directly on the compressed data.
+Systems querying direcly on compressed data include \cstore~\cite{Stonebraker2005-qz}, \ibm~\cite{Raman2013-em}, \mssql~\cite{Larson2013-mc}, \blink~\cite{Johnson2008-cp}, \sapnw~\cite{Lemke2010-is}. All of these systems claim that one of their main reasons for high performance is due to the ability to work directly on the compressed data.
 
 \section{Late Materialization}
 \label{sec:Late Materialization}
@@ -163,7 +163,7 @@ In this chapter, we have seen several query processing techniques and principles
 
 We have previously seen that \bd~applications require joins to associate several tables in an application. For this, we recommend a \textit{nested loop} algorithm since this is the most popular joining algorithm for in-memory and parallel databases. A join algorithm for a column store could be inspired by Abadi \ea's \textit{invisible join}, and Bloom filters and hash table partitioning could be considered to improve performance.
 
-We also studied grouping and aggregation in this chapter, which perhaps is some of the most important capabilities for a \bd~application. With \de, the dictionary can be used to group and aggregate data. For grouping on multiple keys, a two-pass solution algorithm similar to \oracle's \textit{vector group by} should be considered.
+We also studied grouping and aggregation in this chapter, which perhaps is some of the most important capabilities in a \bd~application. With \de, the dictionary can be used to group and aggregate data. For grouping on multiple keys, a two-pass solution algorithm similar to \oracle's \textit{vector group by} should be considered.
 
 The query optimizer should seek to reduce search space by filtering out data as early as possible in the plan and minimize the need for coordination. Queries should work directly on compressed data and utilize optimization allowed by the design. 
 

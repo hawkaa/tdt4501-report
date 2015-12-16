@@ -4,7 +4,7 @@
 
 As we move up the memory hierarchy, careful implementation becomes more important such that available hardware is utilized to its full potential. Recent work by Sidlauskas \ea~claims that for in-memory databases, there is a challenge in concluding about data structures and algorithms only; the implementation also plays a significant role in performance \cite{Sidlauskas2014-ef}. For instance, if an extra layer of indirection is removed for an algorithm, as seen in Figure \ref{fig:implementation}, we observe a 3-fold performance improvement. 
 
-We have decided to dedicate an entire chapter to \textit{hardware utilization} and implementation details, and explain how performance can be improved by reducing the number of branches, avoiding layers of indirection, and utilizing CPU caches. We will first cover basic CPU theory, and then study related techniques employed by systems studied in this research.
+We have decided to dedicate an entire chapter to \textit{hardware utilization} and implementation details, and explain how performance can be improved by reducing the number of branches, avoiding layers of indirection, and utilizing CPU caches. We will first cover basic CPU theory, and then study related techniques that are employed by database systems.
 
 \newpage
 
@@ -22,7 +22,7 @@ In a pipeline, \textit{dependencies between instructions} impose a problem. If a
 
 Conditional branches are also affected by dependencies between instructions. When executing a conditional branch instruction, the decision whether to take a branch is usually dependent on the result of a preceding instruction \cite{Boncz2005-wj}. To avoid stalling the pipeline when waiting for the expression to evaluate, modern CPUs use a technique known as branch prediction where the processor immaturely starts executing the branch that is most likely to be taken. The performance penalty occurs if a branch is \textit{mispredicted}, where the instructions in the pipeline must be invalidated (pipeline flushing).
 
-Another way that performance is increased in a processor is by having muliple execution units. We refer to such processors as \textit{superscalar}. As seen in Figure \ref{fig:superscalar}, a superscalar processor can have multiple instructions in the same stage of the pipeline, which allows for for IPC (instructions per cycle) $> 1$. However, for this functionality to be fully utilized, independent work is required.
+Another way that performance is increased in a processor is by having muliple execution units. We refer to such processors as \textit{superscalar}. As seen in Figure \ref{fig:superscalar}, a superscalar processor can have multiple instructions in the same stage of the pipeline, which allows IPC (instructions per cycle) $> 1$. However, for this functionality to be fully utilized, independent work is required.
 
 \begin{figure}
   \centering
@@ -39,7 +39,7 @@ Another way that performance is increased in a processor is by having muliple ex
   \caption{By unrolling loops, instructions are made independent and the number of branches is reduced.}
   \label{fig:loop-unrolling} 
 \end{figure}
-Hence, to reach maximum performance on a pipelined, superscalar processor, we must find independent work. Since most programming languages do not let the programmer specify which instructions are independent of each other, compiler optimizations play a critical role in CPU utilization \cite{Boncz2005-wj}. The most widely used technique used by the compilers to address this challenge is through \textit{loop unrolling}, which is used to reduce the number of branches and increase independence between instructions \cite{Wikipedia_contributors2015-zc}. As seen in Figure \ref{fig:loop-unrolling}, loop unrolling reduces the number of iterations in a loop (reduction of branches) and replaces it with multiple instances of the same instruction. If the instructions are independent, they can be processed in parallel.
+Hence, to reach maximum performance for a pipelined, superscalar processor, we must find independent work. Since most programming languages do not let the programmer specify which instructions are independent of each other, compiler optimizations play a critical role in CPU utilization \cite{Boncz2005-wj}. The most widely used technique used by the compilers to address this challenge is \textit{loop unrolling}, which is used to reduce the number of branches and increase independence between instructions \cite{Wikipedia_contributors2015-zc}. As seen in Figure \ref{fig:loop-unrolling}, loop unrolling reduces the number of iterations in a loop (reduction of branches) and replaces it with multiple instances of the same instruction. If the instructions are independent, they can be processed in parallel.
 
 \subsection{CPU Caches}
 \label{sub:CPU Caches}
@@ -66,7 +66,7 @@ Trading off time with space is usually done to address the above challenge; addi
 
 \section{Branch Avoidance}
 \label{sec:Branch Avoidance}
-\ffigure{img/branch-selectivity.png}{Predicate evaluation performance for queries with different query selectivities. A \textit{branch version} and a \textit{predicated version} is tested. For the AthlonMP processor, the branch version are 2-3 times slower on queries with 40\%-60\% selectivity, while the Itanium2 processor has constant processing time. The predicated version offers constant processing time for both processors. Courtesy of \cite{Boncz2005-wj}.}{fig:branch-selectivity}
+\ffigure{img/branch-selectivity.png}{Predicate evaluation performance for queries with different query selectivities. A \textit{branch version} and a \textit{predicated version} are tested. For the AthlonMP processor, the branch version are 2-3 times slower on queries with 40\%-60\% selectivity, while the Itanium2 processor has constant processing time. The predicated version offers constant processing time for both processors. Courtesy of \cite{Boncz2005-wj}.}{fig:branch-selectivity}
 
 We saw in the previous section that branches should be avoided due to the penalties of branch misprediction. Besides, branches also cause dependencies between instructions. 
 
@@ -95,9 +95,9 @@ Branches can also be avoided by compiling queries to machine code \cite{Lamb2012
   \caption{Predicate evaluation for query \texttt{WHERE LastName='Doe' AND FirstName='John' AND Age>21}. (a) skips evaluating rest of the predicates if one predicate is false, while (b) evaluates all predicates regardless of previous results.}
   \label{fig:short-circuiting} 
 \end{figure}
-\textit{Short circuiting} is referred to a special case of Boolean operator evaluation in which the next argument is not evaluated if the current argument is sufficient to determine the value of the expression \cite{Wikipedia_contributors2015-rk}. Figure \ref{fig:short-circuiting} illustrates the difference between short-circuit and non-short-circuit predicate evaluation. In short-circuiting, the scan proceeds to the next tuple as soon as one predicate is false, as opposed to the verision without short-circuiting that evaluates all predicates regardless of previous results.
+\textit{Short-circuiting} is referred to a special case of Boolean operator evaluation in which the next argument is not evaluated if the current argument is sufficient to determine the value of the expression \cite{Wikipedia_contributors2015-rk}. Figure \ref{fig:short-circuiting} illustrates the difference between short-circuit and non-short-circuit predicate evaluation. In short-circuiting, the scan proceeds to the next tuple as soon as one predicate is false, as opposed to the verision without short-circuiting that evaluates all predicates regardless of previous results.
 
-Since short-circuit boolean operators are control structures and not simple arithmetic operators, there is a chance of branch misprediction. That is why \blink~\cite{Raman2008-gi, Johnson2008-cp} does not short circuit between tuples. If a block is selected for scanning, all fields in a record are checked. According to Raman \ea, short-circuiting only improves performance on low selectivity queries \cite{Raman2008-gi}.
+Since short-circuit boolean operators are control structures and not simple arithmetic operators, there is a chance of branch misprediction. That is why \blink~does not short-circuit between tuples \cite{Raman2008-gi, Johnson2008-cp}. If a block is selected for scanning, all fields in the records are checked. According to Raman \ea, short-circuiting only improves performance on low selectivity queries \cite{Raman2008-gi}.
 
 
 \section{Loop Pipelining and Vectorized Execution}
@@ -109,7 +109,7 @@ To ensure proper loop pipeline behavior, compilers must be aware that pointers d
 
 \subsection{Vectorized Execution}
 \label{sub:Vectorized Execution}
-To avoid unnecessary subroutine invocation overhead and help the compiler identify which instructions are independent, \textit{vectorized execution} is normally used. Vectorized execution, or block iteration, is the technique where multiple rows are processed at the same time to avoid the overhead associated with tuple-at-a-time processing \cite{Abadi2008-dd}. Vectorized execution enables loop unrolling, memory prefetching, and minimizing of cache misses \cite{Larson2013-mc}. Research performed by Abadi \ea~shows that vectorized execution in columns stores improves performance by 50\% on average.
+To avoid unnecessary subroutine invocation overhead and help the compiler identify which instructions are independent, \textit{vectorized execution} is normally used. Vectorized execution, or block iteration, is the technique where multiple rows are processed at the same time to avoid the overhead associated with tuple-at-a-time processing \cite{Abadi2008-dd}. Vectorized execution enables loop unrolling and memory prefetching, and minimizes cache misses \cite{Larson2013-mc}. Research performed by Abadi \ea~shows that vectorized execution in columns stores improves performance by 50\% on average.
 
 % explain who uses it
 Several systems studied our research use vectorized execution. \ibm~and \mssql~work on batches of thousands of row at a time \cite{Larson2013-mc, Raman2013-em}. \monetdb~and \monetx~use vectors instead of single values as their primary structure for storing data \cite{Boncz2005-wj, Boncz2002-yj}. Vectorized execution is also used by \cstore~and \blink~\cite{Johnson2008-cp, Stonebraker2005-qz}.
@@ -131,7 +131,7 @@ In Section \ref{sub:Call Stack and Subroutine Invocations}, we briefly discussed
 \label{sub:Compiling Queries to Machine Code}
 Compiling queries to native machine code can be used to increase the performance of expression evaluation, avoid branches, and reduce the number of function calls \cite{Lamb2012-kg, Neumann2011-uq}. It is particularly effective for ad-hoc queries \cite{Psaroudakis2014-ma}, which we know that \bd~queries are. Systems compiling queries into machine code include \blink~\cite{Barber2012-xt}, \ibm~\cite{Raman2013-em}, \vertica~\cite{Lamb2012-kg}, \hyper~\cite{Psaroudakis2014-ma}, and \mssql~\cite{Delaney2014-ip}. This technique is also employed by \qlikview, and it has been claimed that compiled code gives up to 5x performance compared to interpreted code for this product \cite{noauthor_undated-js}.
 
-\blink, one of the systems that compile queries from value to code space, uses dictionary keys directly in the compiled code \cite{Barber2012-xt}. Before compilation, the dictionary keys are looked up and put directly into the generated code, such that scans are performed directly on the columns without using the dictionary at run-time. Besides, the code generated by \blink~operates directly on compressed data. Since each partition in this \blink~have a different dictionary and different amount of bits per value in the bitpacked columns, a query must be compiled per partition. 
+\blink, one of the systems that compile queries from value to code space, uses dictionary keys directly in the compiled code \cite{Barber2012-xt}. Before compilation, the dictionary keys are looked up and put directly into the generated code, such that scans are performed directly on the columns without using the dictionary at run-time. Besides, the code generated by \blink~operates directly on compressed data. Since each partition in \blink~has a different dictionary and different amount of bits per value in the bitpacked columns, a query must be compiled per partition. 
 
 Data structures and functions for data access can also be compiled to machine code. \mssql~compiles memory-optimized tables and stored procedures, which allows for more efficient query execution than the traditional interpreted SQL \cite{Delaney2014-ip}. Using the \textit{Visual C compiler}, a dynamically linked library (DLL) per table is created and linked into the \mssql~process.
 

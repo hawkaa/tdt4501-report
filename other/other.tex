@@ -1,6 +1,6 @@
 \chapter{Other Topics}
 \label{chap:Other Topics}
-In this chapter, we present topics and design considerations we have come across in our research that do not fit in any of the other chapeters. We start by explaining how application design and denormalization can affect performance. Then, we look into techniques of how to remove the in-memory and read-only assumptions.
+In this chapter, we present topics and design considerations we have come across that do not fit in any of the other chapters. We start by explaining how application design and denormalization can affect performance. Then, we look into techniques of how to remove the in-memory and read-only assumptions.
 
 
 \newpage
@@ -21,7 +21,7 @@ We have spent the entire report looking at techniques that can improve raw datab
 
 \blink~was originally designed to operate on one, large denormalized table \cite{Johnson2008-cp}. However, after testing the database on real customer data, the authors figured out it did not help the database performance \cite{Barber2012-xt}. Therefore, a \textit{nested loop} based join was implemented instead. The authors never elaborated on why joining gave better performance than denormalization.
 
-In the case of \qlikview, data is not denormalized within the in-memory database engine. However, as we have seen in Section \ref{sub:Data Import}, the data import step allows for denormalization to lower the number of tables in the application and reduce application complexity. We are, however, uncertain of the performance impact of denormalizing data in the data import. 
+In the case of \qlikview, data is not denormalized within the in-memory database engine. However, as we have seen in Section \ref{sub:Data Import}, the data import step allows for denormalization to lower the number of tables in the application and reduce application complexity. We are, however, uncertain of the performance impact of denormalizing data in the data import step. 
 
 \section{Disk Support}
 \label{sec:Disk Support}
@@ -32,7 +32,7 @@ In this report, we have assumed that the entire dataset fits in main memory for 
 
 To support datasets larger than provisioned RAM, the most trivial way is to use the OS' virtual memory. This is done by \monetdb~\cite{Boncz2002-yj}, \blink~\cite{Barber2014-ey} and \qlikview~\cite{Qlik2011-ef}. However, the page replacement algorithms for virtual memory do not work very well on database workloads. The work of Graefe \ea~\cite{Graefe2014-ds} shows that main-memory databases suffers a sudden performance drop when virtual memory mechanism starts swapping pages to disk, as seen in Figure \ref{fig:page-thrashing}. \qlikview~has reported a significant loss in performance once the OS starts paging. 
 
-Falling back to virtual memory are for some systems unacceptable for performance and correctness reasons \cite{Graefe2014-ds}. To overcome these challenges, major database vendors like \oracle~and \mssql~use buffer managers for all their database operations, which we see in Figure \ref{fig:page-thrashing} improves query performance when the working set is larger than the provisioned RAM. However, the same figure also reveals a drawback of using a buffer manager; the extra layer of indirection comes at a performance cost for working sets that fit in memory. \mssql~performs worse than \vertipaq~on workloads that fit in memory because the latter does not have a buffer manager \cite{Ferrari2012-hm}
+Falling back to virtual memory are for some systems unacceptable for performance and correctness reasons \cite{Graefe2014-ds}. To overcome these challenges, major database vendors like \oracle~and \mssql~use buffer managers for all their database operations, which we see in Figure \ref{fig:page-thrashing} improves query performance when the working set is larger than the provisioned RAM. However, the same figure also reveals a drawback of using a buffer manager; the extra layer of indirection comes at a performance cost for working sets that fit in memory. The column store engine in \mssql~performs worse than the in-memory \vertipaq~on workloads that fit in memory because the latter does not have a buffer manager \cite{Ferrari2012-hm}
 
 \tableau~claims their system still performs well even if the data does not fit entirely in memory \cite{Kamkolkar2015-iq}. We are not certain whether this system uses a buffer manager or not.
 
@@ -63,7 +63,7 @@ Delta stores are periodically merged into the main storage, which is often calle
 
 In certain conditions, the delta store can be omitted completely on insertion. \mssql~allows bulk inserts to create columns directly without going via the delta store \cite{Larson2013-mc}.
 
-Many systems disallow updates and instead replace an update operation with one deletion and one insert. Deletes are usually implemented as invalidation bit vectors \cite{Raman2013-em, Lamb2012-kg}, and updates are appended to a suitable structure, like an unsorted B+-tree \cite{Psaroudakis2014-ma}, or an uncompressed column \cite{Farber2012-vh}. \textit{Delete-insert} updates has the benefit of allowing time-travel queries \cite{Schwalb2014-hn, Plattner2014-fr}.
+Many systems disallow updates and instead replace an update operation with one deletion and one insert. Deletes are usually implemented as invalidation bit vectors \cite{Lamb2012-kg, Raman2013-em}, and updates are appended to a suitable structure, like an unsorted B+-tree \cite{Psaroudakis2014-ma}, or an uncompressed column \cite{Farber2012-vh}. \textit{Delete-insert} updates has the benefit of allowing time-travel queries \cite{Plattner2014-fr, Schwalb2014-hn}.
 
 \section{Chapter Conclusion}
 \label{sec:Chapter Conclusion}
