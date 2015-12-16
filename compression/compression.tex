@@ -44,20 +44,21 @@ Later in this chapter, we elaborate on the situations where the various compress
 
 \afigure{img/ram-cache-decompression.png}{I/O-RAM vs RAM-CPU compression. In the left sub-figure, data is decompressed before it is put in the buffer manager (RAM). In the right sub-figure, data is kept compressed in the buffer manager and only decompressed when it is brought into the CPU cache. Courtesy of \cite{Zukowski2006-oz}.}{fig:ram-cache-decompression}{0.6}
 
-Earlier, if compression was applied to a disk-based database, the data was decompressed when brought up to RAM. In 2006, Zukowski \ea~suggested that data should not be decompressed when moved from disk to RAM, but when brought from RAM to cache \cite{Zukowski2006-oz}, as depicted in Figure \ref{fig:ram-cache-decompression}. \monetx~is a system that decompresses when data is moved from RAM to cache \cite{Johnson2008-cp}.
+In earlier database systems with compression, the data was decompressed when brought up to RAM. In 2006, Zukowski \ea~suggested that data should not be decompressed when moved from disk to RAM, but when brought from RAM to cache \cite{Zukowski2006-oz}, as depicted in Figure \ref{fig:ram-cache-decompression}. \monetx~is a system that decompresses when data is moved from RAM to cache \cite{Johnson2008-cp}.
 
-However, the most performance benefit of compression is seen when the system works on the compressed data directly \cite{Lemke2010-is}. This implies that data should not be decompressed until it is materialized and sent to the user. This is backed by the creators of \blink, who says data should never be decompressed before absolutely needed \cite{Barber2012-xt}. \oracle~claims one of the main performance benefits is to work directly on the compressed data \cite{Oracle2015-fs}. Not decompressing data before it is needed relates to a technique known as \textit{late materialization}, a technique we study in Section \ref{sec:Late Materialization}.
+However, the most performance benefit of compression is seen when the system works on the compressed data directly \cite{Lemke2010-is}. This implies that data should not be decompressed until it is materialized and sent to the user. This principle is backed by the creators of \blink, who says data should never be decompressed before absolutely needed \cite{Barber2012-xt}. \oracle~claims one of the main performance benefits is to work directly on the compressed data \cite{Oracle2015-fs}. Not decompressing data before it is needed relates to a technique known as \textit{late materialization}, a technique we study in Section \ref{sec:Late Materialization}.
 
 
 \section{Bitpacking}
 \label{sec:Bitpacking}
-\afigure{img/bitpacking.png}{Bitpacked column values. Values are stored with no more bits than needed to represent the column, which results in values that are not aligned to machine word boundaries. They may be spread across several machine words and share their machine word(s) with other codewords. Courtesy of \cite{Willhalm2013-ri}.}{fig:bitpacking}{0.8}
 
-\bp~is a trivial form of compression, where values are stored with no more bits than needed. In other words, if a column has a cardinality of 32, only 5 bits are required to represent a value. This way, in a 32-bit architecture, 100 values can be stored using $500$ bits, and not $100*32 = 3200$. \bp~has lower compression than algorithms that allow variable length, but values can be randomly accessed in constant time \cite{Raman2008-gi, Willhalm2013-ri}. Also, \bp~enables SIMD processing, which we discuss in Section \ref{sec:SIMD}. \bp is well suited for high cardinality, uniform distribution of values, where dictionary encoding only provides an unnecessary layer of indirection \cite{Holloway2008-rr}.
+\afigure{img/bitpacking.png}{Bitpacked column values. Values are stored with no more bits than needed to represent the column, which results in values that are not aligned to machine word boundaries. Values may be spread across several machine words and share their machine word(s) with other codewords. Courtesy of \cite{Willhalm2013-ri}.}{fig:bitpacking}{0.8}
+
+\bp~is a trivial form of compression, where values are stored with no more bits than needed. In other words, if a column has a cardinality of 32, only 5 bits are required to represent a value. This way, in a 32-bit architecture, 100 values can be stored using $500$ bits, and not $100*32 = 3200$. \bp~has lower compression than algorithms that allow variable length for values, but values can be randomly accessed in constant time \cite{Raman2008-gi, Willhalm2013-ri}. Also, \bp~enables SIMD processing, which we discuss in Section \ref{sec:SIMD}. \bp~is well suited for high cardinality, uniform distribution of values, where dictionary encoding only provides an unnecessary layer of indirection \cite{Holloway2008-rr}.
 
 As seen in Figure \ref{fig:bitpacking}, bitpacked values will not generally align to word boundaries. For processing, values normally have to be moved to the word boundary, but this cost has been found to be negligible \cite{Holloway2008-rr}. Aligning values can be done in an SIMD like fashion, a technique we study in Section \ref{sec:SIMD}.
 
-In its simplest form, \bp~works directly on the column data, but \bp~can be more powerful if combined with other compression types. We see in Section \ref{sec:Dictionary Encoding} that dictionary keys can be bitpacked, and in Section \ref{sec:Delta Encoding} that Delta Encoding benefits from \bp~if the deltas between the values are small. Also, bitpacked vectors can be used in an inverted index structure \cite{Schwalb2014-hn}, which we study in Section \ref{sec:Inverted Indexes}.
+In its simplest form, \bp~works directly on the column data, but the compression scheme can be more powerful if combined with other compression types. We see in Section \ref{sec:Dictionary Encoding} that dictionary keys can be bitpacked, and in Section \ref{sec:Delta Encoding} that \dele~benefits from \bp~if the deltas between the values are small. Besides, bitpacked vectors can be used in an inverted index structure \cite{Schwalb2014-hn}, which we study in Section \ref{sec:Inverted Indexes}.
 
 \subsection{Issues with Bitpacking}
 \label{sub:Issues with Bitpacking}
@@ -76,13 +77,13 @@ The second limitation with \bp~is that it does not account very well for data sk
 In a dictionary encoded column, each distinct value is stored once in a structure known as \textit{the dictionary}. Keys are assigned to each entry in the dictionary, most commonly integers from zero and up. Columns store these keys and not the actual values, and data is compressed since each unique value is stored exactly once. \de~using a sorted dictionary is illustrated in Figure \ref{fig:dictionary-sorted}. \de~is particularly effective when a column in a column store has only a few distinct values in a large dataset \cite{Faust2015-ke}.
 
 
-Except from the compression, one of the major advantages of \de, is that many database operations can be performed directly on the encoded values \cite{Faust2015-ke}, which we have seen in Section \ref{sub:Working Directly on Compressed Data} is important to achieve good performance. Integer comparison is less expensive than comparing the actual values, especially for strings. Additionally, range and \texttt{LIKE} predicates can be turned into \texttt{IN}-list operations, since the dictionary can be scanned first to find the relevant integer keys \cite{Barber2012-xt}.
+Except from the compression, one of the major advantages of \de, is that many database operations can be performed directly on the encoded values \cite{Faust2015-ke}, which we have seen in Section \ref{sub:Working Directly on Compressed Data} is important to achieve good performance. Integer comparison are less expensive than comparing the actual values, especially for strings. Additionally, range and \texttt{LIKE} predicates can be turned into \texttt{IN}-list operations, since the dictionary can be scanned first to find the relevant integer keys \cite{Barber2012-xt}.
 
 If the columns are partitioned horizontally, which we have discussed in Section \ref{sec:Horizontal Partitioning}, it is common that each partition has a separate dictionary. This is the case for most database systems, like \oracle~\cite{Lahiri2015-mz}, \blink~\cite{Barber2012-xt}, and \mssql~\cite{Larson2013-mc}. When a dictionary is stored per partition, it can be used for quick data pruning; if a value is not present in the dictionary, the partition can be skipped. \blink~and \monetx~use this technique \cite{Barber2012-xt, Boncz2005-wj}. 
 
-When implementing \de, special considerations should be taken. First, if the dictionary turns out bigger than the values it is replacing, \de~should not be used \cite{Holloway2008-rr}. Secondly, \de~performs best if the dictionary fits inside the L2 cache.
+When implementing \de, special considerations should be taken. First, if the dictionary turns out bigger than the values it is replacing, \de~should not be used \cite{Holloway2008-rr}. Secondly, \de~performs best if the dictionary fits inside the L2 cache of a processor.
 
-Like \bp, \de~does not handle data skew very well, since each unique value needs an entry in the dictionary no matter frequent that value appears in a column. Besides, for high cardinality columns, the compression is less efficient.
+Like \bp, \de~does not handle data skew very well, since each unique value needs an entry in the dictionary no matter how frequent that value appears in a column. Besides, for high cardinality columns, the compression is less efficient.
 
 \subsection{Sorted Dictionaries}
 \label{sub:Sorted Dictionaries}
@@ -114,9 +115,9 @@ One of the major drawbacks of \dele~is that values cannot be accessed in constan
 
 \subsection{Delta Encoding and Other Compression Techniques}
 \label{sub:Delta Encoding and Other Compression Techniques}
-\bp~can be used in conjunction with \dele. If the deltas are small, which they typically are if applied to a sorted column, \bp~can compress a column significantly. The column can be compressed even further by using \de, \dele, and \bp~a the same time because the variance in the column values will be reduced when replaced with dictionary keys. However, applying \dele~to bitpacked, dictionary encoded columns comes at a cost; Queries can no longer work directly on the compressed data using simple integer operations. In other words, we improve compression, but at the expense of performance reduction.
+\bp~can be used in conjunction with \dele. If the deltas are small, which they typically are if applied to a sorted column, \bp~can compress a column significantly. The column can be compressed even further by using \de, \dele, and \bp~a the same time because the variance in the column values will be reduced when replaced with dictionary keys. However, applying \dele~to bitpacked, dictionary encoded columns comes at a cost; Queries can no longer work directly on the compressed data using simple integer operations. In other words, we improve compression, but at the expense of performance.
 
-An algorithm that combines \dele~with \bp~is \pfdelta \cite{Bjorklund2011-wh}. This algorithm handles outliers very well because a separate structure is used to handle them. \pfdelta~has the advantage of branchless compression and decompression, which we see in Chapter \ref{chap:Hardware Utilization} is important for performance.
+An algorithm that combines \dele~with \bp~is \pfdelta~\cite{Bjorklund2011-wh}. This algorithm handles outliers very well because they are put in a separate structure. \pfdelta~has the advantage of branchless compression and decompression, which we see in Chapter \ref{chap:Hardware Utilization} is important for performance.
 
 \ffigure{img/timestamp-compression.png}{Compression of data stream (a) with timestamps and float values in \gorilla. Timestamps are stored as delta of deltas (b). The float values are \texttt{XOR}ed with the previous value  to extract meaningful bits (c). Courtesy of \cite{Pelkonen2015-ko}.}{fig:timestamp-compression}
 
@@ -125,9 +126,9 @@ If the differences between values are large, but similar to each other, compress
 \section{Run-Length Encoding}
 \label{sec:Run-Length Encoding}
 
-\ffigure{img/rle.png}{\rle~on a sorted value range. Repeated values are replaced with one instance of the value and an integer indicating how many times that value occur in the sequence. Courtesy of \cite{Stoimen_undated-js}.}{fig:rle}
+\ffigure{img/rle.png}{\rle~on a sorted value range. Repeated values are replaced with one instance of the value and an integer indicating how many times that value occurs in the sequence. Courtesy of \cite{Stoimen_undated-js}.}{fig:rle}
 
-\rle~is a lossless data compression algorithm that replaces repeating data values with only one instance of the data and a number of how many times that value appear in the sequence \cite{Stoimen_undated-js}, like illustrated in Figure \ref{fig:rle}. Although it can be used for any sequence, \rle~works best on sorted data \cite{Bjorklund2011-wh, Holloway2008-rr}. In this case, each unique value in the sequence is represented exactly once. \rle~performs best for low-cardinality columns. The method can also be applied to compress sparse bitmaps \cite{Stonebraker2005-qz}.
+\rle~is a lossless data compression algorithm that replaces repeating data values with only one instance of the data and a number of how many times that value appears in the sequence \cite{Stoimen_undated-js}, like illustrated in Figure \ref{fig:rle}. Although it can be used for any sequence, \rle~works best on sorted data \cite{Bjorklund2011-wh, Holloway2008-rr}. In this case, each unique value in the sequence is represented exactly once. \rle~performs best for low-cardinality columns. The method can also be applied to compress sparse bitmaps \cite{Stonebraker2005-qz}.
 
 \rle~is used in \cstore~\cite{Stonebraker2005-qz}, \vertica~\cite{Lamb2012-kg}, \oracle~\cite{Oracle2015-fs}, and \sapnw~\cite{Lemke2010-is}, but only if the values are sorted. 
 
@@ -135,7 +136,7 @@ If the differences between values are large, but similar to each other, compress
 
 \section{Compression Using Bitmaps}
 \label{sec:Compression Using Bitmaps}
-We saw in Section \ref{sub:Compression Types and Light-Weight Compression} that \cstore~and \vertica~compress foreign-order, low cardinality columns using bitmaps. This technique represents each column value as a bitmap, where the 1s in the map indicate which rows that have that value. If there are few distinct values in a column, the size of the bitmaps will be smaller than storing the actual values, and compression will be achieved. Since these bitmaps are typically sparse, they can be compressed further with techniques like \rle, which we study in Section \ref{sub:Compression of Bitmaps}.
+We saw in Section \ref{sub:Compression Types and Light-Weight Compression} that \cstore~and \vertica~compress foreign-order, low cardinality columns using bitmaps. With this technique, each unique column value is represented as a bitmap where the 1s in the map indicate which rows that have that value. If there are few distinct values in a column, the size of the bitmaps will be smaller than storing the actual values, and compression will be achieved. Since these bitmaps are typically sparse, they can be compressed further with techniques like \rle.
 
 Queries can work directly on the compressed data by combining values using bitwise operations. For instance, all people from Norway, Sweden and Denmark can be found by \texttt{OR}ing together the three bitmaps corresponding to these three contries. This storage format is also known as a \textit{bitmap index}, which we study in Section \ref{sec:Bitmap Indexes}.
 
@@ -149,5 +150,5 @@ Other compression techniques could also be considered:
 \begin{itemize}
   \item \rle~for sorted low-cardinality columns.
   \item Bitmaps for unsorted low-cardinality columns.
-  \item \de~for sorted high-cardinality columns, but since this technique renders the system unable to work directly on compressed data, this compression should only be applied if reducing memory footprint is more important than performance.
+  \item \dele~for sorted high-cardinality columns, but since this technique renders the system unable to work directly on compressed data, this compression should only be applied if reducing memory footprint is more important than performance.
 \end{itemize}
