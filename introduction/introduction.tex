@@ -1,6 +1,6 @@
 \chapter{Introduction}
 \label{chap:introduction}
-In this chapter we present the motivation, problem statement, contributions, and deliverables for this project. Also, we list key terms and definitions important for this report.
+In this chapter, we present the motivation, problem statement, contributions, and deliverables for this project. Also, we list key terms and definitions important for this report.
 \clearpage
 
 
@@ -9,11 +9,11 @@ In this chapter we present the motivation, problem statement, contributions, and
 
 \subsection{In-Memory}
 \label{sub:In-Memory}
-We restrict our research to databases that assume the entire dataset can fit in main memory since preliminary research have shown that this is a commonly used approach to achieve good query performance. Systems capable of using main memory as primary storage include \oracle~\cite{Lahiri2015-mz}, \saph~\cite{Farber2012-vh}, \gorilla~\cite{Pelkonen2015-ko}, \qlikview~\cite{Qlik2011-ef}, \tableau~\cite{Kamkolkar2015-iq}, \monetdb~\cite{Boncz2002-yj}, \blink~\cite{Barber2012-xt}, and \sapnw~\cite{Lemke2010-is}. In-memory database systems are where performance and low latency is a key design goal, and on systems that have no need for persistent storage \cite{Zicari2012-is}. Psaroudakis \ea~also say that in-memory databases are easier optimized using parallelization \cite{Psaroudakis2013-fn}. Lastly, a white paper by \qlikview~suggests that companies that are looking for \bi~systems should look for in-memory technologies \cite{Bereanu2010-tj}. 
+We restrict our research to databases that assume the entire dataset can fit in main memory since preliminary research have shown that this is a commonly used approach to achieve good query performance. Systems capable of using main memory as primary storage include \oracle~\cite{Lahiri2015-mz}, \saph~\cite{Farber2012-vh}, \gorilla~\cite{Pelkonen2015-ko}, \qlikview~\cite{Qlik2011-ef}, \tableau~\cite{Kamkolkar2015-iq}, \monetdb~\cite{Boncz2002-yj}, \blink~\cite{Barber2012-xt}, and \sapnw~\cite{Lemke2010-is}. In-memory database systems are used where performance and low latency is a key design goal, and on systems that have no need for persistent storage \cite{Zicari2012-is}. Psaroudakis \ea~also say that in-memory databases are easier to optimize using parallelization \cite{Psaroudakis2013-fn}. Lastly, a white paper by \qlikview~suggests that companies that are searching for \bi~systems should look for in-memory technologies \cite{Bereanu2010-tj}. 
 
-Several of these systems require the database to fit entirely in memory and does not have a buffer manager. We see in Section \ref{sec:Disk Support} that omitting the buffer manager can increase performance since an extra layer of indirection is removed \cite{Ferrari2012-hm, Graefe2014-ds}. However, databases without buffer managers rely on operating system swapping mechanisms if the database is larger than the provisioned RAM.
+Several of the systems we have covered in our research require the database to fit entirely in memory and does not have a buffer manager. We see in Section \ref{sec:Disk Support} that omitting the buffer manager can increase performance since an extra layer of indirection is removed \cite{Ferrari2012-hm, Graefe2014-ds}. However, databases without buffer managers rely on operating system swapping mechanisms if the database is larger than the provisioned RAM.
 
-According to Kemper \ea, it is safe to assume the entire dataset can fit in memory \cite{Kemper2011-ap} if a large scale server is used. Amazon, one of the biggest commercial enterprises of today, has roughly one billion transactions yearly. If each transaction is stored using 54 bytes, 54 GB is needed to store all transactions for a year, an amount that can easily be accommodated on a single commodity server today. Also, RAM is getting cheaper \cite{Exasol2014-xh}, and together with 64-bits CPUs, in-memory databases are getting an increasingly more significant role \cite{Delaney2014-ip}. Much work has been done in the development of non-volatile RAM, which suggests the era of magnetic disks as primary database storage might soon be over. 
+According to Kemper \ea, it is safe to assume the entire dataset can fit in memory if a large scale server is used \cite{Kemper2011-ap}. Amazon, one of the biggest commercial enterprises of today, has roughly one billion transactions yearly. If each transaction is stored using 54 bytes, 54 GB is needed to store all transactions for a year, an amount that can easily be accommodated on a single commodity server today. Also, RAM is getting cheaper \cite{Exasol2014-xh}, and together with 64-bits CPUs, in-memory databases are getting an increasingly more significant role \cite{Delaney2014-ip}. Much work has been done in the development of non-volatile RAM, which suggests the era of magnetic disks as primary database storage might soon be over. 
 
 \afigure{img/memory-hierarchy.png}{Simplified memory hierarchy. Techniques used to utilize the main memory for a hard-disk based database also applies to utilize CPU caches in a main-memory database. Courtesy of \cite{noauthor_undated-bk}.}{fig:memory-hierarchy}{0.5}
 Even though we direct our research to in-memory databases, optimization techniques for disk-based databases will normally apply for in-memory databases as well. As seen in Figure \ref{fig:memory-hierarchy}, techniques used to utilize the main memory for a disk-based database can be applied to utilize CPU caches in a main-memory database. We have only moved a step up in the memory hierarchy \cite{Boncz2002-yj}. There are situations where this argument does not hold, and one exception is where optimizations are based on the fact that sequential access is cheaper than random access, which does not apply for RAM.
@@ -29,14 +29,14 @@ We choose to focus on read-only because our primary design goal is performance. 
 
 \ffigure{img/compromise.png}{Conceptual figures of how performance of mixed workloads are affected by (a) data freshness, (b) flexibility, and (c) scheduling. Courtesy of \cite{Psaroudakis2014-ma}.}{fig:compromise}
 
-Regarding write support, we distinguish between two types. The first, and most involved, relates to database management systems, which we denote as \textit{direct write support}. \textit{Direct write support} implies that the database directly supports inserts, updates, and deletes. Some systems also support transactions. In such databases, correctness and consistency are the main goals, and data written to the database must immediately be accessible for subsequent queries. In such systems, mutable data structures, like invalidation vectors and delta stores are normally used. We elaborate on these structures in Section \ref{sec:Write Support and Mixed Workloads}.
+Regarding write support, we distinguish between two types. The first, and most involved, relates to database management systems, which we denote as \textit{direct write support}. \textit{Direct write support} implies that the database directly supports inserts, updates, and deletes. Some systems also support transactions. In such databases, correctness and consistency are the main goals, and data written to the database must immediately be accessible for subsequent queries. In such systems, dynamic data structures, like invalidation vectors and delta stores are normally used. We elaborate on these structures in Section \ref{sec:Write Support and Mixed Workloads}.
 
 
 The other type, which we denote as \textit{update based write support}, is a more light-weight alternative to \textit{direct write support}. Here, inserts, updates, and deletes are periodically merged into the database. In other words, an update done to the database might not be available to succeeding queries immediately. \textit{Update based write support} is used by \qlikview~and \tableau, as they can be configured to subscribe to changes in the database they are connected to.
 
-The advantages of \textit{update based write support} is that it does not rely on mutable data structures like invalidation vectors and delta stores. Instead, immutable data structures optimized for read-only workloads can be used. Since updates in such system happen periodically, instances of read-only structures can be replaced with instances of a more recent snapshot.
+The advantages of \textit{update based write support} is that it does not rely on dynamic data structures like invalidation vectors and delta stores. Instead, immutable data structures optimized for read-only workloads can be used. Since updates in such system happen periodically, instances of read-only structures can be replaced with instances of a more recent snapshot.
 
-We conclude it is safe to focus on optimizations for read-only workloads. Even though a \bd~product must be able to handle updates, a \textit{update based write support} type can be used.
+We conclude that it is safe to focus on optimizations for read-only workloads, since techniques applied for such workloads can also be used in an \textit{update based write support} system.
 
 \input{introduction/methodology}
 
@@ -45,13 +45,13 @@ We conclude it is safe to focus on optimizations for read-only workloads. Even t
 
 The main deliverable of this phase of the research is a report summarizing our findings. The report outlines the big picture of OLAP and \bd~product optimizations and studies some interesting cases in detail. The intention of the report is not, and has never been, to be a complete text covering all that is needed to improve \bd~performance. The report is first and foremost written to get an overview of the big picture, inspire, and encourage further studying of referred sources. 
 
-The research has also resulted in many notes, where the report covers roughly one-fourth of these. For convenience, the notes are left out of the report, but they can be used in following parts of the research.
+The research has also resulted in many notes, where the report covers roughly one-fourth of these. For convenience, the notes are left out of the report, but they can still be used in the continuation of this research.
 
 Our contributions of this research are threefold. First, we plan to \textit{improve the evidence} of optimization techniques for OLAP databases. We study techniques category by category, instead of product by product, to get a better a better overview. Besides, this setup enables comparisons between different systems. We know that Abadi \ea~have studied the effects of compression, late materialization, and column store \cite{Abadi2008-dd}. Raman \ea~have studied the impact of SIMD processing in databases \cite{Raman2008-gi}. Sidlauskas \ea~have studied the consequences of how different implementation of the same algorithm affects performance \cite{Sidlauskas2014-ef}. However, this research is limited in scope and fails to provide the big picture for the reader. In our work, we take a more holistic approach.
 
 Second, we plan to \textit{introduce new evidence} to optimizations that are specifically related to \bd~products. Current products do not reveal much about how they work internally. We plan to close the gap between the well studied OLAP databases and commercial \bd~products by relating our findings to in-memory and read-only constraints.
 
-Lastly, our research contributes to an \textit{improved computer-based product}. As explained in Section \ref{sec:Background and Motivation}, we plan to integrate \bd~capabilities within the business' main IT system to overcome the challenges of product isolation, integration, and maintenance. We plan to integrate a system where users can access \bd~dashboards and data extracts that seamlessly interact with their main IT system.
+Lastly, our research contributes to an \textit{improved computer-based product}. As explained in Section \ref{sec:Background and Motivation}, we the ultimate goal of this research is to integrate \bd~capabilities within the business' main IT system to overcome the challenges of product isolation, integration, and maintenance. In future work, we plan to integrate our findings in a system where users can access \bd~dashboards and data extracts that seamlessly interact with their main IT system.
 
 \section{Definitions}
 \label{sec:Definitions}
@@ -60,7 +60,7 @@ This section presents terms, definitions, and important products that are releva
 
 \paragraph{Online Analytical Processing (OLAP)}
 \label{par:Online Analytical Processing (OLAP)}
-  We use the term Online Analytical Processing (OLAP) extensively in this report. By OLAP, we mean systems that enable users to analyze multidimensional data interactively from multiple perspectives \cite{Wikipedia_contributors2015-hw}. OLAP is usually dominated by ad hoc, complex queries that group, aggregate and summarize over large datasets \cite{Bjorklund2011-wh}. OLAP systems can be both disk and memory based. Column storage is considered to be an attractive solution for OLAP systems, a technique we study further in Chapter \ref{chap:Data Layout}.
+  We use the term Online Analytical Processing (OLAP) extensively in this report. By OLAP, we mean systems that enable users to analyze multidimensional data interactively from multiple perspectives \cite{Wikipedia_contributors2015-hw}. OLAP is usually dominated by ad-hoc, complex queries that group, aggregate and summarize over large datasets \cite{Bjorklund2011-wh}. OLAP systems can be both disk and memory based. Column storage is considered to be an attractive solution for OLAP systems, a technique we study further in Chapter \ref{chap:Data Layout}.
 
 
 \paragraph{Online Transactional Processing (OLTP)}
@@ -69,11 +69,11 @@ Online Transactional Processing (OLTP) is a class of database systems that manag
 
 \paragraph{Database Management System (DBMS)}
 \label{par:Database Management System (DBMS)}
-A Database Management System (DBMS) is a computer software application for storage and analysis of data \cite{Wikipedia_contributors2015-pb}. The most common way to interface with a database is through SQL, although other methods exist. Regarding performance, DBMSes can focus on analytical workloads (OLAP), transactional performance (OLTP), or even both. DMBSes do not come with user interfaces for \bd~but is designed such that other applications can be built on top of them. In this report, we look at \oracle, \ibm, \saph, \sapnw, \mssql, \cstore, \vertica, \blink, \exasol, \oracle, \hyper, and \hyrise.
+A Database Management System (DBMS) is a computer software application for storage and analysis of data \cite{Wikipedia_contributors2015-pb}. The most common way to interface with a database is through SQL, although other methods exist. Regarding performance, DBMSes can focus on analytical workloads (OLAP), transactional performance (OLTP), or both. DMBSes do not come with user interfaces for \bd~but is designed such that other applications can be built on top of them. In this report, we look at \oracle, \ibm, \saph, \sapnw, \mssql, \cstore, \vertica, \blink, \exasol, \oracle, \hyper, and \hyrise.
 
 \paragraph{\bd}
 \label{par:Business Discovery}
-\bd~is a term introduced by a \qlikview~whitepaper \cite{Qlik2014-vd}. \bd~products differs from traditional \bi~systems by focusing more on the end user. \bd~products does not rely on aggregated data such that the user can follow his "information scent" and click his way through the data. \bd~platforms often provide an architecture that enables panels and dashboards to be shared with multiple clients, both on desktops and mobile devices. Current \bd~products typically build on tailored storage systems that are specifically designed for \bd~workloads, but some of them integrate directly with read-optimized DBMSes. \bd~products include \tableau, \qlikview, \powerpivot, and more. \bd~is explained in greater detail is Section~\ref{sec:Business Discovery}.
+\bd~is a term introduced by a \qlikview~whitepaper \cite{Qlik2014-vd}. \bd~products differ from traditional \bi~systems by focusing more on the end user. \bd~products do not rely on aggregated data such that the user can follow his "information scent" and click his way through the data. \bd~platforms often provide an architecture that enables panels and dashboards to be shared with multiple clients, both on desktops and mobile devices. Current \bd~products typically build on tailored storage systems that are specifically designed for \bd~workloads, but some of them integrate directly with read-optimized DBMSes. \bd~products include \tableau, \qlikview, \powerpivot, and more. \bd~is explained in greater detail is Section~\ref{sec:Business Discovery}.
 
 \paragraph{Reference products}
 \label{par:Reference products}
@@ -81,7 +81,7 @@ We will occasionally use the term \textit{reference products} in this report. By
 
 \paragraph{\exasol}
 \label{par:exasol}
-\exasol~is important in this report because as of November 2015, it is the highest performing DBMS in the official TPC-H benchmark \cite{noauthor_undated-vr}. This benchmark test database performance for analytical workloads on a predefined set of queries. \exasol~outperforms other systems tested in this benchmark by a factor of 10 in average. We, therefore, study techniques used by this system in extra detail.
+\exasol~is important in this report because as of November 2015, it is the highest performing DBMS in the official TPC-H benchmark \cite{noauthor_undated-vr}. This benchmark tests database performance for analytical workloads on a predefined set of queries. \exasol~outperforms other systems tested in this benchmark by a factor of 10 in average. We, therefore, highlight techniques used by this system throughout the report.
 
 
 \input{introduction/thesis-structure}
